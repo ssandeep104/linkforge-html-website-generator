@@ -57,12 +57,12 @@
         <p class="eyebrow">A two-step generator</p>
         <h1 class="display">
           Turn any pile of HTML into a
-          <em>beautiful reading site.</em>
+          <em>site of your own.</em>
         </h1>
         <p class="lede">
-          Paste source HTML from one or many websites. Linkforge extracts every
-          link, thumbnail, and video preview — then assembles them into one
-          curated front page you can publish.
+          Paste HTML from any websites — news, research, photography, video, your
+          own bookmarks. Linkforge pulls out every link, thumbnail, and preview, then
+          lets you choose how it should look.
         </p>
       </section>
 
@@ -241,14 +241,7 @@
               maxlength="120"
             />
           </label>
-          <label class="field field--toggle">
-            <span class="field__label">Layout</span>
-            <select id="site-layout">
-              <option value="magazine" selected>Magazine grid</option>
-              <option value="masonry">Masonry feed</option>
-              <option value="reader">Reader list</option>
-            </select>
-          </label>
+
         </div>
         <div class="bulk-actions">
           <button class="btn btn--ghost btn--sm" type="button" data-bulk="all">
@@ -265,6 +258,15 @@
             Only with image
           </button>
         </div>
+      </section>
+
+      <!-- Template picker -->
+      <section class="template-picker">
+        <div class="template-picker__head">
+          <h3>Pick a template</h3>
+          <p class="muted">We&rsquo;ll suggest one based on your content. Hover to preview, click to choose.</p>
+        </div>
+        <div id="template-grid" class="template-grid"></div>
       </section>
 
       <div id="categories" class="categories"></div>
@@ -365,6 +367,7 @@
     <!-- Toasts -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <script src="./templates.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

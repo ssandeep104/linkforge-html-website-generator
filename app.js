@@ -5,7 +5,7 @@
 const state = {
   sources: [], // {id, name, html, items[]}
   items: [], // flattened, with .enabled flag
-  site: { title: 'Daily Reader', tagline: 'A curated front page, built from the web.', layout: 'magazine' },
+  site: { title: 'Daily Reader', tagline: 'A curated front page, built from the web.', template: 'editorial' },
 };
 
 // Source names are auto-derived from their position (Source 1, Source 2, …)
@@ -447,6 +447,8 @@ function renderReview() {
     <span>${sources.size} source${sources.size === 1 ? '' : 's'}</span>
   `;
 
+  renderTemplatePicker();
+
   const root = $('#categories');
   root.innerHTML = '';
 
@@ -562,10 +564,53 @@ document.addEventListener('click', (e) => {
 // STEP 3 — GENERATE FINAL SITE
 // ===================================================
 
+// ---------- TEMPLATE PICKER UI ----------
+function countByCategory(items) {
+  const c = { article: 0, video: 0, gallery: 0, link: 0, total: items.length };
+  for (const i of items) c[i.category] = (c[i.category] || 0) + 1;
+  return c;
+}
+
+function renderTemplatePicker() {
+  const grid = $('#template-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const enabled = state.items.filter((i) => i.enabled);
+  const counts = countByCategory(enabled);
+  const suggested = window.LINKFORGE_SUGGEST(counts);
+
+  // pick default if not already set
+  if (!state.site.template || !window.LINKFORGE_TEMPLATES[state.site.template]) {
+    state.site.template = suggested;
+  }
+
+  for (const [key, tpl] of Object.entries(window.LINKFORGE_TEMPLATES)) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'template-card';
+    if (state.site.template === key) card.classList.add('template-card--active');
+    card.dataset.template = key;
+    card.innerHTML = `
+      ${key === suggested ? '<span class="template-card__suggested">Suggested</span>' : ''}
+      <div class="template-card__preview">${tpl.preview()}</div>
+      <div class="template-card__body">
+        <div class="template-card__name">${escapeText(tpl.name)}</div>
+        <div class="template-card__desc">${escapeText(tpl.desc)}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      state.site.template = key;
+      $$('.template-card').forEach((c) => c.classList.toggle('template-card--active', c.dataset.template === key));
+    });
+    grid.appendChild(card);
+  }
+}
+
+// ---------- BUILD GENERATED SITE ----------
 function buildGeneratedSite() {
   state.site.title = $('#site-title').value.trim() || 'Daily Reader';
   state.site.tagline = $('#site-tagline').value.trim() || '';
-  state.site.layout = $('#site-layout').value;
 
   const enabled = state.items.filter((i) => i.enabled);
   const articles = enabled.filter((i) => i.category === 'article');
@@ -573,19 +618,24 @@ function buildGeneratedSite() {
   const gallery = enabled.filter((i) => i.category === 'gallery');
   const links = enabled.filter((i) => i.category === 'link');
 
-  // pick hero: first article with thumbnail
-  const hero = articles.find((a) => a.thumbnail) || articles[0] || videos[0] || enabled[0];
-  const restArticles = articles.filter((a) => a !== hero);
-
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
 
-  const styles = generatedStyles(state.site.layout);
+  const ctx = {
+    title: state.site.title,
+    tagline: state.site.tagline,
+    articles, videos, gallery, links,
+    all: enabled,
+    today,
+  };
 
-  const css = `<style>${styles}</style>`;
+  const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || window.LINKFORGE_TEMPLATES.editorial;
+  return tpl.build(ctx);
+}
 
-  const html = `<!doctype html>
+function _UNUSED() {
+  const _html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -618,7 +668,7 @@ function buildGeneratedSite() {
   </footer>
 </body>
 </html>`;
-  return html;
+  return _html;
 }
 
 function renderHero(item) {
