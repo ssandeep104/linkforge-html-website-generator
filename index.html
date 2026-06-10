@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Linkforge — Build a beautiful news site from any HTML</title>
+    <meta
+      name="description"
+      content="Paste HTML from any site. Linkforge extracts every link, thumbnail, and video preview, then bundles them into a beautiful aggregated reading experience."
+    />
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=gambarino@400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230a0a0a'/%3E%3Cpath d='M9 22V10h3v9h6v3H9zm10-12h4l3 12h-3l-.6-2.6h-3.6L18.2 22H15l4-12zm.5 7.2h2.5l-1.2-5-1.3 5z' fill='%23fff'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <!-- ====== STEP 1: INPUT ====== -->
+    <main id="step-input" class="screen screen--active">
+      <header class="topbar">
+        <a class="logo" href="#" aria-label="Linkforge home">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 32 32"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect width="32" height="32" rx="6" fill="currentColor" />
+            <path
+              d="M9 22V10h3v9h6v3H9zm10-12h4l3 12h-3l-.6-2.6h-3.6L18.2 22H15l4-12zm.5 7.2h2.5l-1.2-5-1.3 5z"
+              fill="var(--color-bg)"
+            />
+          </svg>
+          <span>Linkforge</span>
+        </a>
+        <div class="topbar__right">
+          <span class="step-pill" data-step-pill="1">
+            <span class="step-pill__dot"></span>
+            Step <span data-step-current>1</span> of 2
+          </span>
+          <button
+            class="icon-btn"
+            data-theme-toggle
+            aria-label="Switch to dark mode"
+            type="button"
+          ></button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <p class="eyebrow">A two-step generator</p>
+        <h1 class="display">
+          Turn any pile of HTML into a
+          <em>beautiful reading site.</em>
+        </h1>
+        <p class="lede">
+          Paste source HTML from one or many websites. Linkforge extracts every
+          link, thumbnail, and video preview — then assembles them into one
+          curated front page you can publish.
+        </p>
+      </section>
+
+      <section class="composer">
+        <div class="composer__head">
+          <h2>Sources</h2>
+          <div class="composer__actions">
+            <button
+              class="btn btn--ghost"
+              type="button"
+              data-load-sample
+            >
+              Try a sample
+            </button>
+            <label class="btn btn--ghost" for="file-input">
+              Upload .html file
+              <input
+                id="file-input"
+                type="file"
+                accept=".html,.htm,text/html"
+                multiple
+                hidden
+              />
+            </label>
+            <button
+              class="btn btn--ghost"
+              type="button"
+              data-add-source
+            >
+              + Add another source
+            </button>
+          </div>
+        </div>
+
+        <div id="sources" class="sources"></div>
+
+        <div class="composer__foot">
+          <div class="composer__counts">
+            <span data-count-sources>0 sources</span>
+            <span class="dot-sep" aria-hidden="true">·</span>
+            <span data-count-items>0 items detected</span>
+          </div>
+          <button
+            id="btn-parse"
+            class="btn btn--primary"
+            type="button"
+            disabled
+          >
+            Parse & continue
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="how">
+        <div class="how__item">
+          <span class="how__num">01</span>
+          <h3>Paste or upload</h3>
+          <p>
+            Drop in raw HTML from any news, blog, or video site. Add as many
+            sources as you want.
+          </p>
+        </div>
+        <div class="how__item">
+          <span class="how__num">02</span>
+          <h3>Review &amp; refine</h3>
+          <p>
+            See every extracted link, thumbnail, and video card. Drop the
+            duds, keep the gems.
+          </p>
+        </div>
+        <div class="how__item">
+          <span class="how__num">03</span>
+          <h3>Publish</h3>
+          <p>
+            Generate a standalone HTML file you can host anywhere. No backend.
+            No tracking.
+          </p>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Linkforge</span>
+        <span>Client-side only — your HTML never leaves the browser.</span>
+      </footer>
+    </main>
+
+    <!-- ====== STEP 2: REVIEW ====== -->
+    <main id="step-review" class="screen">
+      <header class="topbar">
+        <a class="logo" href="#" data-back-to-input aria-label="Back to input">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 32 32"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect width="32" height="32" rx="6" fill="currentColor" />
+            <path
+              d="M9 22V10h3v9h6v3H9zm10-12h4l3 12h-3l-.6-2.6h-3.6L18.2 22H15l4-12zm.5 7.2h2.5l-1.2-5-1.3 5z"
+              fill="var(--color-bg)"
+            />
+          </svg>
+          <span>Linkforge</span>
+        </a>
+        <div class="topbar__right">
+          <span class="step-pill" data-step-pill="2">
+            <span class="step-pill__dot"></span>
+            Step 2 of 2 — Review
+          </span>
+          <button
+            class="icon-btn"
+            data-theme-toggle
+            aria-label="Switch to dark mode"
+            type="button"
+          ></button>
+        </div>
+      </header>
+
+      <section class="review-head">
+        <button class="btn btn--ghost btn--sm" type="button" data-back-to-input>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Edit sources
+        </button>
+        <div class="review-head__title">
+          <h2 class="page-title">Review what we found</h2>
+          <p class="muted">
+            Categorized by content type. Toggle items off to exclude them.
+          </p>
+        </div>
+        <div class="review-head__meta" data-review-meta></div>
+      </section>
+
+      <section class="review-controls">
+        <div class="site-meta">
+          <label class="field">
+            <span class="field__label">Site title</span>
+            <input
+              type="text"
+              id="site-title"
+              value="Daily Reader"
+              maxlength="80"
+            />
+          </label>
+          <label class="field">
+            <span class="field__label">Tagline</span>
+            <input
+              type="text"
+              id="site-tagline"
+              value="A curated front page, built from the web."
+              maxlength="120"
+            />
+          </label>
+          <label class="field field--toggle">
+            <span class="field__label">Layout</span>
+            <select id="site-layout">
+              <option value="magazine" selected>Magazine grid</option>
+              <option value="masonry">Masonry feed</option>
+              <option value="reader">Reader list</option>
+            </select>
+          </label>
+        </div>
+        <div class="bulk-actions">
+          <button class="btn btn--ghost btn--sm" type="button" data-bulk="all">
+            Select all
+          </button>
+          <button class="btn btn--ghost btn--sm" type="button" data-bulk="none">
+            Select none
+          </button>
+          <button
+            class="btn btn--ghost btn--sm"
+            type="button"
+            data-bulk="with-image"
+          >
+            Only with image
+          </button>
+        </div>
+      </section>
+
+      <div id="categories" class="categories"></div>
+
+      <div class="review-foot">
+        <button class="btn btn--ghost" type="button" data-back-to-input>
+          Back
+        </button>
+        <button class="btn btn--primary" type="button" id="btn-generate">
+          Generate site
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14M13 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </main>
+
+    <!-- ====== STEP 3: OUTPUT PREVIEW ====== -->
+    <main id="step-output" class="screen">
+      <header class="topbar">
+        <a class="logo" href="#" data-back-to-input aria-label="Linkforge home">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 32 32"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect width="32" height="32" rx="6" fill="currentColor" />
+            <path
+              d="M9 22V10h3v9h6v3H9zm10-12h4l3 12h-3l-.6-2.6h-3.6L18.2 22H15l4-12zm.5 7.2h2.5l-1.2-5-1.3 5z"
+              fill="var(--color-bg)"
+            />
+          </svg>
+          <span>Linkforge</span>
+        </a>
+        <div class="topbar__right">
+          <button class="btn btn--ghost btn--sm" type="button" data-back-to-review>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Edit
+          </button>
+          <button class="btn btn--primary btn--sm" type="button" id="btn-download">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Download HTML
+          </button>
+          <button
+            class="icon-btn"
+            data-theme-toggle
+            aria-label="Switch to dark mode"
+            type="button"
+          ></button>
+        </div>
+      </header>
+
+      <div class="preview-frame-wrap">
+        <iframe
+          id="preview-frame"
+          title="Generated site preview"
+          sandbox="allow-same-origin"
+        ></iframe>
+      </div>
+    </main>
+
+    <!-- Toasts -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
