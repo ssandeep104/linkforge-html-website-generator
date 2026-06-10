@@ -8,7 +8,8 @@ const state = {
   site: { title: 'Daily Reader', tagline: 'A curated front page, built from the web.', layout: 'magazine' },
 };
 
-let sourceCounter = 0;
+// Source names are auto-derived from their position (Source 1, Source 2, …)
+// unless the user has customized the name.
 
 // ---------- helpers ----------
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -306,16 +307,20 @@ function parseSource(html, sourceName) {
 // ===================================================
 
 function addSource(prefill = {}) {
-  sourceCounter += 1;
   const source = {
     id: uid(),
-    name: prefill.name || `Source ${sourceCounter}`,
+    name: prefill.name || '',          // empty = auto-named by position
+    customName: !!prefill.name,        // true once user types something
     html: prefill.html || '',
     items: [],
   };
   state.sources.push(source);
   renderSources();
   return source;
+}
+
+function displayName(src, idx) {
+  return src.customName && src.name ? src.name : `Source ${idx + 1}`;
 }
 
 function removeSource(id) {
@@ -334,7 +339,7 @@ function renderSources() {
     card.innerHTML = `
       <div class="source-card__head">
         <span class="source-card__label">${String(idx + 1).padStart(2, '0')}</span>
-        <input class="source-card__name" type="text" value="${escapeAttr(src.name)}" placeholder="Name this source (e.g. NYT homepage)" />
+        <input class="source-card__name" type="text" value="${escapeAttr(displayName(src, idx))}" placeholder="Name this source (e.g. NYT homepage)" />
         <button class="source-card__remove" type="button" aria-label="Remove source" title="Remove source">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -355,7 +360,10 @@ function renderSources() {
     const textarea = card.querySelector('textarea');
     const removeBtn = card.querySelector('.source-card__remove');
 
-    nameInput.addEventListener('input', () => (src.name = nameInput.value));
+    nameInput.addEventListener('input', () => {
+      src.name = nameInput.value;
+      src.customName = nameInput.value.trim().length > 0;
+    });
     textarea.addEventListener('input', () => {
       src.html = textarea.value;
       const quickItems = parseSource(src.html, src.name);
@@ -1037,7 +1045,6 @@ document.addEventListener('drop', async (e) => {
 
 function loadSample() {
   state.sources = [];
-  sourceCounter = 0;
 
   addSource({
     name: 'Editorial Weekly',
