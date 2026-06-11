@@ -89,6 +89,32 @@ const baseCSS = `
   button { font: inherit; cursor: pointer; }
 `;
 
+// Shared theme-toggle button (button HTML + paired JS).
+// Templates that use this:
+//   1. include themeToggleButton in their <body>
+//   2. include themeToggleScript before </body>
+//   3. scope their dark-mode CSS to both `:root[data-theme="dark"]` AND
+//      `@media(prefers-color-scheme:dark){:root:not([data-theme="light"])}` so the
+//      OS default still wins until the user clicks the toggle.
+const themeToggleButton = `<button class="theme-toggle" data-theme-toggle aria-label="Toggle theme" type="button"><svg class="theme-toggle__sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="theme-toggle__moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>`;
+
+const themeToggleCSS = `
+.theme-toggle{position:fixed;top:1rem;right:1rem;z-index:1000;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--divider,rgba(0,0,0,.15));background:var(--surface,#fff);color:var(--text,#111);transition:transform .2s,background .2s,border-color .2s;backdrop-filter:blur(8px)}
+.theme-toggle:hover{transform:scale(1.05)}
+.theme-toggle svg{position:absolute;transition:opacity .2s,transform .25s}
+.theme-toggle .theme-toggle__sun{opacity:0;transform:rotate(-30deg) scale(.6)}
+.theme-toggle .theme-toggle__moon{opacity:1;transform:rotate(0) scale(1)}
+:root[data-theme="dark"] .theme-toggle .theme-toggle__sun{opacity:1;transform:rotate(0) scale(1)}
+:root[data-theme="dark"] .theme-toggle .theme-toggle__moon{opacity:0;transform:rotate(30deg) scale(.6)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .theme-toggle .theme-toggle__sun{opacity:1;transform:rotate(0) scale(1)}:root:not([data-theme="light"]) .theme-toggle .theme-toggle__moon{opacity:0;transform:rotate(30deg) scale(.6)}}
+`;
+
+// In-memory theme toggle (no persistence to avoid the preview-iframe storage
+// validator). Each page load starts from system preference, user can flip
+// with the toggle button. Persistence will be added when this is wired into
+// real templates in the next iteration.
+const themeToggleScript = `<script>(function(){var r=document.documentElement;document.addEventListener('click',function(e){var b=e.target.closest('[data-theme-toggle]');if(!b)return;var cur=r.getAttribute('data-theme');var sysDark=matchMedia('(prefers-color-scheme:dark)').matches;var isDark=cur?cur==='dark':sysDark;r.setAttribute('data-theme',isDark?'light':'dark')});})();</script>`;
+
 // ============================================================
 // 1. EDITORIAL — newspaper / blog
 // ============================================================

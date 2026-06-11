@@ -62,11 +62,39 @@ const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif|svg)(\?|$)/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i;
 
 function safeURL(href, base) {
+  // If no base and href is relative, return the raw href without inventing a domain.
+  // The caller can decide how to handle truly relative links (we filter them out for hrefs,
+  // but still allow them for thumbnail/image resolution against the source's likely host).
   try {
-    return new URL(href, base || 'https://example.com').toString();
+    if (base) return new URL(href, base).toString();
+    return new URL(href).toString();
   } catch {
     return null;
   }
+}
+
+// Try to detect the most likely host for a parsed document by counting absolute anchor hosts.
+function detectBaseFromAnchors(doc) {
+  const counts = {};
+  const anchors = doc.querySelectorAll('a[href]');
+  for (const a of anchors) {
+    const raw = a.getAttribute('href') || '';
+    if (!/^https?:\/\//i.test(raw)) continue;
+    try {
+      const u = new URL(raw);
+      const host = u.hostname.replace(/^www\./, '');
+      // Skip social/share hosts and trackers — they're never the publisher
+      if (/^(twitter|x|facebook|instagram|linkedin|reddit|pinterest|whatsapp|t|tiktok)\.(com|co)$/i.test(host)) continue;
+      if (/^(googleadservices|doubleclick|google-analytics|googletagmanager|amazon-adsystem)\./i.test(host)) continue;
+      counts[host] = (counts[host] || 0) + 1;
+    } catch {}
+  }
+  // Return the most common host (with origin), or null
+  let best = null, bestCount = 0;
+  for (const [host, count] of Object.entries(counts)) {
+    if (count > bestCount) { best = host; bestCount = count; }
+  }
+  return best ? `https://${best}` : null;
 }
 
 function domainOf(url) {
@@ -316,25 +344,48 @@ function buildSectionMap(doc) {
   return map;
 }
 
-function parseSource(html, sourceName) {
-  if (!html?.trim()) return [];
+// Parse a source's HTML into items.
+// Returns an array of items (back-compat — callers can also read `.meta` for
+// the unresolved-anchors info via parseSourceWithMeta below).
+function parseSource(html, sourceName, opts = {}) {
+  return parseSourceWithMeta(html, sourceName, opts).items;
+}
+
+function parseSourceWithMeta(html, sourceName, opts = {}) {
+  if (!html?.trim()) return { items: [], unresolvedCount: 0, hasBase: false };
   let doc;
   try {
     doc = new DOMParser().parseFromString(html, 'text/html');
   } catch {
-    return [];
+    return { items: [], unresolvedCount: 0, hasBase: false };
   }
 
-  // Try to detect a base URL from <base> or og:url
+  // Try to detect a base URL from multiple signals, in order of reliability.
+  // Used to resolve relative hrefs/thumbnails. If we can't find one, we leave
+  // relative links unresolved (the parser will skip them) so we never invent
+  // a fake host like example.com.
   let baseURL = doc.querySelector('base')?.href || null;
   if (!baseURL) {
     const ogu = doc.querySelector('meta[property="og:url"]')?.content;
-    if (ogu) baseURL = ogu;
+    if (ogu) try { baseURL = new URL(ogu).origin; } catch {}
   }
+  if (!baseURL) {
+    const canon = doc.querySelector('link[rel="canonical"]')?.href;
+    if (canon) try { baseURL = new URL(canon).origin; } catch {}
+  }
+  if (!baseURL) {
+    const tw = doc.querySelector('meta[name="twitter:url"]')?.content || doc.querySelector('meta[property="twitter:url"]')?.content;
+    if (tw) try { baseURL = new URL(tw).origin; } catch {}
+  }
+  if (!baseURL) baseURL = detectBaseFromAnchors(doc);
+
+  // Allow caller to override base (e.g. user typed a domain into the prompt).
+  if (opts.overrideBase) baseURL = opts.overrideBase;
 
   const fallbackImage = getMetaImage(doc);
   const items = [];
   const seen = new Set();
+  let unresolvedCount = 0;
 
   // Pre-compute the section that each anchor sits in so the review page can
   // group items the way they appear on the original page (Top News, Sports, etc.)
@@ -346,7 +397,12 @@ function parseSource(html, sourceName) {
     const rawHref = a.getAttribute('href');
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue;
     const href = safeURL(rawHref, baseURL);
-    if (!href) continue;
+    if (!href) {
+      // Could not resolve — likely a relative URL with no detectable base.
+      // Track it so the UI can prompt the user for a domain.
+      if (!/^https?:\/\//i.test(rawHref)) unresolvedCount++;
+      continue;
+    }
     if (!/^https?:/i.test(href)) continue;
     if (seen.has(href)) continue;
     seen.add(href);
@@ -442,7 +498,7 @@ function parseSource(html, sourceName) {
     it.enabled = true;
   }
 
-  return items;
+  return { items, unresolvedCount, hasBase: !!baseURL, baseURL: baseURL || null };
 }
 
 // ===================================================
@@ -456,6 +512,9 @@ function addSource(prefill = {}) {
     customName: !!prefill.name,        // true once user types something
     html: prefill.html || '',
     items: [],
+    overrideBase: null,                // set when user manually provides a domain
+    unresolvedCount: 0,                // # of relative anchors that need a domain
+    domainValidationState: 'idle',     // 'idle' | 'checking' | 'ok' | 'failed'
   };
   state.sources.push(source);
   renderSources();
@@ -488,6 +547,7 @@ function renderSources() {
         </button>
       </div>
       <textarea spellcheck="false" placeholder="Paste raw HTML here — &lt;html&gt;, a fragment, or anything that contains anchors, images, videos…">${escapeText(src.html)}</textarea>
+      <div class="source-card__banner" data-banner hidden></div>
       <div class="source-card__foot">
         <div class="source-card__stats">
           <span><strong>0</strong> items</span>
@@ -509,21 +569,120 @@ function renderSources() {
     });
     textarea.addEventListener('input', () => {
       src.html = textarea.value;
-      const quickItems = parseSource(src.html, src.name);
-      src.items = quickItems;
-      updateStats(card, quickItems);
-      updateCounts();
+      runParse(src, card);
     });
     removeBtn.addEventListener('click', () => removeSource(src.id));
 
     // initial stats if prefilled
-    if (src.html) {
-      const quickItems = parseSource(src.html, src.name);
-      src.items = quickItems;
-      updateStats(card, quickItems);
-    }
+    if (src.html) runParse(src, card);
   });
   updateCounts();
+}
+
+// Parse a source and update its card UI (stats + unresolved-domain banner).
+function runParse(src, card) {
+  const meta = parseSourceWithMeta(src.html, src.name, {
+    overrideBase: src.overrideBase || undefined,
+  });
+  src.items = meta.items;
+  src.unresolvedCount = meta.unresolvedCount;
+  src.detectedBase = meta.baseURL;
+  updateStats(card, meta.items);
+  renderBanner(src, card);
+  updateCounts();
+}
+
+// Show / hide the yellow "unresolved domain" banner under the textarea.
+function renderBanner(src, card) {
+  const banner = card.querySelector('[data-banner]');
+  if (!banner) return;
+  if (!src.unresolvedCount) {
+    banner.hidden = true;
+    banner.innerHTML = '';
+    return;
+  }
+  banner.hidden = false;
+  const stateClass = src.domainValidationState === 'checking' ? 'is-checking'
+                  : src.domainValidationState === 'failed' ? 'is-failed'
+                  : src.domainValidationState === 'ok' ? 'is-ok' : '';
+  const msg = src.domainValidationState === 'checking' ? 'Checking that host…'
+           : src.domainValidationState === 'failed' ? "Couldn't reach that host — check the spelling, or use \"Skip & drop these links\"."
+           : src.domainValidationState === 'ok' ? 'Got it — links will use this domain.'
+           : `${src.unresolvedCount} link${src.unresolvedCount === 1 ? '' : 's'} ${src.unresolvedCount === 1 ? 'has' : 'have'} no domain. What site are these from?`;
+  banner.className = `source-card__banner ${stateClass}`;
+  banner.innerHTML = `
+    <div class="banner__msg">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      <span>${escapeText(msg)}</span>
+    </div>
+    <form class="banner__form" data-banner-form>
+      <input type="text" class="banner__input" placeholder="e.g. dallasnews.com" value="${escapeAttr(src.overrideBase || '')}" autocomplete="off" spellcheck="false" />
+      <button type="submit" class="banner__btn banner__btn--primary">Use this domain</button>
+      <button type="button" class="banner__btn banner__btn--ghost" data-banner-skip>Skip & drop these links</button>
+    </form>
+  `;
+  const form = banner.querySelector('[data-banner-form]');
+  const input = banner.querySelector('.banner__input');
+  const skipBtn = banner.querySelector('[data-banner-skip]');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const raw = input.value.trim();
+    if (!raw) return;
+    const origin = normalizeHostToOrigin(raw);
+    if (!origin) {
+      src.domainValidationState = 'failed';
+      renderBanner(src, card);
+      return;
+    }
+    src.domainValidationState = 'checking';
+    renderBanner(src, card);
+    const ok = await probeHost(origin);
+    if (!ok) {
+      src.domainValidationState = 'failed';
+      renderBanner(src, card);
+      return;
+    }
+    src.overrideBase = origin;
+    src.domainValidationState = 'ok';
+    runParse(src, card); // re-parse with the new base
+  });
+  skipBtn.addEventListener('click', () => {
+    // Mark as resolved-by-skipping: clear unresolvedCount so banner hides;
+    // the unresolved anchors are already excluded from items so they get dropped.
+    src.unresolvedCount = 0;
+    src.domainValidationState = 'idle';
+    renderBanner(src, card);
+    updateCounts();
+  });
+}
+
+// Accept anything from "dallasnews.com" to "https://www.dallasnews.com/foo"
+// and return a clean "https://host" origin string. Returns null if invalid.
+function normalizeHostToOrigin(raw) {
+  let s = raw.trim();
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  try {
+    const u = new URL(s);
+    if (!u.hostname || !u.hostname.includes('.')) return null;
+    return u.origin;
+  } catch {
+    return null;
+  }
+}
+
+// Best-effort reachability test. Uses no-cors so an opaque success still means
+// the host resolved. AbortController gives us a 5s timeout.
+async function probeHost(origin) {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 5000);
+    await fetch(origin, { mode: 'no-cors', signal: ctrl.signal });
+    clearTimeout(tid);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function updateStats(card, items) {
@@ -573,6 +732,23 @@ function bucketOf(item) {
 }
 
 function gotoReview() {
+  // Block parse if any source still has unresolved links the user hasn't
+  // addressed. They have to either type a domain or click "Skip & drop".
+  const blocked = state.sources.filter((s) => s.unresolvedCount > 0);
+  if (blocked.length) {
+    const first = document.querySelector(`.source-card[data-id="${blocked[0].id}"] .banner__input`);
+    if (first) first.focus();
+    const hint = blocked.length === 1
+      ? 'One source has links with no domain — resolve it first.'
+      : `${blocked.length} sources have links with no domain — resolve them first.`;
+    const parseHint = $('#parse-hint');
+    if (parseHint) {
+      parseHint.textContent = hint;
+      parseHint.classList.add('is-warn');
+      setTimeout(() => { parseHint.classList.remove('is-warn'); parseHint.textContent = ''; }, 4000);
+    }
+    return;
+  }
   // flatten and dedupe by href, keep pageSection
   const all = [];
   const seen = new Set();
@@ -1341,7 +1517,7 @@ $('#file-input').addEventListener('change', async (e) => {
       firstEmpty.name = name;
       firstEmpty.customName = true;
       firstEmpty.html = html;
-      firstEmpty.items = parseSource(html, name);
+      // items + banner state get populated by renderSources → runParse below
     } else {
       addSource({ name, html });
     }
@@ -1367,7 +1543,7 @@ document.addEventListener('drop', async (e) => {
     src.html = html;
     src.name = name;
     src.customName = true;
-    src.items = parseSource(html, name);
+    // items + banner state get populated by renderSources → runParse below
     renderSources();
   }
 });
