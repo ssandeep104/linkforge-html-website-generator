@@ -1476,6 +1476,11 @@ a:hover {
   background: color-mix(in srgb, #16a34a 12%, var(--surface));
   border-color: color-mix(in srgb, #16a34a 35%, transparent);
 }
+.source-card__banner.is-empty {
+  background: color-mix(in srgb, #6b7280 10%, var(--surface));
+  border-color: color-mix(in srgb, #6b7280 30%, transparent);
+}
+.source-card__banner.is-empty .banner__msg svg { color: #6b7280; }
 .source-card__banner .banner__msg {
   display: flex;
   align-items: center;

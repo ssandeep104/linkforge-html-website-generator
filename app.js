@@ -142,6 +142,35 @@ function classify(item) {
   return 'link';
 }
 
+// Declarative Shadow DOM: <template shadowrootmode="open"> nodes are NOT
+// instantiated by DOMParser. The browser would attach them as real shadow
+// trees, but we just get inert <template> elements with their content stuck
+// inside a DocumentFragment. To find <a>, <img>, <video>, etc. we hoist that
+// content out of the template so subsequent querySelectorAll walks see it.
+// Used for sites like NYT, where article media lives inside <template shadowrootmode>.
+function expandShadowTemplates(root, depth = 0) {
+  if (depth > 12) return; // safety: avoid pathological nesting
+  const templates = Array.from(root.querySelectorAll('template'));
+  for (const tpl of templates) {
+    // Only expand declarative shadow templates — leave plain <template> alone.
+    const mode = tpl.getAttribute('shadowrootmode') || tpl.getAttribute('shadowroot');
+    if (!mode) continue;
+    const frag = tpl.content;
+    if (!frag) continue;
+    // Recurse into the fragment first so nested shadow templates are flattened too.
+    expandShadowTemplates(frag, depth + 1);
+    // Move the children out, inserted right after the template so DOM order is preserved.
+    const parent = tpl.parentNode;
+    if (!parent) continue;
+    const after = tpl.nextSibling;
+    while (frag.firstChild) {
+      parent.insertBefore(frag.firstChild, after);
+    }
+    // Leave the empty <template> in place so we don't break sibling counts /
+    // querySelector :scope > * selectors elsewhere in the parser.
+  }
+}
+
 function getMetaImage(doc) {
   const sels = [
     'meta[property="og:image"]',
@@ -360,6 +389,10 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     return { items: [], unresolvedCount: 0, hasBase: false };
   }
 
+  // Flatten declarative Shadow DOM so we can see media inside <template shadowrootmode>.
+  // Required for sites like NYT video feeds.
+  expandShadowTemplates(doc);
+
   // Try to detect a base URL from multiple signals, in order of reliability.
   // Used to resolve relative hrefs/thumbnails. If we can't find one, we leave
   // relative links unresolved (the parser will skip them) so we never invent
@@ -426,9 +459,28 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     items.push(item);
   }
 
+  // 1.5) <article> synthesis — for articles that contain no <a href> of their own.
+  // This handles sites like NYT video feeds where each card is a self-contained
+  // <article> with <video><source>, <img> poster, and a <p> headline but no anchors.
+  // We do this BEFORE the standalone image/video walks so the standalone passes
+  // don't grab the article's media as orphan "Image"/"Video" items.
+  const synthesizedFromArticles = new WeakSet();
+  const articles = Array.from(doc.querySelectorAll('article'));
+  for (const art of articles) {
+    if (art.querySelector('a[href]')) continue; // already covered by anchor walk
+    const synth = synthesizeFromArticle(art, baseURL, sourceName);
+    if (!synth) continue;
+    if (seen.has(synth.href)) continue;
+    seen.add(synth.href);
+    synth.pageSection = sectionFor.get(art) || 'Videos';
+    items.push(synth);
+    // Mark all images & videos inside this article so standalone walks skip them.
+    art.querySelectorAll('img, video, iframe, source').forEach((el) => synthesizedFromArticles.add(el));
+  }
+
   // 2) Standalone images on the page (often used in galleries)
-  // Only add ones not already attached to anchors above
-  const standaloneImgs = Array.from(doc.querySelectorAll('img')).filter((img) => !img.closest('a[href]'));
+  // Only add ones not already attached to anchors above or synthesized from <article>
+  const standaloneImgs = Array.from(doc.querySelectorAll('img')).filter((img) => !img.closest('a[href]') && !synthesizedFromArticles.has(img));
   for (const img of standaloneImgs) {
     let src = img.getAttribute('src') || img.getAttribute('data-src');
     if (!src) continue;
@@ -452,7 +504,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
 
   // 3) Pure video tags / iframes without anchors
   const standaloneVideos = Array.from(doc.querySelectorAll('iframe[src], video')).filter(
-    (v) => !v.closest('a[href]')
+    (v) => !v.closest('a[href]') && !synthesizedFromArticles.has(v)
   );
   for (const v of standaloneVideos) {
     let src = v.getAttribute('src') || v.querySelector?.('source')?.getAttribute('src');
@@ -499,6 +551,106 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   }
 
   return { items, unresolvedCount, hasBase: !!baseURL, baseURL: baseURL || null };
+}
+
+// Build an item from a self-contained <article> when the article has no
+// outbound <a href>. We pull:
+//   title:     headline-like <p> text, or aria-label on any inner role="group" / video
+//   thumbnail: poster <img> (data-testid="betamax-poster" for NYT, else first <img>)
+//   href:      best <video><source> URL (mp4 preferred, then any), or first <iframe>
+// Returns null if we can't even derive a title + (href or thumbnail).
+function synthesizeFromArticle(art, baseURL, sourceName) {
+  // --- title ---
+  let title = null;
+  // Headline containers commonly used by news sites
+  const headline = art.querySelector('[class*="headline"] p, [class*="headline"] h1, [class*="headline"] h2, [class*="headline"] h3, [class*="caption"] p');
+  if (headline) title = headline.textContent.replace(/\s+/g, ' ').trim();
+  // Generic headline-like child
+  if (!title) {
+    const h = art.querySelector('h1, h2, h3, h4');
+    if (h) title = h.textContent.replace(/\s+/g, ' ').trim();
+  }
+  // aria-label on an inner role="group" (NYT betamax)
+  if (!title) {
+    const grp = art.querySelector('[role="group"][aria-label], [aria-label]');
+    if (grp) title = grp.getAttribute('aria-label').replace(/\s+/g, ' ').trim();
+  }
+  // First <p> as last resort
+  if (!title) {
+    const p = art.querySelector('p');
+    if (p) title = p.textContent.replace(/\s+/g, ' ').trim();
+  }
+  if (title && title.length > 280) title = title.slice(0, 280);
+  if (!title) return null;
+
+  // --- thumbnail ---
+  let thumb = null;
+  const poster = art.querySelector('img[data-testid*="poster"], img[class*="poster"], img[class*="thumb"]');
+  if (poster) thumb = pickImgSrc(poster);
+  if (!thumb) {
+    const anyImg = art.querySelector('img');
+    if (anyImg) thumb = pickImgSrc(anyImg);
+  }
+  if (thumb) thumb = safeURL(thumb, baseURL) || thumb;
+  if (thumb && !/^https?:/i.test(thumb)) thumb = null;
+
+  // --- href: best video source, then iframe, then thumbnail itself ---
+  let href = null;
+  let videoInfo = null;
+  const video = art.querySelector('video');
+  if (video) {
+    // Find the highest-quality MP4 source; prefer non-HLS for direct linking.
+    const sources = Array.from(video.querySelectorAll('source'));
+    let best = sources.find((s) => /video\/mp4/i.test(s.getAttribute('type') || '') && !/m3u8/i.test(s.getAttribute('src') || ''));
+    if (!best) best = sources.find((s) => /\.mp4/i.test(s.getAttribute('src') || ''));
+    if (!best) best = sources[0];
+    if (best) {
+      const src = best.getAttribute('src');
+      if (src) {
+        const resolved = safeURL(src, baseURL) || src;
+        if (/^https?:/i.test(resolved)) {
+          href = resolved;
+          videoInfo = { src: resolved, poster: thumb || null };
+        }
+      }
+    }
+  }
+  if (!href) {
+    const iframe = art.querySelector('iframe[src]');
+    if (iframe) {
+      const src = iframe.getAttribute('src');
+      const resolved = src ? (safeURL(src, baseURL) || src) : null;
+      if (resolved && /^https?:/i.test(resolved)) {
+        href = resolved;
+        if (/youtube|vimeo|tiktok|wistia|dailymotion|twitch/i.test(resolved)) {
+          videoInfo = { src: resolved };
+        }
+      }
+    }
+  }
+  // If no playable media URL exists, fall back to linking the article container's
+  // data-href / data-url, or the thumbnail itself.
+  if (!href) {
+    const dataLink = art.getAttribute('data-href') || art.getAttribute('data-url') || art.getAttribute('data-link');
+    if (dataLink) {
+      const resolved = safeURL(dataLink, baseURL) || dataLink;
+      if (/^https?:/i.test(resolved)) href = resolved;
+    }
+  }
+  if (!href && thumb) href = thumb;
+  if (!href) return null;
+
+  const item = {
+    id: uid(),
+    sourceName,
+    href,
+    title,
+    thumbnail: thumb || null,
+    video: videoInfo,
+    domain: domainOf(href),
+  };
+  item.category = videoInfo ? 'video' : (thumb ? 'article' : 'link');
+  return item;
 }
 
 // ===================================================
@@ -587,6 +739,9 @@ function runParse(src, card) {
   src.items = meta.items;
   src.unresolvedCount = meta.unresolvedCount;
   src.detectedBase = meta.baseURL;
+  // "Empty source" — we got non-empty HTML but zero items. Likely a JS-rendered
+  // page or a snippet that needs different selectors. Track so we can show a hint.
+  src.emptyAfterParse = !!(src.html.trim() && meta.items.length === 0 && meta.unresolvedCount === 0);
   updateStats(card, meta.items);
   renderBanner(src, card);
   updateCounts();
@@ -596,6 +751,20 @@ function runParse(src, card) {
 function renderBanner(src, card) {
   const banner = card.querySelector('[data-banner]');
   if (!banner) return;
+
+  // Empty-source hint takes over when there's no unresolved-domain situation.
+  if (!src.unresolvedCount && src.emptyAfterParse) {
+    banner.hidden = false;
+    banner.className = 'source-card__banner is-empty';
+    banner.innerHTML = `
+      <div class="banner__msg">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <span>No links, images, or videos detected. This may be a JS-rendered page — try “View Page Source” in your browser and paste that instead of inspecting the rendered DOM.</span>
+      </div>
+    `;
+    return;
+  }
+
   if (!src.unresolvedCount) {
     banner.hidden = true;
     banner.innerHTML = '';
