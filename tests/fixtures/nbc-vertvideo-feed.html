@@ -1,0 +1,110 @@
+<!-- Fixture: NBC News vertical-video scroll feed
+     URL pattern: https://www.nbcnews.com/now and similar pages with the vertvideo widget
+     Captured: 2026-06-11 from a live page (3 of 20 cards shown — same structure repeats)
+
+     Failure mode (parser v5):
+       - 1 item, 1 image, 0 videos — the lone item is the "FOR SUBSCRIBERS" asterisk SVG
+         from a subscriber badge (the only real <img> in the markup).
+       - All 20 actual video thumbnails are CSS background-image URLs and the
+         standalone image walk doesn't see them.
+       - All 20 cards are <div role="button" data-contentid="..."> with no <a href>,
+         no <video>, no <iframe> — invisible to every existing extraction pass.
+
+     Key shape (per card):
+       - Clickable root: <div role="button" tabindex="0" data-contentid="mmvo...">
+       - Title:    <span data-testid="card-title">…</span>
+       - Duration: <span data-testid="card-duration">…</span>
+       - Thumb:    <div style="background-image: url('…')"> (inner div, not an <img>)
+
+     Expected items after fix: 3 video items per fixture, titles from
+     [data-testid="card-title"], thumbs from inline background-image URLs, hrefs
+     either synthesized as https://www.nbcnews.com/now/video/<contentid> OR marked
+     unresolved so the domain-banner can prompt for a base.
+-->
+<div class="styles_vertVideoScrollWrapper__k9oxs">
+  <div class="styles_vertVideoScrollContainer__ZwVM8" data-testid="vertvideo-scroll-container">
+
+    <div class="styles_vertVideoCardWrapper__ie_iW js-vertvideo-thumb" data-testid="card">
+      <div class="styles_vertVideoCardsTwoByThreeContainer__DOkDK"
+           data-contentid="mmvo264919109909"
+           data-testid="card-container" role="button" tabindex="0">
+        <div data-testid="background" class="background bg-background__wrapper styles_vertVideoCardsTwoByThreeBgWrapper____H4q bg-use-background">
+          <div class="bg-background styles_vertVideoCardBackground__9s6XP">
+            <div class="bg-background__picture w-100 h-100"
+                 style="background-image:url('https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/baby_hippo-afw9z1.jpg')"
+                 data-testid="background-image"></div>
+          </div>
+          <div class="styles_vertVideoCardsTwoByThreeBgContent__vtJMA relative df flex-column justify-center">
+            <div class="styles_vertVideoCardsTwoByThreeTitleLink__KLrWz">
+              <div class="styles_vertVideoCardsTwoByThreeTitle__p9kVE">
+                <span data-testid="card-title">Rare baby hippo makes appearance at Berlin Zoo</span>
+              </div>
+            </div>
+            <div class="styles_videoMeta__IHKZz">
+              <span class="styles_caret__Aqe2z icon icon-play" aria-hidden="true" focusable="false" data-testid="caret"></span>
+              <span data-testid="card-duration">00:44</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="styles_vertVideoCardWrapper__ie_iW js-vertvideo-thumb" data-testid="card">
+      <div class="styles_vertVideoCardsTwoByThreeContainer__DOkDK"
+           data-contentid="mmvo264814149890"
+           data-testid="card-container" role="button" tabindex="0">
+        <!-- "FOR SUBSCRIBERS" badge — the only real <img> in the entire feed -->
+        <div class="subscriber-badge styles_subscriberBadge__Lc_nV" data-testid="subscriber-badge">
+          <img src="https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2026-01/asterisk-43f04b.svg" alt="">
+          <div class="styles_textWrapper__6GGIR">
+            <span class="styles_text__CtcQ0">FOR</span><span class="styles_text__CtcQ0">SUBSCRIBERS</span>
+          </div>
+        </div>
+        <div data-testid="background" class="background bg-background__wrapper styles_vertVideoCardsTwoByThreeBgWrapper____H4q bg-use-background">
+          <div class="bg-background styles_vertVideoCardBackground__9s6XP">
+            <div class="bg-background__picture w-100 h-100"
+                 style="background-image:url('https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/gabe_thumb2-lef1r4.jpg')"
+                 data-testid="background-image"></div>
+          </div>
+          <div class="styles_vertVideoCardsTwoByThreeBgContent__vtJMA relative df flex-column justify-center">
+            <div class="styles_vertVideoCardsTwoByThreeTitleLink__KLrWz">
+              <div class="styles_vertVideoCardsTwoByThreeTitle__p9kVE">
+                <span data-testid="card-title">Are the UFC fights at the White House unprecedented?</span>
+              </div>
+            </div>
+            <div class="styles_videoMeta__IHKZz">
+              <span class="styles_caret__Aqe2z icon icon-play" aria-hidden="true" focusable="false" data-testid="caret"></span>
+              <span data-testid="card-duration">01:39</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="styles_vertVideoCardWrapper__ie_iW js-vertvideo-thumb" data-testid="card">
+      <div class="styles_vertVideoCardsTwoByThreeContainer__DOkDK"
+           data-contentid="mmvo264912965718"
+           data-testid="card-container" role="button" tabindex="0">
+        <div data-testid="background" class="background bg-background__wrapper styles_vertVideoCardsTwoByThreeBgWrapper____H4q bg-use-background">
+          <div class="bg-background styles_vertVideoCardBackground__9s6XP">
+            <div class="bg-background__picture w-100 h-100"
+                 style="background-image:url('https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/Russia_Thumb_Vert-gzj8sk.jpg')"
+                 data-testid="background-image"></div>
+          </div>
+          <div class="styles_vertVideoCardsTwoByThreeBgContent__vtJMA relative df flex-column justify-center">
+            <div class="styles_vertVideoCardsTwoByThreeTitleLink__KLrWz">
+              <div class="styles_vertVideoCardsTwoByThreeTitle__p9kVE">
+                <span data-testid="card-title">Russian authorities investigate two car bombings in Moscow</span>
+              </div>
+            </div>
+            <div class="styles_videoMeta__IHKZz">
+              <span class="styles_caret__Aqe2z icon icon-play" aria-hidden="true" focusable="false" data-testid="caret"></span>
+              <span data-testid="card-duration">00:20</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
