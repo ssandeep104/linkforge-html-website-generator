@@ -57,7 +57,15 @@ function showScreen(id) {
 // PARSING
 // ===================================================
 
-const VIDEO_HOSTS = ['youtube.com', 'youtu.be', 'vimeo.com', 'tiktok.com', 'twitch.tv', 'dailymotion.com', 'wistia.com'];
+const VIDEO_HOSTS = ['youtube.com', 'youtu.be', 'vimeo.com', 'tiktok.com', 'twitch.tv', 'dailymotion.com', 'wistia.com', 'instagram.com'];
+
+// URL-shortener / tracker hosts. Anchors pointing here are dropped — they're
+// never the canonical destination and just pollute the output (esp. Twitter
+// oEmbed cards which contain t.co links for every image and date stamp).
+// youtu.be is NOT in this list — it's a real video destination, not a tracker.
+const SHORT_LINK_HOSTS = new Set([
+  't.co', 'bit.ly', 'tinyurl.com', 'lnkd.in', 'buff.ly', 'ow.ly', 'goo.gl', 'fb.me',
+]);
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif|svg)(\?|$)/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i;
 
@@ -265,7 +273,7 @@ function extractVideoFromAnchor(a) {
   const iframe = a.querySelector('iframe[src]');
   if (iframe) {
     const src = iframe.getAttribute('src');
-    if (src && /youtube|vimeo|tiktok|wistia|dailymotion|twitch/i.test(src)) {
+    if (src && /youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(src)) {
       return { src };
     }
   }
@@ -361,17 +369,29 @@ function looksLikeBadTitle(t) {
 }
 
 function getAnchorTitle(a) {
-  // prefer aria-label, then title attr, then text content, then nested heading, then img alt
+  // Order of preference: aria-label → title attr → nested heading → textContent
+  // → [class*="title"] descendant → img alt. Each candidate is filtered by
+  // looksLikeBadTitle() (#6) so a video tile labelled only "1:23" or "4.5K
+  // views" falls through to a real headline if one exists.
   const aria = a.getAttribute('aria-label');
-  if (aria?.trim()) return aria.trim();
+  if (aria?.trim() && !looksLikeBadTitle(aria)) return aria.trim();
   const ttl = a.getAttribute('title');
-  if (ttl?.trim()) return ttl.trim();
+  if (ttl?.trim() && !looksLikeBadTitle(ttl)) return ttl.trim();
   const heading = a.querySelector('h1, h2, h3, h4, h5, h6');
-  if (heading?.textContent.trim()) return heading.textContent.trim();
+  const headingText = heading?.textContent.trim();
+  if (headingText && !looksLikeBadTitle(headingText)) return headingText;
   const text = a.textContent.replace(/\s+/g, ' ').trim();
-  if (text && text.length > 2) return text;
+  if (text && text.length > 2 && !looksLikeBadTitle(text)) return text;
+  const titleEl = a.querySelector('[class*="title" i], [class*="headline" i]');
+  const titleElText = titleEl?.textContent.trim();
+  if (titleElText && !looksLikeBadTitle(titleElText)) return titleElText;
   const img = a.querySelector('img[alt]');
   if (img?.getAttribute('alt')?.trim()) return img.getAttribute('alt').trim();
+  // Last resort: return whatever we had even if it looked bad — better than null.
+  if (aria?.trim()) return aria.trim();
+  if (ttl?.trim()) return ttl.trim();
+  if (headingText) return headingText;
+  if (text && text.length > 2) return text;
   return null;
 }
 
@@ -500,6 +520,13 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   }
   if (!baseURL) baseURL = detectBaseFromAnchors(doc);
 
+  // YouTube heuristic: pages always have relative /shorts/<id> hrefs and no
+  // <base> tag. If we still have no base and the DOM contains YouTube custom
+  // elements, synthesize the canonical origin. (Issue #6)
+  if (!baseURL && doc.querySelector('ytd-app, [class^="ytd-"], [class*=" ytd-"], yt-formatted-string, [class*="yt-simple-endpoint"]')) {
+    baseURL = 'https://www.youtube.com';
+  }
+
   // Allow caller to override base (e.g. user typed a domain into the prompt).
   if (opts.overrideBase) baseURL = opts.overrideBase;
 
@@ -531,6 +558,13 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     }
     if (!/^https?:/i.test(href)) continue;
     if (isChromeAnchor(a, href)) continue; // drop nav/footer/tag/account chrome
+    // Drop URL-shortener / tracker hosts (#6). These appear inside Twitter
+    // oEmbed blockquotes (t.co), LinkedIn previews (lnkd.in), etc. and are
+    // never the canonical content destination.
+    try {
+      const host = new URL(href).hostname.toLowerCase().replace(/^www\./, '');
+      if (SHORT_LINK_HOSTS.has(host)) continue;
+    } catch {}
 
     if (!buckets.has(href)) buckets.set(href, { anchors: [], firstAnchor: a });
     buckets.get(href).anchors.push(a);
@@ -767,7 +801,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
       const resolved = src ? (safeURL(src, baseURL) || src) : null;
       if (resolved && /^https?:/i.test(resolved)) {
         href = resolved;
-        if (/youtube|vimeo|tiktok|wistia|dailymotion|twitch/i.test(resolved)) {
+        if (/youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(resolved)) {
           videoInfo = { src: resolved };
         }
       }

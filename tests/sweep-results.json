@@ -43,11 +43,40 @@
     ]
   },
   "youtube-shorts.html": {
-    "count": 0,
-    "baseURL": null,
-    "unresolved": 8,
-    "hasBase": false,
-    "items": []
+    "count": 4,
+    "baseURL": "https://www.youtube.com",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Every iPhone Camera — Compared",
+        "href": "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+        "thumb": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLAmfZ1fq5xHhMD_syvkMiIgUYDu3Q",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Galaxy S25 Ultra First Look",
+        "href": "https://www.youtube.com/shorts/abc123xyz00",
+        "thumb": "https://i.ytimg.com/vi/abc123xyz00/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Best Budget Laptop 2024",
+        "href": "https://www.youtube.com/shorts/xyz999shorts",
+        "thumb": "https://i.ytimg.com/vi/xyz999shorts/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue2",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Watch This Before Buying AirPods Pro 2",
+        "href": "https://www.youtube.com/shorts/lmnop567890",
+        "thumb": "https://i.ytimg.com/vi/lmnop567890/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue3",
+        "category": "video",
+        "pageSection": "Other"
+      }
+    ]
   },
   "reddit-video-cards.html": {
     "count": 6,
@@ -352,18 +381,11 @@
     ]
   },
   "twitter-video-embed.html": {
-    "count": 7,
+    "count": 4,
     "baseURL": "https://example-blog.com/",
     "unresolved": 0,
     "hasBase": true,
     "items": [
-      {
-        "title": "pic.twitter.com/launch_video_link",
-        "href": "https://t.co/launch_video_link",
-        "thumb": null,
-        "category": "link",
-        "pageSection": "Other"
-      },
       {
         "title": "June 10, 2026",
         "href": "https://twitter.com/SpaceX/status/1800000000000000001?ref_src=twsrc%5Etfw",
@@ -372,22 +394,8 @@
         "pageSection": "Other"
       },
       {
-        "title": "pic.twitter.com/legs_deployment_video",
-        "href": "https://t.co/legs_deployment_video",
-        "thumb": null,
-        "category": "link",
-        "pageSection": "Other"
-      },
-      {
         "title": "June 10, 2026",
         "href": "https://twitter.com/elonmusk/status/1800000000000000002?ref_src=twsrc%5Etfw",
-        "thumb": null,
-        "category": "link",
-        "pageSection": "Other"
-      },
-      {
-        "title": "pic.twitter.com/booster_catch_video",
-        "href": "https://t.co/booster_catch_video",
         "thumb": null,
         "category": "link",
         "pageSection": "Other"
@@ -415,28 +423,28 @@
     "hasBase": true,
     "items": [
       {
-        "title": "Gaza ceasefire talks enter critical phase, mediators say",
+        "title": "Negotiators at ceasefire talks",
         "href": "https://www.reuters.com/world/middle-east/ceasefire-negotiations-latest-update-2026-06-10/",
         "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
         "category": "article",
         "pageSection": "Latest Videos"
       },
       {
-        "title": "U.S. adds 280,000 jobs in May, beating expectations",
+        "title": "Factory workers on assembly line",
         "href": "https://www.reuters.com/business/economy/us-jobs-report-may-2026-analysis-2026-06-10/",
         "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
         "category": "article",
         "pageSection": "Latest Videos"
       },
       {
-        "title": "State-sponsored hackers breach European energy infrastructure",
+        "title": "Power grid control room monitors",
         "href": "https://www.reuters.com/technology/cyber/major-cyberattack-hits-eu-energy-grid-2026-06-10/",
         "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
         "category": "article",
         "pageSection": "Latest Videos"
       },
       {
-        "title": "Wimbledon 2026 draw: Djokovic and Swiatek headline favorites",
+        "title": "Tennis player serving on grass court",
         "href": "https://www.reuters.com/sports/tennis/wimbledon-2026-draw-preview-2026-06-10/",
         "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
         "category": "article",
@@ -445,7 +453,7 @@
     ]
   },
   "instagram-embed.html": {
-    "count": 2,
+    "count": 3,
     "baseURL": "https://fashion-blog.example.com/",
     "unresolved": 0,
     "hasBase": true,
@@ -454,15 +462,22 @@
         "title": "Fashion lookbook reel preview",
         "href": "https://www.instagram.com/reel/C8x9YZabc12/?utm_source=ig_embed",
         "thumb": "https://www.instagram.com/p/C8x9YZabc12/media/?size=t",
-        "category": "article",
+        "category": "video",
         "pageSection": "Other"
       },
       {
         "title": "Behind the scenes shoot",
         "href": "https://www.instagram.com/p/C7w8XYzde34/?utm_source=ig_embed",
         "thumb": "https://www.instagram.com/p/C7w8XYzde34/media/?size=t",
-        "category": "article",
+        "category": "video",
         "pageSection": "Other"
+      },
+      {
+        "title": "Instagram Reel: Summer collection drop",
+        "href": "https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/",
+        "thumb": null,
+        "category": "video",
+        "pageSection": "Videos"
       }
     ]
   },
@@ -473,21 +488,21 @@
     "hasBase": true,
     "items": [
       {
-        "title": "4.2M",
+        "title": "How bees make honey — 3D animation",
         "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000001",
         "thumb": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/osPfmAVlbIXfG3e7oLsBCpPDQBFRBAhc7ABDC?x-expires=1718500000&x-signature=abc123",
         "category": "video",
         "pageSection": "Other"
       },
       {
-        "title": "11.7M",
+        "title": "Why do we yawn? The real science",
         "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000002",
         "thumb": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/qrPgmBWmcJYgH4f8pMtCDqREhcAGBhd8ABEd?x-expires=1718500001&x-signature=def456",
         "category": "video",
         "pageSection": "Other"
       },
       {
-        "title": "8.9M",
+        "title": "Space facts that will break your brain",
         "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000003",
         "thumb": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/sTQimCXncKZhI5g9rNuDErSFicBHCie9BCFe?x-expires=1718500002&x-signature=ghi789",
         "category": "video",
