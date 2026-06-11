@@ -1,0 +1,13 @@
+# QA test artifacts (regenerated locally)
+tests/
+assets/test-*.png
+assets/v2-*.png
+assets/v3-*.png
+assets/shot-*.png
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

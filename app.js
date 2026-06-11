@@ -128,29 +128,72 @@ function getMetaImage(doc) {
   return null;
 }
 
+// Heuristic: looks like a placeholder, blank pixel, or site logo (not the real article thumb)
+function looksLikePlaceholder(url) {
+  if (!url) return true;
+  const u = url.toLowerCase();
+  if (u.startsWith('data:')) return true; // base64 blank/spinner pixels
+  if (/(^|[\/_\-])(logo|placeholder|blank|spacer|pixel|loading|default|empty|transparent|1x1|2x2|noimage|no-image)([\/_\-\.]|$)/.test(u)) return true;
+  if (/photogallery\.indiatimes\.com\/.+\.(cms|jpg)\?(.*)?width=(1|2|10|16|20)\b/.test(u)) return true;
+  // tiny gif/png often used as lazy placeholders
+  if (/[\?&](w|width|h|height)=(1|2|4|8|10)(\D|$)/.test(u)) return true;
+  return false;
+}
+
+// Pick the best <img> src across normal + lazy-load attributes.
+// Prefers data-src / data-original / srcset over src when src looks like a placeholder.
+function pickImgSrc(img) {
+  const candidates = [];
+  const push = (v) => { if (v && typeof v === 'string') candidates.push(v.trim()); };
+
+  // Lazy-load conventions used by major CMSes (TOI, WordPress, Drupal, NYT, etc.)
+  push(img.getAttribute('data-src'));
+  push(img.getAttribute('data-original'));
+  push(img.getAttribute('data-lazy-src'));
+  push(img.getAttribute('data-lazy'));
+  push(img.getAttribute('data-srcset')?.split(',').pop()?.trim().split(' ')[0]); // largest in lazy srcset
+  push(img.getAttribute('data-hi-res-src'));
+  push(img.getAttribute('data-full-src'));
+  push(img.getAttribute('data-img'));
+  // srcset — take the largest entry (last one)
+  const srcset = img.getAttribute('srcset');
+  if (srcset) {
+    const entries = srcset.split(',').map((s) => s.trim()).filter(Boolean);
+    if (entries.length) push(entries[entries.length - 1].split(' ')[0]);
+  }
+  // finally, the visible src
+  push(img.getAttribute('src'));
+
+  // First non-placeholder wins. If everything looks like a placeholder,
+  // return null so we don't fall back to the site logo.
+  for (const c of candidates) {
+    if (!looksLikePlaceholder(c)) return c;
+  }
+  return null;
+}
+
 function extractImageFromAnchor(a) {
   // direct img child
   const img = a.querySelector('img');
   if (img) {
-    const src = img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src');
-    if (src) return src;
-    const srcset = img.getAttribute('srcset') || img.getAttribute('data-srcset');
-    if (srcset) {
-      const first = srcset.split(',')[0].trim().split(' ')[0];
-      if (first) return first;
-    }
+    const picked = pickImgSrc(img);
+    if (picked) return picked;
   }
-  // picture > source
+  // picture > source (prefer largest in srcset)
   const source = a.querySelector('picture source[srcset], source[srcset]');
   if (source) {
     const ss = source.getAttribute('srcset');
-    if (ss) return ss.split(',')[0].trim().split(' ')[0];
+    if (ss) {
+      const entries = ss.split(',').map((s) => s.trim()).filter(Boolean);
+      const last = entries[entries.length - 1]?.split(' ')[0];
+      if (last && !looksLikePlaceholder(last)) return last;
+    }
   }
   // background-image inline style
   const styled = Array.from(a.querySelectorAll('[style*="background"]'));
   for (const el of styled) {
     const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/i);
-    if (m) return m[1];
+    if (m && !looksLikePlaceholder(m[1])) return m[1];
   }
   return null;
 }
@@ -187,6 +230,92 @@ function getAnchorTitle(a) {
   return null;
 }
 
+// ---------- page-section detection ----------
+// Walk up from each anchor/img/video and figure out which on-page section
+// it belongs to. We look for the nearest <section>, <nav>, <aside>, or
+// any element that has a heading (h1-h4) as its first child / preceding sibling,
+// or an aria-label. Result: Map<element, sectionLabel>.
+function buildSectionMap(doc) {
+  const map = new Map();
+  const SECT_TAGS = new Set(['SECTION', 'NAV', 'ASIDE', 'ARTICLE', 'MAIN', 'HEADER', 'FOOTER']);
+
+  function labelFor(el) {
+    if (!el) return null;
+    // aria-label / aria-labelledby
+    const aria = el.getAttribute?.('aria-label');
+    if (aria && aria.trim().length < 80) return aria.trim();
+    const labelledBy = el.getAttribute?.('aria-labelledby');
+    if (labelledBy) {
+      const lbl = doc.getElementById(labelledBy);
+      if (lbl) {
+        const t = lbl.textContent.replace(/\s+/g, ' ').trim();
+        if (t && t.length < 80) return t;
+      }
+    }
+    // first heading inside this element (h1-h4)
+    const h = el.querySelector?.(':scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > header h1, :scope > header h2, :scope > header h3, :scope > header h4, :scope > div > h1, :scope > div > h2, :scope > div > h3, :scope > div > h4');
+    if (h) {
+      const t = h.textContent.replace(/\s+/g, ' ').trim();
+      if (t && t.length < 80) return t;
+    }
+    // data-section / data-category / id-as-label
+    const dataSection = el.getAttribute?.('data-section') || el.getAttribute?.('data-category');
+    if (dataSection && dataSection.length < 80) return dataSection;
+    // id as label (e.g. id="top-news")
+    const id = el.id;
+    if (id && /^[a-z0-9_-]{3,40}$/i.test(id) && !/^(main|content|root|app|page|wrapper|container)$/i.test(id)) {
+      return id.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+    // class hint (e.g. class="top-news-section")
+    const cls = el.className;
+    if (typeof cls === 'string') {
+      const m = cls.match(/\b([a-z]+(?:-[a-z]+){0,3})-(?:section|widget|module|block|list)\b/i);
+      if (m) return m[1].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+    return null;
+  }
+
+  // Also detect heading-led groups (no enclosing <section>): a heading followed by
+  // a list of links until the next heading at the same or higher level.
+  // For each heading h1-h4, collect anchors in its following siblings until the next heading.
+  const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4'));
+  for (const h of headings) {
+    const lvl = +h.tagName[1];
+    const label = h.textContent.replace(/\s+/g, ' ').trim();
+    if (!label || label.length > 80) continue;
+    let sib = h.nextElementSibling;
+    while (sib) {
+      if (/^H[1-4]$/.test(sib.tagName)) {
+        const sibLvl = +sib.tagName[1];
+        if (sibLvl <= lvl) break;
+      }
+      sib.querySelectorAll?.('a[href], img, iframe, video').forEach((el) => {
+        if (!map.has(el)) map.set(el, label);
+      });
+      sib = sib.nextElementSibling;
+    }
+  }
+
+  // Walk all anchors/images/videos and find their nearest tagged-section ancestor.
+  const targets = Array.from(doc.querySelectorAll('a[href], img, iframe, video'));
+  for (const t of targets) {
+    if (map.has(t)) continue;
+    let cur = t.parentElement;
+    let found = null;
+    let depth = 0;
+    while (cur && depth < 8) {
+      if (SECT_TAGS.has(cur.tagName) || cur.getAttribute?.('role') === 'region') {
+        const lbl = labelFor(cur);
+        if (lbl) { found = lbl; break; }
+      }
+      cur = cur.parentElement;
+      depth++;
+    }
+    if (found) map.set(t, found);
+  }
+  return map;
+}
+
 function parseSource(html, sourceName) {
   if (!html?.trim()) return [];
   let doc;
@@ -206,6 +335,10 @@ function parseSource(html, sourceName) {
   const fallbackImage = getMetaImage(doc);
   const items = [];
   const seen = new Set();
+
+  // Pre-compute the section that each anchor sits in so the review page can
+  // group items the way they appear on the original page (Top News, Sports, etc.)
+  const sectionFor = buildSectionMap(doc);
 
   // 1) anchors with href
   const anchors = Array.from(doc.querySelectorAll('a[href]'));
@@ -231,6 +364,7 @@ function parseSource(html, sourceName) {
       thumbnail: thumb || null,
       video: video || null,
       domain: domainOf(href),
+      pageSection: sectionFor.get(a) || 'Other',
     };
     item.category = classify(item);
     items.push(item);
@@ -256,6 +390,7 @@ function parseSource(html, sourceName) {
       video: null,
       domain: domainOf(src),
       category: 'gallery',
+      pageSection: sectionFor.get(img) || 'Images',
     });
   }
 
@@ -281,21 +416,29 @@ function parseSource(html, sourceName) {
       video: { src },
       domain: domainOf(src),
       category: 'video',
+      pageSection: sectionFor.get(v) || 'Videos',
     });
   }
 
-  // Attach fallback image where missing for articles
+  // og:image is the SITE-wide social card (often the site logo). Never apply it
+  // to multiple anchors — that's what caused every TOI article to show the TOI logo.
+  // Only use it when there's exactly one anchor and it has no thumb of its own.
+  const articlesWithoutThumb = items.filter((i) => !i.thumbnail && i.category === 'link');
+  if (fallbackImage && items.length === 1 && articlesWithoutThumb.length === 1) {
+    articlesWithoutThumb[0].thumbnail = safeURL(fallbackImage, baseURL) || fallbackImage;
+    articlesWithoutThumb[0].category = 'article';
+  }
+
+  // Reclassify items now that thumbs are settled, and synthesize video posters
   for (const it of items) {
-    if (!it.thumbnail && it.category === 'article' && fallbackImage) {
-      it.thumbnail = safeURL(fallbackImage, baseURL) || fallbackImage;
-    }
-    // Detect youtube/vimeo and synthesize a thumbnail
     if (it.category === 'video' && !it.thumbnail) {
       const yt = youtubeId(it.href) || (it.video?.src ? youtubeId(it.video.src) : null);
       if (yt) it.thumbnail = `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`;
       const vi = vimeoId(it.href) || (it.video?.src ? vimeoId(it.video.src) : null);
       if (vi) it.thumbnail = null; // vimeo needs API; leave blank, will render styled card
     }
+    // re-run classify in case thumbnails changed
+    it.category = classify(it);
     it.enabled = true;
   }
 
@@ -347,8 +490,8 @@ function renderSources() {
       <textarea spellcheck="false" placeholder="Paste raw HTML here — &lt;html&gt;, a fragment, or anything that contains anchors, images, videos…">${escapeText(src.html)}</textarea>
       <div class="source-card__foot">
         <div class="source-card__stats">
-          <span><strong>0</strong> links</span>
-          <span><strong>0</strong> images</span>
+          <span><strong>0</strong> items</span>
+          <span><strong>0</strong> with image</span>
           <span><strong>0</strong> videos</span>
         </div>
         <span class="source-card__hint"></span>
@@ -385,11 +528,11 @@ function renderSources() {
 
 function updateStats(card, items) {
   const stats = card.querySelector('.source-card__stats');
-  const links = items.filter((i) => i.category === 'link' || i.category === 'article').length;
+  const nonVideo = items.filter((i) => i.category === 'link' || i.category === 'article').length;
   const images = items.filter((i) => i.thumbnail).length;
   const videos = items.filter((i) => i.category === 'video').length;
   stats.innerHTML = `
-    <span><strong>${links}</strong> links</span>
+    <span><strong>${nonVideo}</strong> items</span>
     <span><strong>${images}</strong> with image</span>
     <span><strong>${videos}</strong> videos</span>
   `;
@@ -415,23 +558,29 @@ function escapeAttr(s) {
 // ===================================================
 
 const CATEGORY_META = {
-  article: { title: 'Articles', desc: 'Links with thumbnail previews — typical news, blogs, and editorial.' },
-  video: { title: 'Videos', desc: 'YouTube, Vimeo, and embedded video content.' },
-  gallery: { title: 'Images', desc: 'Standalone images, photo galleries, and visual posts.' },
-  link: { title: 'Links', desc: 'Plain links with no media preview detected.' },
+  'with-image': { title: 'Links with image preview', desc: 'Anchors that came with a thumbnail.' },
+  'with-video': { title: 'Links with video preview', desc: 'YouTube, Vimeo, and other embedded videos.' },
+  'plain': { title: 'Plain links (no preview)', desc: 'Anchors with text only — no image, no video.' },
 };
 
-const CATEGORY_ORDER = ['article', 'video', 'gallery', 'link'];
+const CATEGORY_ORDER = ['with-image', 'with-video', 'plain'];
+
+// Map the internal item.category to the user-facing bucket above.
+function bucketOf(item) {
+  if (item.category === 'video') return 'with-video';
+  if (item.thumbnail) return 'with-image'; // includes article + gallery
+  return 'plain';
+}
 
 function gotoReview() {
-  // flatten and dedupe by href
+  // flatten and dedupe by href, keep pageSection
   const all = [];
   const seen = new Set();
   for (const src of state.sources) {
     for (const it of src.items) {
       if (seen.has(it.href)) continue;
       seen.add(it.href);
-      all.push({ ...it, enabled: true });
+      all.push({ ...it, enabled: true, pageSection: it.pageSection || 'Other' });
     }
   }
   state.items = all;
@@ -442,8 +591,9 @@ function gotoReview() {
 function renderReview() {
   const meta = $('[data-review-meta]');
   const sources = new Set(state.items.map((i) => i.sourceName));
+  const enabledCount = state.items.filter((i) => i.enabled).length;
   meta.innerHTML = `
-    <span><strong>${state.items.length}</strong> items</span>
+    <span><strong>${enabledCount}</strong> / ${state.items.length} selected</span>
     <span>${sources.size} source${sources.size === 1 ? '' : 's'}</span>
   `;
 
@@ -452,39 +602,145 @@ function renderReview() {
   const root = $('#categories');
   root.innerHTML = '';
 
-  const grouped = {};
-  for (const it of state.items) (grouped[it.category] ||= []).push(it);
-
-  let hasAny = false;
-  for (const cat of CATEGORY_ORDER) {
-    const items = grouped[cat];
-    if (!items || items.length === 0) continue;
-    hasAny = true;
-
-    const section = document.createElement('section');
-    section.className = 'category';
-    section.innerHTML = `
-      <div class="category__head">
-        <div>
-          <h3 class="category__title">${CATEGORY_META[cat].title}<span class="count">${items.length}</span></h3>
-          <p class="category__desc">${CATEGORY_META[cat].desc}</p>
-        </div>
-      </div>
-      <div class="category__grid"></div>
-    `;
-    const grid = section.querySelector('.category__grid');
-    items.forEach((item) => grid.appendChild(renderItemCard(item)));
-    root.appendChild(section);
-  }
-
-  if (!hasAny) {
+  if (state.items.length === 0) {
     root.innerHTML = `
       <div class="empty">
         <h3>No items found.</h3>
         <p>Go back and paste HTML that contains anchor tags, images, or videos.</p>
       </div>
     `;
+    return;
   }
+
+  // Group by content-type bucket: with-image, with-video, plain.
+  const grouped = new Map();
+  for (const it of state.items) {
+    const k = bucketOf(it);
+    if (!grouped.has(k)) grouped.set(k, []);
+    grouped.get(k).push(it);
+  }
+
+  CATEGORY_ORDER.forEach((key, idx) => {
+    const items = grouped.get(key);
+    if (!items || items.length === 0) return;
+    root.appendChild(renderGroupPanel(key, items, idx === 0));
+  });
+}
+
+function renderGroupPanel(key, items, openByDefault) {
+  const title = CATEGORY_META[key]?.title || key;
+  const desc = CATEGORY_META[key]?.desc || '';
+  const enabled = items.filter((i) => i.enabled).length;
+  const allOn = enabled === items.length;
+  const someOn = enabled > 0 && enabled < items.length;
+
+  const panel = document.createElement('section');
+  panel.className = 'group-panel';
+  if (openByDefault) panel.classList.add('group-panel--open');
+  panel.innerHTML = `
+    <header class="group-panel__head">
+      <label class="group-checkbox" title="Toggle all in this group">
+        <input type="checkbox" data-group-toggle ${allOn ? 'checked' : ''} ${someOn ? 'data-indeterminate="true"' : ''} />
+        <span class="group-checkbox__box"></span>
+      </label>
+      <button type="button" class="group-panel__toggle" aria-expanded="${openByDefault ? 'true' : 'false'}">
+        <span class="group-panel__title">${escapeText(title)}</span>
+        <span class="group-panel__count">${enabled} / ${items.length}</span>
+        <svg class="group-panel__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      ${desc ? `<p class="group-panel__desc">${escapeText(desc)}</p>` : ''}
+    </header>
+    <div class="group-panel__body"></div>
+  `;
+
+  const body = panel.querySelector('.group-panel__body');
+  items.forEach((it) => body.appendChild(renderItemRow(it)));
+
+  // Fix indeterminate after attaching
+  const groupChk = panel.querySelector('[data-group-toggle]');
+  if (someOn) groupChk.indeterminate = true;
+
+  // Group checkbox: select / deselect all in this group
+  groupChk.addEventListener('change', (e) => {
+    e.stopPropagation();
+    const turnOn = groupChk.checked;
+    items.forEach((it) => (it.enabled = turnOn));
+    renderReview();
+  });
+
+  // Collapse toggle
+  panel.querySelector('.group-panel__toggle').addEventListener('click', () => {
+    panel.classList.toggle('group-panel--open');
+    const expanded = panel.classList.contains('group-panel--open');
+    panel.querySelector('.group-panel__toggle').setAttribute('aria-expanded', expanded);
+  });
+
+  return panel;
+}
+
+function renderItemRow(item) {
+  const row = document.createElement('label');
+  row.className = 'item-row';
+  if (!item.enabled) row.classList.add('item-row--off');
+  row.dataset.id = item.id;
+
+  const thumbHtml = item.thumbnail
+    ? `<div class="item-row__thumb ${item.category === 'video' ? 'item-row__thumb--video' : ''}">
+         <img src="${escapeAttr(item.thumbnail)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('item-row__thumb--empty'); this.remove();" />
+         ${item.category === 'video' ? '<span class="item-row__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : ''}
+       </div>`
+    : `<div class="item-row__thumb item-row__thumb--empty"><span>${escapeText((item.domain || item.title || 'L').charAt(0).toUpperCase())}</span></div>`;
+
+  const typeLabel = item.category === 'article' ? 'Article'
+    : item.category === 'video' ? 'Video'
+    : item.category === 'gallery' ? 'Image' : 'Link';
+
+  row.innerHTML = `
+    <input type="checkbox" class="item-row__check" ${item.enabled ? 'checked' : ''} />
+    <span class="item-row__box"></span>
+    ${thumbHtml}
+    <div class="item-row__body">
+      <p class="item-row__title">${escapeText(item.title)}</p>
+      <div class="item-row__meta">
+        <span class="item-row__type item-row__type--${item.category}">${typeLabel}</span>
+        <span class="item-row__domain">${escapeText(item.domain)}</span>
+      </div>
+      <span class="item-row__url">${escapeText(item.href)}</span>
+    </div>
+  `;
+
+  const check = row.querySelector('.item-row__check');
+  check.addEventListener('change', () => {
+    item.enabled = check.checked;
+    row.classList.toggle('item-row--off', !item.enabled);
+    // Update parent group + meta counts without re-rendering everything
+    updateGroupHeader(row);
+    updateReviewMeta();
+  });
+
+  return row;
+}
+
+function updateGroupHeader(row) {
+  const panel = row.closest('.group-panel');
+  if (!panel) return;
+  const checks = Array.from(panel.querySelectorAll('.item-row__check'));
+  const onCount = checks.filter((c) => c.checked).length;
+  const groupChk = panel.querySelector('[data-group-toggle]');
+  groupChk.checked = onCount === checks.length;
+  groupChk.indeterminate = onCount > 0 && onCount < checks.length;
+  panel.querySelector('.group-panel__count').textContent = `${onCount} / ${checks.length}`;
+}
+
+function updateReviewMeta() {
+  const meta = $('[data-review-meta]');
+  if (!meta) return;
+  const sources = new Set(state.items.map((i) => i.sourceName));
+  const enabledCount = state.items.filter((i) => i.enabled).length;
+  meta.innerHTML = `
+    <span><strong>${enabledCount}</strong> / ${state.items.length} selected</span>
+    <span>${sources.size} source${sources.size === 1 ? '' : 's'}</span>
+  `;
 }
 
 function renderItemCard(item) {
@@ -566,6 +822,8 @@ document.addEventListener('click', (e) => {
 
 // ---------- TEMPLATE PICKER UI ----------
 function countByCategory(items) {
+  // Provide both bucket counts (for suggesting templates from the 3-bucket world)
+  // and legacy category counts (article/video/gallery/link) for back-compat.
   const c = { article: 0, video: 0, gallery: 0, link: 0, total: items.length };
   for (const i of items) c[i.category] = (c[i.category] || 0) + 1;
   return c;
@@ -612,11 +870,22 @@ function buildGeneratedSite() {
   state.site.title = $('#site-title').value.trim() || 'Daily Reader';
   state.site.tagline = $('#site-tagline').value.trim() || '';
 
+  // The final site uses the same three buckets shown on the review page:
+  //   withImage  -> rendered as image-card grid (articles section)
+  //   withVideo  -> rendered as video card grid (videos section)
+  //   plain      -> rendered as text-only link list (links section)
+  // We also keep `gallery` (standalone images) as a separate bucket so the
+  // Gallery template can still receive image-only items if needed.
   const enabled = state.items.filter((i) => i.enabled);
-  const articles = enabled.filter((i) => i.category === 'article');
-  const videos = enabled.filter((i) => i.category === 'video');
-  const gallery = enabled.filter((i) => i.category === 'gallery');
-  const links = enabled.filter((i) => i.category === 'link');
+  const withImage = enabled.filter((i) => bucketOf(i) === 'with-image');
+  const videos = enabled.filter((i) => bucketOf(i) === 'with-video');
+  const links = enabled.filter((i) => bucketOf(i) === 'plain');
+
+  // For backward compat with existing templates, split withImage into
+  //   articles (have an outbound href, i.e. not pure standalone images)
+  //   gallery  (standalone images where href === thumbnail)
+  const articles = withImage.filter((i) => i.category !== 'gallery');
+  const gallery = withImage.filter((i) => i.category === 'gallery');
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
@@ -1059,12 +1328,23 @@ $('#btn-generate').addEventListener('click', gotoOutput);
 $('#btn-download').addEventListener('click', downloadHtml);
 
 // file upload
+// If the first source is empty, fill it with the first uploaded file instead
+// of appending a new card. (Otherwise users see Source 1 sit empty while their
+// upload lands in Source 2.)
 $('#file-input').addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
   for (const file of files) {
     const html = await file.text();
-    const src = addSource({ name: file.name.replace(/\.html?$/i, ''), html });
-    // re-render so the textarea picks up content
+    const name = file.name.replace(/\.html?$/i, '');
+    const firstEmpty = state.sources.find((s) => !s.html.trim());
+    if (firstEmpty) {
+      firstEmpty.name = name;
+      firstEmpty.customName = true;
+      firstEmpty.html = html;
+      firstEmpty.items = parseSource(html, name);
+    } else {
+      addSource({ name, html });
+    }
   }
   renderSources();
   e.target.value = '';
@@ -1083,8 +1363,11 @@ document.addEventListener('drop', async (e) => {
   const html = await file.text();
   const src = state.sources.find((s) => s.id === card.dataset.id);
   if (src) {
+    const name = file.name.replace(/\.html?$/i, '');
     src.html = html;
-    src.name = file.name.replace(/\.html?$/i, '');
+    src.name = name;
+    src.customName = true;
+    src.items = parseSource(html, name);
     renderSources();
   }
 });
@@ -1096,47 +1379,72 @@ document.addEventListener('drop', async (e) => {
 function loadSample() {
   state.sources = [];
 
+  // Section-rich news sample with lazy-loaded images (the TOI pattern):
+  // every <img> has src=site-logo and data-src=real-article-image.
   addSource({
-    name: 'Editorial Weekly',
-    html: `<!doctype html><html><head><meta property="og:url" content="https://example-news.com/"></head><body>
-      <article>
-        <a href="https://example-news.com/the-quiet-rise-of-small-towns">
-          <img src="https://images.unsplash.com/photo-1518002171953-a080ee817e1f?w=800" alt="Sunset over a small town" />
-          <h2>The quiet rise of America's smallest towns</h2>
-        </a>
-      </article>
-      <article>
-        <a href="https://example-news.com/inside-the-new-space-race">
-          <img src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800" alt="Rocket launch at night" />
-          <h2>Inside the new space race — and who's actually winning</h2>
-        </a>
-      </article>
-      <article>
-        <a href="https://example-news.com/what-coffee-says-about-us">
-          <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800" alt="Pour over coffee" />
-          <h2>What our morning coffee says about the way we live now</h2>
-        </a>
-      </article>
-      <a href="https://example-news.com/opinion/why-cities-still-matter">Why cities still matter — an opinion column</a>
-    </body></html>`,
+    name: 'Daily Times — homepage',
+    html: `<!doctype html><html>
+      <head>
+        <meta property="og:url" content="https://example-news.com/" />
+        <meta property="og:image" content="https://example-news.com/logo.png" />
+      </head>
+      <body>
+        <section id="top-news" aria-label="Top News">
+          <h2>Top News</h2>
+          <a href="https://example-news.com/the-quiet-rise-of-small-towns">
+            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1518002171953-a080ee817e1f?w=800" alt="Sunset over a small town" />
+            <h3>The quiet rise of America's smallest towns</h3>
+          </a>
+          <a href="https://example-news.com/inside-the-new-space-race">
+            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800" alt="Rocket launch at night" />
+            <h3>Inside the new space race — and who's actually winning</h3>
+          </a>
+          <a href="https://example-news.com/coffee-and-the-modern-morning">
+            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800" alt="Pour over coffee" />
+            <h3>What our morning coffee says about the way we live now</h3>
+          </a>
+        </section>
+
+        <section id="sports" aria-label="Sports">
+          <h2>Sports</h2>
+          <a href="https://example-news.com/sports/champions-league-final">
+            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=800" alt="Soccer stadium" />
+            <h3>The Champions League final — what to watch for</h3>
+          </a>
+          <a href="https://example-news.com/sports/grand-slam-preview">
+            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800" alt="Tennis court" />
+            <h3>Grand Slam preview: five storylines to follow</h3>
+          </a>
+          <a href="https://example-news.com/sports/marathon-records">
+            Why marathon records keep falling
+          </a>
+        </section>
+
+        <section id="entertainment" aria-label="Entertainment">
+          <h2>Entertainment</h2>
+          <a href="https://example-news.com/entertainment/summer-blockbusters">
+            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1489599735188-900a0c1316dd?w=800" alt="Cinema seats" />
+            <h3>Summer blockbuster season: the films to watch</h3>
+          </a>
+          <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+            <h3>Behind the scenes of a record season</h3>
+          </a>
+          <a href="https://www.youtube.com/watch?v=9bZkp7q19f0">
+            <h3>A morning at the harbor — short film</h3>
+          </a>
+        </section>
+
+        <section id="opinion" aria-label="Opinion">
+          <h2>Opinion</h2>
+          <a href="https://example-news.com/opinion/why-cities-still-matter">Why cities still matter</a>
+          <a href="https://example-news.com/opinion/the-quiet-power-of-public-libraries">The quiet power of public libraries</a>
+          <a href="https://example-news.com/opinion/saturday-mail">Saturday Mail: readers respond</a>
+        </section>
+      </body>
+    </html>`,
   });
 
-  addSource({
-    name: 'Visual Stories',
-    html: `<!doctype html><html><body>
-      <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-        <h3>Behind the scenes of a quiet record</h3>
-      </a>
-      <a href="https://www.youtube.com/watch?v=9bZkp7q19f0">
-        <h3>A morning at the harbor — short film</h3>
-      </a>
-      <a href="https://vimeo.com/76979871">A film about typography</a>
-      <img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=900" alt="Foggy mountain road" />
-      <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=900" alt="Lake at dawn" />
-    </body></html>`,
-  });
-
-  showToast('Sample sources loaded');
+  showToast('Sample loaded — try the section view');
 }
 
 // ===================================================
