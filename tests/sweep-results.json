@@ -79,7 +79,7 @@
     ]
   },
   "reddit-video-cards.html": {
-    "count": 6,
+    "count": 3,
     "baseURL": "https://www.reddit.com/",
     "unresolved": 0,
     "hasBase": true,
@@ -88,43 +88,22 @@
         "title": "Amazing drone footage of Yosemite National Park",
         "href": "https://www.reddit.com/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/",
         "thumb": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
-        "category": "article",
+        "category": "video",
         "pageSection": "Other"
       },
       {
         "title": "Incredible timelapse of Northern Lights in Norway",
         "href": "https://www.reddit.com/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/",
         "thumb": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
-        "category": "article",
+        "category": "video",
         "pageSection": "Other"
       },
       {
         "title": "Dog learns to skateboard in one afternoon",
         "href": "https://www.reddit.com/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/",
         "thumb": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
-        "category": "article",
+        "category": "video",
         "pageSection": "Other"
-      },
-      {
-        "title": "Video",
-        "href": "https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback",
-        "thumb": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
-        "category": "video",
-        "pageSection": "Videos"
-      },
-      {
-        "title": "Video",
-        "href": "https://v.redd.it/def456lights/DASH_720.mp4?source=fallback",
-        "thumb": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
-        "category": "video",
-        "pageSection": "Videos"
-      },
-      {
-        "title": "Video",
-        "href": "https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback",
-        "thumb": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
-        "category": "video",
-        "pageSection": "Videos"
       }
     ]
   },
@@ -453,7 +432,7 @@
     ]
   },
   "instagram-embed.html": {
-    "count": 3,
+    "count": 2,
     "baseURL": "https://fashion-blog.example.com/",
     "unresolved": 0,
     "hasBase": true,
@@ -471,13 +450,6 @@
         "thumb": "https://www.instagram.com/p/C7w8XYzde34/media/?size=t",
         "category": "video",
         "pageSection": "Other"
-      },
-      {
-        "title": "Instagram Reel: Summer collection drop",
-        "href": "https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/",
-        "thumb": null,
-        "category": "video",
-        "pageSection": "Videos"
       }
     ]
   },

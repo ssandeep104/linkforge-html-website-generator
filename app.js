@@ -354,6 +354,45 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
   return null;
 }
 
+// ---------- sibling video fallback (issue #5 follow-up: Reddit shreddit-post) ----------
+// On Reddit (and any card-based feed using web components), the post anchor
+// is in one slot and the <video> is in a sibling slot of the same card. The
+// anchor never *contains* the video, so extractVideoFromAnchor misses it and
+// the standalone-video walk later picks it up as a junk "Video" item with
+// title literally "Video". This helper walks up to the nearest card-shaped
+// container and pulls the first <video> / <iframe> found in any sibling.
+// The returned element should be added to claimedVideos so the standalone
+// walk doesn't re-emit it.
+function findSiblingVideo(a, baseURL) {
+  const block = a.closest(
+    'article, li, [class*="card"], [class*="story"], [class*="teaser"], [class*="post"], ' +
+    'shreddit-post, shreddit-feed-post, [class*="feed-item"], [class*="feed-card"]'
+  );
+  if (!block) return null;
+  // <video> with <source> or src attr
+  const video = block.querySelector('video');
+  if (video) {
+    const src =
+      video.getAttribute('src') ||
+      video.querySelector('source[src]')?.getAttribute('src') ||
+      video.querySelector('source[data-src]')?.getAttribute('data-src');
+    if (src) {
+      const resolved = safeURL(src, baseURL) || src;
+      return { videoInfo: { src: resolved, poster: video.getAttribute('poster') || null }, claimedEl: video };
+    }
+  }
+  // Embedded iframe (YouTube/Vimeo/TikTok/Instagram embeds)
+  const iframe = block.querySelector('iframe[src]');
+  if (iframe) {
+    const src = iframe.getAttribute('src');
+    if (src && /youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(src)) {
+      const resolved = safeURL(src, baseURL) || src;
+      return { videoInfo: { src: resolved }, claimedEl: iframe };
+    }
+  }
+  return null;
+}
+
 // ---------- bad-title detector (issue #6) ----------
 // Some sites use anchor text that's a duration ("12:34") or play-count
 // ("1.2M", "4.5K views") instead of a real title. When that happens we want
@@ -546,6 +585,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // footer/nav, modal dialogs) to prevent them polluting the output.
   // Issues #5 (two-anchor) and #10 (chrome filter, figure-sibling thumb).
   const claimedImgs = new WeakSet(); // images claimed by article-level synthesis
+  const claimedVideos = new WeakSet(); // <video>/<iframe> claimed by anchor-bucket items (#5/Reddit)
   const buckets = new Map(); // href -> { anchors: [a, ...], firstAnchor: a }
   const rawAnchors = Array.from(doc.querySelectorAll('a[href]'));
   for (const a of rawAnchors) {
@@ -615,11 +655,27 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       }
     }
 
-    // Best video from any anchor in the bucket.
+    // Best video from any anchor in the bucket. First try direct extraction
+    // (video inside the anchor), then fall back to sibling lookup which covers
+    // Reddit-style card layouts where the <video> is in a separate slot.
     let video = null;
     for (const a of bucket.anchors) {
       const v = extractVideoFromAnchor(a);
       if (v) { video = v; break; }
+    }
+    if (!video) {
+      for (const a of bucket.anchors) {
+        const found = findSiblingVideo(a, baseURL);
+        if (found) {
+          video = found.videoInfo;
+          if (found.claimedEl) {
+            claimedVideos.add(found.claimedEl);
+            // also claim every <source> child so source-level dedup works
+            found.claimedEl.querySelectorAll?.('source').forEach((s) => claimedVideos.add(s));
+          }
+          break;
+        }
+      }
     }
 
     const item = {
@@ -683,7 +739,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
 
   // 3) Pure video tags / iframes without anchors
   const standaloneVideos = Array.from(doc.querySelectorAll('iframe[src], video')).filter(
-    (v) => !v.closest('a[href]') && !synthesizedFromArticles.has(v)
+    (v) => !v.closest('a[href]') && !synthesizedFromArticles.has(v) && !claimedVideos.has(v)
   );
   for (const v of standaloneVideos) {
     let src = v.getAttribute('src') || v.querySelector?.('source')?.getAttribute('src');
