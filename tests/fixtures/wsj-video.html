@@ -1,0 +1,90 @@
+<!--
+  WSJ Video page — synthesized representative sample
+  Pattern: WSJ video cards use article elements with <a> inside, 
+  but images use lazy-loading with data-src. WSJ is behind a paywall;
+  the public-facing video feed page typically has article cards.
+  This tests article cards with lazy-loaded images.
+-->
+<html>
+<head>
+  <base href="https://www.wsj.com/">
+  <meta property="og:url" content="https://www.wsj.com/video">
+</head>
+<body>
+<div class="WSJTheme--ArticleList--3enLaEV1" data-testid="article-list">
+  <div class="WSJTheme--ArticleList--container">
+
+    <article class="WSJTheme--story--XB4V2mLz" data-type="Video">
+      <a href="https://www.wsj.com/video/series/markets-hub/market-reaction-to-rate-decision-june-2026/AB1234CD-5678-EFGH-IJKL-MN9012OPQRST"
+         class="WSJTheme--story-link--1BznKqKZ">
+        <div class="WSJTheme--media-image-wrap--2gBXFiMO">
+          <figure class="WSJTheme--media-image--1Ps-1wnJ">
+            <img class="WSJTheme--media-image--1Ps-1wnJ"
+                 src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                 data-src="https://images.wsj.net/im-12345678?width=700&height=394"
+                 data-srcset="https://images.wsj.net/im-12345678?width=350&height=197 350w, https://images.wsj.net/im-12345678?width=700&height=394 700w"
+                 alt="Federal Reserve Chair speaking at podium"
+                 loading="lazy">
+          </figure>
+        </div>
+        <div class="WSJTheme--story-body--1NKxi0Wl">
+          <h3 class="WSJTheme--headline--7VCzo7Ax">
+            Markets Rally After Fed Signals Two Rate Cuts in 2026
+          </h3>
+          <p class="WSJTheme--summary--1HVnhk4D">
+            Stocks soared as the Federal Reserve indicated it could cut rates twice this year pending inflation data.
+          </p>
+          <div class="WSJTheme--video-duration--2x8K0R0q">4:51</div>
+        </div>
+      </a>
+    </article>
+
+    <article class="WSJTheme--story--XB4V2mLz" data-type="Video">
+      <a href="https://www.wsj.com/video/series/journal-report/future-of-electric-vehicles-2026-outlook/EF5678GH-9012-IJKL-MNOP-QR3456STUVWX"
+         class="WSJTheme--story-link--1BznKqKZ">
+        <div class="WSJTheme--media-image-wrap--2gBXFiMO">
+          <figure class="WSJTheme--media-image--1Ps-1wnJ">
+            <img class="WSJTheme--media-image--1Ps-1wnJ"
+                 src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                 data-src="https://images.wsj.net/im-23456789?width=700&height=394"
+                 alt="Electric vehicle charging station at night"
+                 loading="lazy">
+          </figure>
+        </div>
+        <div class="WSJTheme--story-body--1NKxi0Wl">
+          <h3 class="WSJTheme--headline--7VCzo7Ax">
+            EV Market Faces Reckoning as Sales Growth Slows
+          </h3>
+          <p class="WSJTheme--summary--1HVnhk4D">
+            Electric vehicle manufacturers are reassessing their strategies amid softening consumer demand.
+          </p>
+          <div class="WSJTheme--video-duration--2x8K0R0q">6:18</div>
+        </div>
+      </a>
+    </article>
+
+    <article class="WSJTheme--story--XB4V2mLz" data-type="Video">
+      <a href="https://www.wsj.com/video/series/the-economics-of/why-housing-remains-unaffordable-june-2026/GH9012IJ-3456-KLMN-OPQR-ST7890UVWXYZ"
+         class="WSJTheme--story-link--1BznKqKZ">
+        <div class="WSJTheme--media-image-wrap--2gBXFiMO">
+          <figure>
+            <img class="WSJTheme--media-image--1Ps-1wnJ"
+                 src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                 data-src="https://images.wsj.net/im-34567890?width=700&height=394"
+                 alt="Row of suburban houses with for-sale signs"
+                 loading="lazy">
+          </figure>
+        </div>
+        <div class="WSJTheme--story-body--1NKxi0Wl">
+          <h3 class="WSJTheme--headline--7VCzo7Ax">
+            Why Housing Costs Keep Rising Even as Mortgage Rates Fall
+          </h3>
+          <div class="WSJTheme--video-duration--2x8K0R0q">5:44</div>
+        </div>
+      </a>
+    </article>
+
+  </div>
+</div>
+</body>
+</html>

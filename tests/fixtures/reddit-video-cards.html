@@ -1,0 +1,82 @@
+<!--
+  Reddit video post cards — synthesized representative sample
+  Pattern: shreddit-post web component with slot-based content, links use /r/<sub>/comments/<id>/
+  Note: Reddit uses custom elements; <a href> is on the post title
+-->
+<html>
+<head>
+  <base href="https://www.reddit.com/">
+</head>
+<body>
+<div id="main-content">
+  <shreddit-post
+    permalink="/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/"
+    post-title="Amazing drone footage of Yosemite National Park"
+    author="DroneFlyer99"
+    score="42100"
+    thumbnail-url="https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123"
+  >
+    <a slot="title" href="/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/" class="post-title">
+      Amazing drone footage of Yosemite National Park
+    </a>
+    <div slot="thumbnail">
+      <a href="/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/">
+        <img src="https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123"
+             alt="Amazing drone footage thumbnail" width="216" height="121">
+      </a>
+    </div>
+    <div slot="post-media-container">
+      <video controls poster="https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123">
+        <source src="https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback" type="video/mp4">
+      </video>
+    </div>
+  </shreddit-post>
+
+  <shreddit-post
+    permalink="/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/"
+    post-title="Incredible timelapse of Northern Lights in Norway"
+    author="AuroraChaser"
+    score="31500"
+    thumbnail-url="https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456"
+  >
+    <a slot="title" href="/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/" class="post-title">
+      Incredible timelapse of Northern Lights in Norway
+    </a>
+    <div slot="thumbnail">
+      <a href="/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/">
+        <img src="https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456"
+             alt="Northern Lights timelapse thumbnail" width="216" height="121">
+      </a>
+    </div>
+    <div slot="post-media-container">
+      <video controls poster="https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456">
+        <source src="https://v.redd.it/def456lights/DASH_720.mp4?source=fallback" type="video/mp4">
+      </video>
+    </div>
+  </shreddit-post>
+
+  <shreddit-post
+    permalink="/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/"
+    post-title="Dog learns to skateboard in one afternoon"
+    author="SkateboardPup"
+    score="89200"
+    thumbnail-url="https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789"
+  >
+    <a slot="title" href="/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/" class="post-title">
+      Dog learns to skateboard in one afternoon
+    </a>
+    <div slot="thumbnail">
+      <a href="/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/">
+        <img src="https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789"
+             alt="Skateboarding dog thumbnail" width="216" height="121">
+      </a>
+    </div>
+    <div slot="post-media-container">
+      <video controls poster="https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789">
+        <source src="https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback" type="video/mp4">
+      </video>
+    </div>
+  </shreddit-post>
+</div>
+</body>
+</html>

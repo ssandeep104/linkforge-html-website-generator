@@ -1,0 +1,57 @@
+<!--
+  Twitter/X video tweet embed — synthesized representative sample
+  Pattern: twitter-widget / tweet-embed iframe wrapper.
+  When embedded on a 3rd-party page, tweets use <blockquote class="twitter-tweet">
+  with a fallback <a> to twitter.com (detected as social host and filtered out).
+  The actual media is in a shadow-DOM iframe. Test the blockquote fallback path.
+  Also tests: links to twitter.com are filtered by the parser's social host filter.
+-->
+<html>
+<head>
+  <base href="https://example-blog.com/">
+</head>
+<body>
+<div class="blog-post-content">
+  <p>Check out this incredible video of the rocket launch:</p>
+
+  <!-- Standard twitter embed blockquote -->
+  <blockquote class="twitter-tweet" data-lang="en">
+    <p lang="en" dir="ltr">
+      Watch the Starship IFT-5 catch attempt LIVE right now 🚀
+      <a href="https://t.co/launch_video_link">pic.twitter.com/launch_video_link</a>
+    </p>
+    &mdash; SpaceX (@SpaceX)
+    <a href="https://twitter.com/SpaceX/status/1800000000000000001?ref_src=twsrc%5Etfw">
+      June 10, 2026
+    </a>
+  </blockquote>
+
+  <blockquote class="twitter-tweet" data-media-max-width="560">
+    <p lang="en" dir="ltr">
+      The landing legs deployed perfectly. Full video thread 🧵
+      <a href="https://t.co/legs_deployment_video">pic.twitter.com/legs_deployment_video</a>
+    </p>
+    &mdash; Elon Musk (@elonmusk)
+    <a href="https://twitter.com/elonmusk/status/1800000000000000002?ref_src=twsrc%5Etfw">
+      June 10, 2026
+    </a>
+  </blockquote>
+
+  <blockquote class="twitter-tweet">
+    <p lang="en" dir="ltr">
+      Incredible footage of the tower arms catching the booster in mid-air. This changes everything for reusable rockets.
+      <a href="https://t.co/booster_catch_video">pic.twitter.com/booster_catch_video</a>
+    </p>
+    &mdash; NASA (@NASA)
+    <a href="https://twitter.com/NASA/status/1800000000000000003?ref_src=twsrc%5Etfw">
+      June 10, 2026
+    </a>
+  </blockquote>
+
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+  <p>Also relevant, a longer form blog post about the mission:</p>
+  <a href="https://example-blog.com/spacex-ift5-analysis">Read our full analysis of IFT-5 →</a>
+</div>
+</body>
+</html>

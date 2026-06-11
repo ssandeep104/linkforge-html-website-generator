@@ -1,0 +1,86 @@
+<!--
+  Substack post with embedded video — synthesized representative sample
+  Pattern: .post-content with embedded YouTube iframes (iframe[src*="youtube"]),
+  plus inline images in article body. Substack post feed also has article cards.
+  This tests iframe-in-article extraction and image extraction from post listings.
+-->
+<html>
+<head>
+  <base href="https://techpulse.substack.com/">
+  <link rel="canonical" href="https://techpulse.substack.com/p/the-ai-video-revolution">
+</head>
+<body>
+<article class="post" data-post-id="12345678">
+  <div class="post-header">
+    <h1 class="post-title">The AI Video Revolution Is Here</h1>
+    <div class="post-subtitle">How Sora, Runway, and Pika changed filmmaking in 12 months</div>
+  </div>
+  <div class="post-content">
+    <p>Welcome to this week's deep-dive. Let's start with the biggest demo of the year:</p>
+
+    <figure>
+      <div class="captioned-image-container">
+        <img src="https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fai-video-timeline.jpg"
+             alt="AI video generation timeline 2023-2026" loading="lazy">
+      </div>
+      <figcaption>AI video tools over the past 12 months</figcaption>
+    </figure>
+
+    <p>OpenAI's Sora changed everything. Here's the full demo:</p>
+
+    <div class="youtube-embed">
+      <iframe
+        src="https://www.youtube.com/embed/HK6y8DAPN_0"
+        title="OpenAI Sora Full Demo — One Year Later"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        width="700" height="394">
+      </iframe>
+    </div>
+
+    <p>And here's what Runway Gen-3 can do that Sora still can't:</p>
+
+    <div class="youtube-embed">
+      <iframe
+        src="https://www.youtube.com/embed/RUNWAY_GEN3_DEMO"
+        title="Runway Gen-3 vs Sora: Side-by-Side Comparison"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+        width="700" height="394">
+      </iframe>
+    </div>
+
+    <figure>
+      <div class="captioned-image-container">
+        <img src="https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Frunway-comparison.jpg"
+             alt="Runway vs Sora output comparison chart" loading="lazy">
+      </div>
+    </figure>
+  </div>
+</article>
+
+<!-- Post listing / subscriber feed below -->
+<div class="post-preview-list">
+  <div class="post-preview">
+    <a class="post-preview-title" href="/p/diffusion-models-explained">
+      <h2>Diffusion Models Explained: A Visual Guide</h2>
+    </a>
+    <a class="post-preview-image" href="/p/diffusion-models-explained">
+      <img src="https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdiffusion-cover.jpg"
+           alt="Diffusion model visualisation">
+    </a>
+  </div>
+  <div class="post-preview">
+    <a class="post-preview-title" href="/p/claude-vs-gpt4-benchmark">
+      <h2>Claude 4 vs GPT-4o: Full Benchmark Breakdown</h2>
+    </a>
+    <a class="post-preview-image" href="/p/claude-vs-gpt4-benchmark">
+      <img src="https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbenchmark-chart.jpg"
+           alt="Benchmark comparison chart">
+    </a>
+  </div>
+</div>
+</body>
+</html>

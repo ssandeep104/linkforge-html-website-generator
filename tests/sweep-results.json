@@ -1,0 +1,238 @@
+{
+  "run_date": "2026-06-11",
+  "parser_version": "v5 (commit d4db73f)",
+  "fixtures": {
+    "nyt-video-feed.html": {
+      "count": 5,
+      "baseURL": null,
+      "unresolved": 0,
+      "hasBase": false,
+      "result": "PASS",
+      "issues": [],
+      "items": [
+        {
+          "title": "Visiting a Soldier's Funeral in Ukraine",
+          "href": "https://vp.nyt.com/video/2026/06/09/167399_1_00vid-rv-ukraine-Grief_wg_1080p.mp4",
+          "thumb": "https://static01.nyt.com/images/2026/04/21/arts/Kim-Barker/Kim-Barker-verticalTwoByThree735.png?auto=webp&quality=30&disable=upscale&format=pjpg",
+          "category": "video",
+          "pageSection": "Videos"
+        },
+        {
+          "title": "Scott Pelley: Bari Weiss Put a 'Thumb on the Scale' for Trump",
+          "href": "https://vp.nyt.com/video/2026/06/06/171154_1_6-pelley-bari-weiss-clip_wg_1080p.mp4",
+          "thumb": "https://static01.nyt.com/images/2026/06/07/arts/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16-verticalTwoByThree735.jpg?auto=webp&quality=30&disable=upscale&format=pjpg",
+          "category": "video",
+          "pageSection": "Videos"
+        },
+        {
+          "title": "Soccer Referee Receives Hero's Welcome in Somalia After U.S. Denies Him Entry",
+          "href": "https://vp.nyt.com/video/2026/06/10/171412_1_10vid-referee_wg_1080p.mp4",
+          "thumb": "https://static01.nyt.com/images/2026/06/10/sports/soccer/somali-ref-thumb-onsite/somali-ref-thumb-onsite-smallTwoByThree.jpg",
+          "category": "video",
+          "pageSection": "Videos"
+        },
+        {
+          "title": "Russian Military Official Killed in Car Explosion Near Moscow",
+          "href": "https://vp.nyt.com/video/2026/06/10/171435_1_10Vid-moscow-car-explosion_wg_1080p.mp4",
+          "thumb": "https://static01.nyt.com/images/2026/06/10/multimedia/10Russia-Bombing-qgbl/10Russia-Bombing-qgbl-verticalTwoByThree735-v2.jpg",
+          "category": "video",
+          "pageSection": "Videos"
+        },
+        {
+          "title": "Southern Lights Seen From International Space Station",
+          "href": "https://vp.nyt.com/video/2026/06/10/171454_1_10vid-southern-lights_wg_1080p.mp4",
+          "thumb": "https://static01.nyt.com/images/2026/06/10/science/space/10vid-southern-lights-cover/10vid-southern-lights-cover-smallTwoByThree.jpg",
+          "category": "video",
+          "pageSection": "Videos"
+        }
+      ]
+    },
+    "youtube-shorts.html": {
+      "count": 0,
+      "baseURL": null,
+      "unresolved": 8,
+      "hasBase": false,
+      "result": "FAIL",
+      "issues": ["All hrefs are relative (/shorts/<id>) with no <base> tag and no absolute anchor to detect base URL. Parser cannot resolve relative hrefs with no base, so all 8 links counted as unresolved and 0 items extracted."],
+      "items": []
+    },
+    "reddit-video-cards.html": {
+      "count": 6,
+      "baseURL": "https://www.reddit.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": [
+        "Items doubled: each post appears twice — once as a bare 'link' (from the <a slot='title'>) with no thumbnail, and once as a raw MP4 video (from the standalone <video> tag outside the anchor). The expected result is 3 items each with a title, correct href (the post URL), and thumbnail.",
+        "Title for video items is generic 'Video' instead of the post title.",
+        "thumbnail missing on the 3 anchor-path items because <img> is inside a nested <a> (not the title anchor), so extractImageFromAnchor doesn't find it."
+      ],
+      "items": [
+        {"title": "Amazing drone footage of Yosemite National Park", "href": "https://www.reddit.com/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/", "thumb": null, "category": "link"},
+        {"title": "Incredible timelapse of Northern Lights in Norway", "href": "https://www.reddit.com/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/", "thumb": null, "category": "link"},
+        {"title": "Dog learns to skateboard in one afternoon", "href": "https://www.reddit.com/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/", "thumb": null, "category": "link"},
+        {"title": "Video", "href": "https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback", "thumb": "...", "category": "video"},
+        {"title": "Video", "href": "https://v.redd.it/def456lights/DASH_720.mp4?source=fallback", "thumb": "...", "category": "video"},
+        {"title": "Video", "href": "https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback", "thumb": "...", "category": "video"}
+      ]
+    },
+    "bbc-video.html": {
+      "count": 4,
+      "baseURL": "https://www.bbc.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": ["Titles come from img alt text ('Wildfire spreading across hillside') instead of the article headline ('California wildfires: What started them?'). The <a> wrapping the image is encountered before the <a> with the headline text. Both links point to the same href, so only the first <a> is stored (seen set deduplication). The article heading's link is then skipped as a duplicate. Net effect: correct href, correct thumb, wrong title for all 4 items."],
+      "items": [
+        {"title": "Wildfire spreading across hillside", "href": "https://www.bbc.com/news/articles/c9d0gex9q3go", "thumb": "https://ichef.bbci.co.uk/news/976/...", "category": "article"}
+      ]
+    },
+    "cnn-video-carousel.html": {
+      "count": 4,
+      "baseURL": "https://www.cnn.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": ["Titles include the video duration prefix: '2:34 Space debris lights up night sky over Pacific Northwest'. The <span class='container__duration'> sits inside the same <a> as the headline, so its text is prepended to the title. The duration string should be ignored or stripped."],
+      "items": []
+    },
+    "bloomberg-video.html": {
+      "count": 3,
+      "baseURL": "https://www.bloomberg.com",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "FAIL",
+      "issues": [
+        "Bloomberg uses <button> elements with data-video-url instead of <a href>. The parser's anchor walk only processes a[href], so no video cards are detected via the intended code path.",
+        "The 3 items extracted are standalone images (the <img> inside each <button>) with the thumbnail URL used as the item href — not the article or video URLs. Titles are img alt text, not card headlines.",
+        "data-video-url / data-href on <button> elements is not read by the parser."
+      ],
+      "items": []
+    },
+    "guardian-video.html": {
+      "count": 3,
+      "baseURL": "https://www.theguardian.com",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PASS",
+      "issues": [],
+      "items": [
+        {"title": "New drone footage reveals scale of Amazon deforestation", "href": "https://www.theguardian.com/environment/video/...", "thumb": "https://i.guim.co.uk/...", "category": "article"},
+        {"title": "England 3-1 Germany: Euro 2026 quarter-final highlights", "href": "https://www.theguardian.com/sport/video/...", "thumb": "https://i.guim.co.uk/...", "category": "article"},
+        {"title": "Deepfakes explained: how AI is blurring reality", "href": "https://www.theguardian.com/technology/video/...", "thumb": "https://i.guim.co.uk/...", "category": "article"}
+      ]
+    },
+    "vimeo-showcase.html": {
+      "count": 8,
+      "baseURL": "https://vimeo.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": [
+        "8 items extracted instead of expected 4. Each video card has two <a> tags: one on the thumbnail (with the clip title as img alt) and one on the channel name below. The channel-name links (e.g. /glacierfilms) are picked up as separate items, creating duplicates per card.",
+        "Video titles are the duration string ('12:34') taken from the <span> inside the thumbnail anchor, not the actual clip title (which is in a separate .clip_title anchor below). The clip_title anchor is deduplicated away because the href matches.",
+        "Channel profile links (/glacierfilms) are extracted as spurious video items."
+      ],
+      "items": []
+    },
+    "substack-video-post.html": {
+      "count": 3,
+      "baseURL": "https://techpulse.substack.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": [
+        "Only the first embedded YouTube iframe is extracted, merged into the <article> element via synthesizeFromArticle. The second iframe (RUNWAY_GEN3_DEMO) is dropped because the article already has a synthesized item and the synthesizedFromArticles WeakSet marks the second iframe as already used.",
+        "The two post-listing items (Diffusion Models, Claude vs GPT-4o) are missing thumbnails because the <img> is inside a sibling <a> (post-preview-image) rather than the title <a>. extractImageFromAnchor only looks inside a single anchor.",
+        "The standalone article image (ai-video-timeline.jpg) is not extracted as a separate gallery item because it is inside the <article> element, which is consumed by synthesizeFromArticle."
+      ],
+      "items": []
+    },
+    "medium-article-cards.html": {
+      "count": 3,
+      "baseURL": "https://medium.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": [
+        "All 3 items are missing thumbnails. Medium uses data-src lazy loading (img src set to a 1x1 base64 GIF placeholder, real URL in data-src). The parser correctly calls pickImgSrc which checks data-src first — but the data-src value itself is a 2-pixel placeholder resize URL ending in 'resize:fit:2', which looks small but doesn't match the looksLikePlaceholder heuristic (it checks ?w= or ?width= params, not path segments). Digging further: the actual issue is that the title anchor and the image anchor are two separate sibling <a> elements — the parser extracts the title anchor first (no image inside it), adding the item. The image anchor is then a separate seen duplicate of the same href and is skipped. So the image is never attached to the item."
+      ],
+      "items": []
+    },
+    "twitter-video-embed.html": {
+      "count": 7,
+      "baseURL": "https://example-blog.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "FAIL",
+      "issues": [
+        "7 low-quality items extracted from the blockquote fallback anchors: t.co short links (meaningless without redirect), twitter.com status links (social host, but still added since twitter.com is NOT in the social host filter for item creation — only for base URL detection), and a date string used as title.",
+        "The tweet text content / video is entirely inside the blockquote fallback structure. The useful item is only the one non-Twitter link: the blog post analysis link, which does get extracted correctly.",
+        "t.co shortened links are unhelpfully extracted — the parser has no t.co expander.",
+        "Titles are junk: 'June 10, 2026', 'pic.twitter.com/...' — these come from the anchor text content inside the blockquote."
+      ],
+      "items": []
+    },
+    "reuters-video.html": {
+      "count": 4,
+      "baseURL": "https://www.reuters.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": [
+        "All 4 item titles are the video duration string ('2:47', '3:15', etc.) rather than the article headline. Reuters has two separate <a> elements per card: one wraps the thumbnail (containing the duration overlay div), and the heading link is a sibling. The parser encounters the thumbnail anchor first; its text content is the duration string from the overlay span. The heading link then has the same href and is deduplicated away.",
+        "The correct href and thumbnail are captured."
+      ],
+      "items": []
+    },
+    "instagram-embed.html": {
+      "count": 2,
+      "baseURL": "https://fashion-blog.example.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": [
+        "2 items extracted from the instagram.com blockquote fallback anchors (the static embed). Instagram.com is in the social host blocklist for base-URL detection but NOT filtered for item extraction — so the instagram.com hrefs are kept as items.",
+        "The <iframe src='https://www.instagram.com/reel/.../embed/'> is not extracted as a third item because the iframe src hostname (www.instagram.com) is not in the VIDEO_HOSTS list (which has tiktok.com but not instagram.com), and the pattern check uses /youtube|vimeo|tiktok|wistia|dailymotion|twitch/i — Instagram is excluded.",
+        "Thumbnails come from /media/?size=t which is a valid but very low-quality image URL — functionally present but not ideal."
+      ],
+      "items": []
+    },
+    "tiktok-foryou.html": {
+      "count": 3,
+      "baseURL": "https://www.tiktok.com",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PARTIAL",
+      "issues": [
+        "All 3 items have wrong titles: the play count ('4.2M', '11.7M', '8.9M') is used as the title instead of the actual video title. This is because the text content of the anchor is the play count div, not the video title paragraph (which is outside the <a>).",
+        "Thumbnails are correctly resolved from data-src (1x1 base64 src filtered, data-src used) — thumbs look correct.",
+        "hrefs correctly point to tiktok.com video URLs and are classified as 'video'."
+      ],
+      "items": []
+    },
+    "wsj-video.html": {
+      "count": 3,
+      "baseURL": "https://www.wsj.com/",
+      "unresolved": 0,
+      "hasBase": true,
+      "result": "PASS",
+      "issues": [],
+      "items": [
+        {"title": "Markets Rally After Fed Signals Two Rate Cuts in 2026", "href": "https://www.wsj.com/video/...", "thumb": "https://images.wsj.net/...", "category": "article"},
+        {"title": "EV Market Faces Reckoning as Sales Growth Slows", "href": "https://www.wsj.com/video/...", "thumb": "https://images.wsj.net/...", "category": "article"},
+        {"title": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall", "href": "https://www.wsj.com/video/...", "thumb": "https://images.wsj.net/...", "category": "article"}
+      ]
+    }
+  },
+  "summary": {
+    "total": 15,
+    "pass": 3,
+    "partial": 8,
+    "fail": 3,
+    "na": 0,
+    "pass_fixtures": ["nyt-video-feed.html", "guardian-video.html", "wsj-video.html"],
+    "fail_fixtures": ["youtube-shorts.html", "bloomberg-video.html", "twitter-video-embed.html"],
+    "partial_fixtures": ["reddit-video-cards.html", "bbc-video.html", "cnn-video-carousel.html", "vimeo-showcase.html", "substack-video-post.html", "medium-article-cards.html", "reuters-video.html", "instagram-embed.html", "tiktok-foryou.html"]
+  }
+}

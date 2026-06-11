@@ -1,0 +1,60 @@
+<!--
+  Instagram embed — synthesized representative sample
+  Pattern: <blockquote class="instagram-media"> with fallback <a> links
+  The actual content is an iframe (loaded by embed.js), but static fallback 
+  uses blockquote with <a href> pointing to instagram.com (filtered as social host).
+  Tests: Instagram links are filtered because instagram.com is in the social host blocklist.
+  Also tests: iframe embed detection for reel embeds.
+-->
+<html>
+<head>
+  <base href="https://fashion-blog.example.com/">
+</head>
+<body>
+<div class="post-content">
+  <p>Our latest lookbook shoot is now live on Instagram:</p>
+
+  <!-- Instagram post blockquote embed (fallback before JS loads) -->
+  <blockquote class="instagram-media"
+              data-instgrm-captioned
+              data-instgrm-permalink="https://www.instagram.com/reel/C8x9YZabc12/?utm_source=ig_embed"
+              data-instgrm-version="14">
+    <div>
+      <a href="https://www.instagram.com/reel/C8x9YZabc12/?utm_source=ig_embed" target="_blank">
+        <img src="https://www.instagram.com/p/C8x9YZabc12/media/?size=t"
+             alt="Fashion lookbook reel preview">
+      </a>
+      <p>Summer collection drop 🌊 Full video now available. Link in bio to shop.</p>
+      <p>View this post on Instagram</p>
+    </div>
+  </blockquote>
+
+  <blockquote class="instagram-media"
+              data-instgrm-permalink="https://www.instagram.com/p/C7w8XYzde34/?utm_source=ig_embed"
+              data-instgrm-version="14">
+    <div>
+      <a href="https://www.instagram.com/p/C7w8XYzde34/?utm_source=ig_embed" target="_blank">
+        <img src="https://www.instagram.com/p/C7w8XYzde34/media/?size=t"
+             alt="Behind the scenes shoot">
+      </a>
+      <p>BTS from our photoshoot at the old mills. Coming to the store June 15.</p>
+      <p>View this post on Instagram</p>
+    </div>
+  </blockquote>
+
+  <!-- Instagram reel via iframe (after embed.js loads) — testing iframe detection -->
+  <iframe
+    src="https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/"
+    width="400"
+    height="712"
+    frameborder="0"
+    scrolling="no"
+    allowtransparency="true"
+    allow="encrypted-media"
+    title="Instagram Reel: Summer collection drop">
+  </iframe>
+
+  <script async src="//www.instagram.com/embed.js"></script>
+</div>
+</body>
+</html>

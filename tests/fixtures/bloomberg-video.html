@@ -1,0 +1,70 @@
+<!--
+  Bloomberg video article page — synthesized representative sample
+  Pattern: Bloomberg uses button-driven video player (no <a href> on cards),
+  data-video-id / data-component-props for video IDs, not <a href>.
+  The video cards in the feed use <button> elements with data attributes.
+  This tests a known parser failure mode: items behind <button data-href>.
+-->
+<html>
+<head>
+  <meta property="og:url" content="https://www.bloomberg.com/media/videos">
+  <meta property="og:image" content="https://assets.bwbx.io/images/users/iqjWHBFdfxIU/iKIWgaiJUtss/v0/1200x800.jpg">
+</head>
+<body>
+<div class="video-container" data-component="VideoFeed">
+
+  <!-- Bloomberg's video cards use <button> not <a>, data-video-id for playback -->
+  <div class="video-feed__item" data-testid="video-card">
+    <button class="video-card__trigger"
+            data-video-id="bFLhXXNMRpg"
+            data-video-url="https://www.bloomberg.com/news/videos/2026-06-10/fed-rate-decision-analysis"
+            aria-label="Fed Holds Rates Steady as Inflation Data Cools">
+      <div class="video-card__thumbnail">
+        <img src="https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg"
+             alt="Federal Reserve building exterior">
+      </div>
+      <div class="video-card__info">
+        <span class="video-card__label">MARKETS</span>
+        <h3 class="video-card__headline">Fed Holds Rates Steady as Inflation Data Cools</h3>
+        <span class="video-card__duration">5:23</span>
+      </div>
+    </button>
+  </div>
+
+  <div class="video-feed__item" data-testid="video-card">
+    <button class="video-card__trigger"
+            data-video-id="cGMiYYOpRqh"
+            data-video-url="https://www.bloomberg.com/news/videos/2026-06-10/tech-earnings-preview"
+            aria-label="Big Tech Earnings: What to Expect This Week">
+      <div class="video-card__thumbnail">
+        <img src="https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg"
+             alt="Stock market ticker boards">
+      </div>
+      <div class="video-card__info">
+        <span class="video-card__label">TECHNOLOGY</span>
+        <h3 class="video-card__headline">Big Tech Earnings: What to Expect This Week</h3>
+        <span class="video-card__duration">3:47</span>
+      </div>
+    </button>
+  </div>
+
+  <div class="video-feed__item" data-testid="video-card">
+    <button class="video-card__trigger"
+            data-video-id="dHNjZZPqSri"
+            data-video-url="https://www.bloomberg.com/news/videos/2026-06-10/oil-markets-opec-decision"
+            aria-label="OPEC+ Cuts Output Again: Oil Prices React">
+      <div class="video-card__thumbnail">
+        <img src="https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg"
+             alt="Oil refinery at sunset">
+      </div>
+      <div class="video-card__info">
+        <span class="video-card__label">ENERGY</span>
+        <h3 class="video-card__headline">OPEC+ Cuts Output Again: Oil Prices React</h3>
+        <span class="video-card__duration">4:15</span>
+      </div>
+    </button>
+  </div>
+
+</div>
+</body>
+</html>
