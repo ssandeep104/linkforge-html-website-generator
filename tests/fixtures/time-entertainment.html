@@ -1,0 +1,126 @@
+<!-- Fixture: time.com homepage Entertainment section
+     Captured: 2026-06-11 from user paste (truncated at 3rd article — same shape repeats)
+
+     Failure mode (parser v5):
+       - User reports "1 with image" — and most likely 0 actual items captured.
+       - The lone image probably comes from one of the SVG <img> inside Follow modals.
+
+     Key shape (per card):
+       <article data-mrf-link="https://time.com/article/.../slug/" ...>
+         <figure><picture>
+           <source srcset="...&amp;crop=4:5" ...>
+           <img alt="" src="..." srcset="...&amp;crop=3:2 ..."/>
+         </picture></figure>
+         <h3><a class="..." href="https://time.com/article/.../slug/">Headline...</a></h3>
+       </article>
+
+     Multiple breakage layers stacked:
+       1. The HEADLINE anchor is the ONLY anchor — but img has alt="" and lives in
+          a <picture> SIBLING of the heading. The two-anchor merging logic in #5
+          won't apply because there are no two anchors at all.
+       2. Linkforge's pickImgSrc may struggle: <img alt=""> with empty alt;
+          srcset values use HTML-encoded "&amp;" which can confuse src resolvers.
+       3. Each Entertainment section header has multiple <a href="/tag/movies/">,
+          <a href="/account/my-feed/">, <a href="/account/preferences/"> inside
+          Follow modals — these get extracted as junk items (tag/account pages,
+          not articles), inflating the count incorrectly while real articles get
+          orphaned with no image.
+       4. Critically, the article-level <article data-mrf-link="..."> uses a custom
+          attribute as the canonical URL — not a wrapping <a href>. The headline
+          <a> inside also has that URL, so this is recoverable. But the IMAGE
+          is in a <figure> sibling of the heading and has no anchor wrapping it.
+
+     Expected after fix: 3 article items (Every Year After, Marjane Satrapi,
+     Disclosure Day) — each with proper Time.com article URL, headline as title,
+     and the largest image from the picture/srcset as thumbnail. Tag/Follow
+     anchors (/tag/movies/, /account/my-feed/, /account/preferences/) should
+     be filtered as navigation chrome, not extracted as items.
+-->
+<section id="id-entertainment-1" class="pt-10 text-black-coffee lg:pt-16" aria-labelledby="entertainment">
+  <div class="container mx-auto max-w-[90rem] px-6 lg:px-20">
+    <h2 id="entertainment">Entertainment</h2>
+    <!-- Section tag chips with Follow modals (junk anchors for our purposes) -->
+    <ul class="flex flex-wrap justify-center gap-x-4 gap-y-2 pb-4">
+      <li><a href="/tag/movies/" data-mrf-link="https://time.com/tag/movies/"><span>movies</span></a>
+        <!-- inside <dialog>: -->
+        <a href="/account/my-feed/" data-mrf-link="https://time.com/account/my-feed/">Go to your personalized feed</a>
+        <a href="/account/preferences/" data-mrf-link="https://time.com/account/preferences/">Account Settings</a>
+      </li>
+      <li><a href="/tag/television/" data-mrf-link="https://time.com/tag/television/"><span>Television</span></a>
+        <a href="/account/my-feed/" data-mrf-link="https://time.com/account/my-feed/">Go to your personalized feed</a>
+        <a href="/account/preferences/" data-mrf-link="https://time.com/account/preferences/">Account Settings</a>
+      </li>
+      <li><a href="/tag/books/" data-mrf-link="https://time.com/tag/books/"><span>Books</span></a>
+        <a href="/account/my-feed/" data-mrf-link="https://time.com/account/my-feed/">Go to your personalized feed</a>
+        <a href="/account/preferences/" data-mrf-link="https://time.com/account/preferences/">Account Settings</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="container mx-auto max-w-[90rem] px-6 lg:px-20 hidden lg:block">
+    <ul class="grid gap-x-4 grid-cols-4 lg:grid-cols-12 lg:py-10">
+
+      <!-- Lead article (col-span-6) -->
+      <li class="3 my-auto size-full order-2 col-span-6">
+        <article data-mrf-link="https://time.com/article/2026/06/10/every-year-after-finale/">
+          <figure class="mb-4">
+            <div class="relative w-full">
+              <picture>
+                <source media="(max-width: 1024px)" srcset="https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&amp;width=1080&amp;quality=75&amp;auto=webp&amp;crop=4:5 1080w" sizes="(max-width: 1439px) 44vw, 632px">
+                <img alt="" loading="lazy" width="2399" height="1599" decoding="async" class="h-auto w-full" sizes="(max-width: 1439px) 44vw, 632px" srcset="https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&amp;width=1920&amp;quality=75&amp;auto=webp&amp;crop=3:2 1920w" src="https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&amp;width=3840&amp;quality=75&amp;auto=webp&amp;crop=3:2">
+              </picture>
+            </div>
+            <figcaption><span class="italic text-grey-1">Justine Yeung—Prime Video</span></figcaption>
+          </figure>
+          <div class="space-y-4 text-center">
+            <h3>
+              <a class="after:absolute after:inset-0 after:content-['']" href="https://time.com/article/2026/06/10/every-year-after-finale/" data-mrf-link="https://time.com/article/2026/06/10/every-year-after-finale/">Breaking Down the Dramatic Ending of Romance Series 'Every Year After'</a>
+            </h3>
+            <p>by Barry Levitt</p>
+          </div>
+        </article>
+      </li>
+
+      <!-- Second article (col-span-3) -->
+      <li class="3 my-auto size-full order-1 col-span-3 mt-12">
+        <article data-mrf-link="https://time.com/article/2026/06/10/marjane-satrapi-remembrance/">
+          <figure class="mb-4">
+            <div class="relative flex size-full">
+              <picture>
+                <source media="(max-width: 1024px)" srcset="https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&amp;width=1080&amp;quality=75&amp;auto=webp&amp;crop=4:5 1080w" sizes="(max-width: 1439px) 22vw, 308px">
+                <img alt="" loading="lazy" decoding="async" sizes="(max-width: 1439px) 22vw, 308px" srcset="https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&amp;width=1920&amp;quality=75&amp;auto=webp&amp;crop=1:1 1920w" src="https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&amp;width=3840&amp;quality=75&amp;auto=webp&amp;crop=1:1">
+              </picture>
+            </div>
+          </figure>
+          <div class="space-y-4">
+            <h3>
+              <a class="after:absolute after:inset-0 after:content-['']" href="https://time.com/article/2026/06/10/marjane-satrapi-remembrance/" data-mrf-link="https://time.com/article/2026/06/10/marjane-satrapi-remembrance/">Marjane Satrapi Always Defied Convention</a>
+            </h3>
+            <p>by Joobin Bekhrad</p>
+          </div>
+        </article>
+      </li>
+
+      <!-- Third article (col-span-3) -->
+      <li class="3 my-auto size-full order-3 col-span-3 mt-12">
+        <article data-mrf-link="https://time.com/article/2026/06/03/disclosure-day-cast-interview/">
+          <figure class="mb-4">
+            <div class="relative flex size-full">
+              <picture>
+                <source media="(max-width: 1024px)" srcset="https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&amp;width=1080&amp;quality=75&amp;auto=webp&amp;crop=4:5 1080w" sizes="(max-width: 1439px) 22vw, 308px">
+                <img alt="" loading="lazy" decoding="async" sizes="(max-width: 1439px) 22vw, 308px" srcset="https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&amp;width=1920&amp;quality=75&amp;auto=webp&amp;crop=1:1 1920w" src="https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&amp;width=3840&amp;quality=75&amp;auto=webp&amp;crop=1:1">
+              </picture>
+            </div>
+          </figure>
+          <div class="space-y-4">
+            <h3>
+              <a class="after:absolute after:inset-0 after:content-['']" href="https://time.com/article/2026/06/03/disclosure-day-cast-interview/" data-mrf-link="https://time.com/article/2026/06/03/disclosure-day-cast-interview/">Inside the Surprising Cast of 'Disclosure Day'</a>
+            </h3>
+            <p>by Eliana Dockterman</p>
+          </div>
+        </article>
+      </li>
+
+    </ul>
+  </div>
+</section>
