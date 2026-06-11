@@ -1,238 +1,571 @@
 {
-  "run_date": "2026-06-11",
-  "parser_version": "v5 (commit d4db73f)",
-  "fixtures": {
-    "nyt-video-feed.html": {
-      "count": 5,
-      "baseURL": null,
-      "unresolved": 0,
-      "hasBase": false,
-      "result": "PASS",
-      "issues": [],
-      "items": [
-        {
-          "title": "Visiting a Soldier's Funeral in Ukraine",
-          "href": "https://vp.nyt.com/video/2026/06/09/167399_1_00vid-rv-ukraine-Grief_wg_1080p.mp4",
-          "thumb": "https://static01.nyt.com/images/2026/04/21/arts/Kim-Barker/Kim-Barker-verticalTwoByThree735.png?auto=webp&quality=30&disable=upscale&format=pjpg",
-          "category": "video",
-          "pageSection": "Videos"
-        },
-        {
-          "title": "Scott Pelley: Bari Weiss Put a 'Thumb on the Scale' for Trump",
-          "href": "https://vp.nyt.com/video/2026/06/06/171154_1_6-pelley-bari-weiss-clip_wg_1080p.mp4",
-          "thumb": "https://static01.nyt.com/images/2026/06/07/arts/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16-verticalTwoByThree735.jpg?auto=webp&quality=30&disable=upscale&format=pjpg",
-          "category": "video",
-          "pageSection": "Videos"
-        },
-        {
-          "title": "Soccer Referee Receives Hero's Welcome in Somalia After U.S. Denies Him Entry",
-          "href": "https://vp.nyt.com/video/2026/06/10/171412_1_10vid-referee_wg_1080p.mp4",
-          "thumb": "https://static01.nyt.com/images/2026/06/10/sports/soccer/somali-ref-thumb-onsite/somali-ref-thumb-onsite-smallTwoByThree.jpg",
-          "category": "video",
-          "pageSection": "Videos"
-        },
-        {
-          "title": "Russian Military Official Killed in Car Explosion Near Moscow",
-          "href": "https://vp.nyt.com/video/2026/06/10/171435_1_10Vid-moscow-car-explosion_wg_1080p.mp4",
-          "thumb": "https://static01.nyt.com/images/2026/06/10/multimedia/10Russia-Bombing-qgbl/10Russia-Bombing-qgbl-verticalTwoByThree735-v2.jpg",
-          "category": "video",
-          "pageSection": "Videos"
-        },
-        {
-          "title": "Southern Lights Seen From International Space Station",
-          "href": "https://vp.nyt.com/video/2026/06/10/171454_1_10vid-southern-lights_wg_1080p.mp4",
-          "thumb": "https://static01.nyt.com/images/2026/06/10/science/space/10vid-southern-lights-cover/10vid-southern-lights-cover-smallTwoByThree.jpg",
-          "category": "video",
-          "pageSection": "Videos"
-        }
-      ]
-    },
-    "youtube-shorts.html": {
-      "count": 0,
-      "baseURL": null,
-      "unresolved": 8,
-      "hasBase": false,
-      "result": "FAIL",
-      "issues": ["All hrefs are relative (/shorts/<id>) with no <base> tag and no absolute anchor to detect base URL. Parser cannot resolve relative hrefs with no base, so all 8 links counted as unresolved and 0 items extracted."],
-      "items": []
-    },
-    "reddit-video-cards.html": {
-      "count": 6,
-      "baseURL": "https://www.reddit.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": [
-        "Items doubled: each post appears twice — once as a bare 'link' (from the <a slot='title'>) with no thumbnail, and once as a raw MP4 video (from the standalone <video> tag outside the anchor). The expected result is 3 items each with a title, correct href (the post URL), and thumbnail.",
-        "Title for video items is generic 'Video' instead of the post title.",
-        "thumbnail missing on the 3 anchor-path items because <img> is inside a nested <a> (not the title anchor), so extractImageFromAnchor doesn't find it."
-      ],
-      "items": [
-        {"title": "Amazing drone footage of Yosemite National Park", "href": "https://www.reddit.com/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/", "thumb": null, "category": "link"},
-        {"title": "Incredible timelapse of Northern Lights in Norway", "href": "https://www.reddit.com/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/", "thumb": null, "category": "link"},
-        {"title": "Dog learns to skateboard in one afternoon", "href": "https://www.reddit.com/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/", "thumb": null, "category": "link"},
-        {"title": "Video", "href": "https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback", "thumb": "...", "category": "video"},
-        {"title": "Video", "href": "https://v.redd.it/def456lights/DASH_720.mp4?source=fallback", "thumb": "...", "category": "video"},
-        {"title": "Video", "href": "https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback", "thumb": "...", "category": "video"}
-      ]
-    },
-    "bbc-video.html": {
-      "count": 4,
-      "baseURL": "https://www.bbc.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": ["Titles come from img alt text ('Wildfire spreading across hillside') instead of the article headline ('California wildfires: What started them?'). The <a> wrapping the image is encountered before the <a> with the headline text. Both links point to the same href, so only the first <a> is stored (seen set deduplication). The article heading's link is then skipped as a duplicate. Net effect: correct href, correct thumb, wrong title for all 4 items."],
-      "items": [
-        {"title": "Wildfire spreading across hillside", "href": "https://www.bbc.com/news/articles/c9d0gex9q3go", "thumb": "https://ichef.bbci.co.uk/news/976/...", "category": "article"}
-      ]
-    },
-    "cnn-video-carousel.html": {
-      "count": 4,
-      "baseURL": "https://www.cnn.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": ["Titles include the video duration prefix: '2:34 Space debris lights up night sky over Pacific Northwest'. The <span class='container__duration'> sits inside the same <a> as the headline, so its text is prepended to the title. The duration string should be ignored or stripped."],
-      "items": []
-    },
-    "bloomberg-video.html": {
-      "count": 3,
-      "baseURL": "https://www.bloomberg.com",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "FAIL",
-      "issues": [
-        "Bloomberg uses <button> elements with data-video-url instead of <a href>. The parser's anchor walk only processes a[href], so no video cards are detected via the intended code path.",
-        "The 3 items extracted are standalone images (the <img> inside each <button>) with the thumbnail URL used as the item href — not the article or video URLs. Titles are img alt text, not card headlines.",
-        "data-video-url / data-href on <button> elements is not read by the parser."
-      ],
-      "items": []
-    },
-    "guardian-video.html": {
-      "count": 3,
-      "baseURL": "https://www.theguardian.com",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PASS",
-      "issues": [],
-      "items": [
-        {"title": "New drone footage reveals scale of Amazon deforestation", "href": "https://www.theguardian.com/environment/video/...", "thumb": "https://i.guim.co.uk/...", "category": "article"},
-        {"title": "England 3-1 Germany: Euro 2026 quarter-final highlights", "href": "https://www.theguardian.com/sport/video/...", "thumb": "https://i.guim.co.uk/...", "category": "article"},
-        {"title": "Deepfakes explained: how AI is blurring reality", "href": "https://www.theguardian.com/technology/video/...", "thumb": "https://i.guim.co.uk/...", "category": "article"}
-      ]
-    },
-    "vimeo-showcase.html": {
-      "count": 8,
-      "baseURL": "https://vimeo.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": [
-        "8 items extracted instead of expected 4. Each video card has two <a> tags: one on the thumbnail (with the clip title as img alt) and one on the channel name below. The channel-name links (e.g. /glacierfilms) are picked up as separate items, creating duplicates per card.",
-        "Video titles are the duration string ('12:34') taken from the <span> inside the thumbnail anchor, not the actual clip title (which is in a separate .clip_title anchor below). The clip_title anchor is deduplicated away because the href matches.",
-        "Channel profile links (/glacierfilms) are extracted as spurious video items."
-      ],
-      "items": []
-    },
-    "substack-video-post.html": {
-      "count": 3,
-      "baseURL": "https://techpulse.substack.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": [
-        "Only the first embedded YouTube iframe is extracted, merged into the <article> element via synthesizeFromArticle. The second iframe (RUNWAY_GEN3_DEMO) is dropped because the article already has a synthesized item and the synthesizedFromArticles WeakSet marks the second iframe as already used.",
-        "The two post-listing items (Diffusion Models, Claude vs GPT-4o) are missing thumbnails because the <img> is inside a sibling <a> (post-preview-image) rather than the title <a>. extractImageFromAnchor only looks inside a single anchor.",
-        "The standalone article image (ai-video-timeline.jpg) is not extracted as a separate gallery item because it is inside the <article> element, which is consumed by synthesizeFromArticle."
-      ],
-      "items": []
-    },
-    "medium-article-cards.html": {
-      "count": 3,
-      "baseURL": "https://medium.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": [
-        "All 3 items are missing thumbnails. Medium uses data-src lazy loading (img src set to a 1x1 base64 GIF placeholder, real URL in data-src). The parser correctly calls pickImgSrc which checks data-src first — but the data-src value itself is a 2-pixel placeholder resize URL ending in 'resize:fit:2', which looks small but doesn't match the looksLikePlaceholder heuristic (it checks ?w= or ?width= params, not path segments). Digging further: the actual issue is that the title anchor and the image anchor are two separate sibling <a> elements — the parser extracts the title anchor first (no image inside it), adding the item. The image anchor is then a separate seen duplicate of the same href and is skipped. So the image is never attached to the item."
-      ],
-      "items": []
-    },
-    "twitter-video-embed.html": {
-      "count": 7,
-      "baseURL": "https://example-blog.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "FAIL",
-      "issues": [
-        "7 low-quality items extracted from the blockquote fallback anchors: t.co short links (meaningless without redirect), twitter.com status links (social host, but still added since twitter.com is NOT in the social host filter for item creation — only for base URL detection), and a date string used as title.",
-        "The tweet text content / video is entirely inside the blockquote fallback structure. The useful item is only the one non-Twitter link: the blog post analysis link, which does get extracted correctly.",
-        "t.co shortened links are unhelpfully extracted — the parser has no t.co expander.",
-        "Titles are junk: 'June 10, 2026', 'pic.twitter.com/...' — these come from the anchor text content inside the blockquote."
-      ],
-      "items": []
-    },
-    "reuters-video.html": {
-      "count": 4,
-      "baseURL": "https://www.reuters.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": [
-        "All 4 item titles are the video duration string ('2:47', '3:15', etc.) rather than the article headline. Reuters has two separate <a> elements per card: one wraps the thumbnail (containing the duration overlay div), and the heading link is a sibling. The parser encounters the thumbnail anchor first; its text content is the duration string from the overlay span. The heading link then has the same href and is deduplicated away.",
-        "The correct href and thumbnail are captured."
-      ],
-      "items": []
-    },
-    "instagram-embed.html": {
-      "count": 2,
-      "baseURL": "https://fashion-blog.example.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": [
-        "2 items extracted from the instagram.com blockquote fallback anchors (the static embed). Instagram.com is in the social host blocklist for base-URL detection but NOT filtered for item extraction — so the instagram.com hrefs are kept as items.",
-        "The <iframe src='https://www.instagram.com/reel/.../embed/'> is not extracted as a third item because the iframe src hostname (www.instagram.com) is not in the VIDEO_HOSTS list (which has tiktok.com but not instagram.com), and the pattern check uses /youtube|vimeo|tiktok|wistia|dailymotion|twitch/i — Instagram is excluded.",
-        "Thumbnails come from /media/?size=t which is a valid but very low-quality image URL — functionally present but not ideal."
-      ],
-      "items": []
-    },
-    "tiktok-foryou.html": {
-      "count": 3,
-      "baseURL": "https://www.tiktok.com",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PARTIAL",
-      "issues": [
-        "All 3 items have wrong titles: the play count ('4.2M', '11.7M', '8.9M') is used as the title instead of the actual video title. This is because the text content of the anchor is the play count div, not the video title paragraph (which is outside the <a>).",
-        "Thumbnails are correctly resolved from data-src (1x1 base64 src filtered, data-src used) — thumbs look correct.",
-        "hrefs correctly point to tiktok.com video URLs and are classified as 'video'."
-      ],
-      "items": []
-    },
-    "wsj-video.html": {
-      "count": 3,
-      "baseURL": "https://www.wsj.com/",
-      "unresolved": 0,
-      "hasBase": true,
-      "result": "PASS",
-      "issues": [],
-      "items": [
-        {"title": "Markets Rally After Fed Signals Two Rate Cuts in 2026", "href": "https://www.wsj.com/video/...", "thumb": "https://images.wsj.net/...", "category": "article"},
-        {"title": "EV Market Faces Reckoning as Sales Growth Slows", "href": "https://www.wsj.com/video/...", "thumb": "https://images.wsj.net/...", "category": "article"},
-        {"title": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall", "href": "https://www.wsj.com/video/...", "thumb": "https://images.wsj.net/...", "category": "article"}
-      ]
-    }
+  "nyt-video-feed.html": {
+    "count": 5,
+    "baseURL": null,
+    "unresolved": 0,
+    "hasBase": false,
+    "items": [
+      {
+        "title": "Visiting a Soldier's Funeral in Ukraine",
+        "href": "https://vp.nyt.com/video/2026/06/09/167399_1_00vid-rv-ukraine-Grief_wg_1080p.mp4",
+        "thumb": "https://static01.nyt.com/images/2026/04/21/arts/Kim-Barker/Kim-Barker-verticalTwoByThree735.png?auto=webp&quality=30&disable=upscale&format=pjpg",
+        "category": "video",
+        "pageSection": "Videos"
+      },
+      {
+        "title": "Scott Pelley: Bari Weiss Put a 'Thumb on the Scale' for Trump",
+        "href": "https://vp.nyt.com/video/2026/06/06/171154_1_6-pelley-bari-weiss-clip_wg_1080p.mp4",
+        "thumb": "https://static01.nyt.com/images/2026/06/07/arts/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16-verticalTwoByThree735.jpg?auto=webp&quality=30&disable=upscale&format=pjpg",
+        "category": "video",
+        "pageSection": "Videos"
+      },
+      {
+        "title": "Soccer Referee Receives Hero's Welcome in Somalia After U.S. Denies Him Entry",
+        "href": "https://vp.nyt.com/video/2026/06/10/171412_1_10vid-referee_wg_1080p.mp4",
+        "thumb": "https://static01.nyt.com/images/2026/06/10/sports/soccer/somali-ref-thumb-onsite/somali-ref-thumb-onsite-smallTwoByThree.jpg",
+        "category": "video",
+        "pageSection": "Videos"
+      },
+      {
+        "title": "Russian Military Official Killed in Car Explosion Near Moscow",
+        "href": "https://vp.nyt.com/video/2026/06/10/171435_1_10Vid-moscow-car-explosion_wg_1080p.mp4",
+        "thumb": "https://static01.nyt.com/images/2026/06/10/multimedia/10Russia-Bombing-qgbl/10Russia-Bombing-qgbl-verticalTwoByThree735-v2.jpg",
+        "category": "video",
+        "pageSection": "Videos"
+      },
+      {
+        "title": "Southern Lights Seen From International Space Station",
+        "href": "https://vp.nyt.com/video/2026/06/10/171454_1_10vid-southern-lights_wg_1080p.mp4",
+        "thumb": "https://static01.nyt.com/images/2026/06/10/science/space/10vid-southern-lights-cover/10vid-southern-lights-cover-smallTwoByThree.jpg",
+        "category": "video",
+        "pageSection": "Videos"
+      }
+    ]
   },
-  "summary": {
-    "total": 15,
-    "pass": 3,
-    "partial": 8,
-    "fail": 3,
-    "na": 0,
-    "pass_fixtures": ["nyt-video-feed.html", "guardian-video.html", "wsj-video.html"],
-    "fail_fixtures": ["youtube-shorts.html", "bloomberg-video.html", "twitter-video-embed.html"],
-    "partial_fixtures": ["reddit-video-cards.html", "bbc-video.html", "cnn-video-carousel.html", "vimeo-showcase.html", "substack-video-post.html", "medium-article-cards.html", "reuters-video.html", "instagram-embed.html", "tiktok-foryou.html"]
+  "youtube-shorts.html": {
+    "count": 0,
+    "baseURL": null,
+    "unresolved": 8,
+    "hasBase": false,
+    "items": []
+  },
+  "reddit-video-cards.html": {
+    "count": 6,
+    "baseURL": "https://www.reddit.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Amazing drone footage of Yosemite National Park",
+        "href": "https://www.reddit.com/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/",
+        "thumb": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Incredible timelapse of Northern Lights in Norway",
+        "href": "https://www.reddit.com/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/",
+        "thumb": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Dog learns to skateboard in one afternoon",
+        "href": "https://www.reddit.com/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/",
+        "thumb": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Video",
+        "href": "https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback",
+        "thumb": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
+        "category": "video",
+        "pageSection": "Videos"
+      },
+      {
+        "title": "Video",
+        "href": "https://v.redd.it/def456lights/DASH_720.mp4?source=fallback",
+        "thumb": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
+        "category": "video",
+        "pageSection": "Videos"
+      },
+      {
+        "title": "Video",
+        "href": "https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback",
+        "thumb": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
+        "category": "video",
+        "pageSection": "Videos"
+      }
+    ]
+  },
+  "bbc-video.html": {
+    "count": 4,
+    "baseURL": "https://www.bbc.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Wildfire spreading across hillside",
+        "href": "https://www.bbc.com/news/articles/c9d0gex9q3go",
+        "thumb": "https://ichef.bbci.co.uk/news/976/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+        "category": "article",
+        "pageSection": "Most Watched Video"
+      },
+      {
+        "title": "Astronauts in orange suits",
+        "href": "https://www.bbc.com/news/articles/cy8n7z2xm9lo",
+        "thumb": "https://ichef.bbci.co.uk/news/976/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+        "category": "article",
+        "pageSection": "Most Watched Video"
+      },
+      {
+        "title": "Large crowd at climate protest",
+        "href": "https://www.bbc.com/news/articles/cq5xp0r4wkno",
+        "thumb": "https://ichef.bbci.co.uk/news/480/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+        "category": "article",
+        "pageSection": "Most Watched Video"
+      },
+      {
+        "title": "G7 world leaders at summit table",
+        "href": "https://www.bbc.com/news/articles/cm3n8w1vt5po",
+        "thumb": "https://ichef.bbci.co.uk/news/480/cpsprodpb/3456/production/_133034567_summit.jpg",
+        "category": "article",
+        "pageSection": "Most Watched Video"
+      }
+    ]
+  },
+  "cnn-video-carousel.html": {
+    "count": 4,
+    "baseURL": "https://www.cnn.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "2:34 Space debris lights up night sky over Pacific Northwest",
+        "href": "https://www.cnn.com/videos/us/2026/06/10/space-debris-reentry-orig-dp.cnn",
+        "thumb": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2215088888.jpg?c=16x9&q=h_438,w_780,c_fill",
+        "category": "article",
+        "pageSection": "Video"
+      },
+      {
+        "title": "1:58 Senate passes sweeping infrastructure package 67-33",
+        "href": "https://www.cnn.com/videos/politics/2026/06/10/senate-vote-infrastructure-orig-jm.cnn",
+        "thumb": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-senate-floor.jpg?c=16x9&q=h_438,w_780,c_fill",
+        "category": "article",
+        "pageSection": "Video"
+      },
+      {
+        "title": "3:12 Massive tornado tears through Texas Panhandle, dozens injured",
+        "href": "https://www.cnn.com/videos/weather/2026/06/10/tornado-texas-panhandle-orig-na.cnn",
+        "thumb": "https://media.cnn.com/api/v1/images/stellar/prod/tornado-funnel-cloud.jpg?c=16x9&q=h_438,w_780,c_fill",
+        "category": "article",
+        "pageSection": "Video"
+      },
+      {
+        "title": "4:07 OpenAI unveils new reasoning model at surprise event",
+        "href": "https://www.cnn.com/videos/tech/2026/06/10/openai-new-model-demo-orig-bk.cnn",
+        "thumb": "https://media.cnn.com/api/v1/images/stellar/prod/openai-model-demo.jpg?c=16x9&q=h_438,w_780,c_fill",
+        "category": "article",
+        "pageSection": "Video"
+      }
+    ]
+  },
+  "bloomberg-video.html": {
+    "count": 3,
+    "baseURL": "https://www.bloomberg.com",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Federal Reserve building exterior",
+        "href": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
+        "thumb": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
+        "category": "article",
+        "pageSection": "Images"
+      },
+      {
+        "title": "Stock market ticker boards",
+        "href": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
+        "thumb": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
+        "category": "article",
+        "pageSection": "Images"
+      },
+      {
+        "title": "Oil refinery at sunset",
+        "href": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
+        "thumb": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
+        "category": "article",
+        "pageSection": "Images"
+      }
+    ]
+  },
+  "guardian-video.html": {
+    "count": 3,
+    "baseURL": "https://www.theguardian.com",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "New drone footage reveals scale of Amazon deforestation",
+        "href": "https://www.theguardian.com/environment/video/2026/jun/10/amazon-deforestation-drone-footage-video",
+        "thumb": "https://i.guim.co.uk/img/media/abc123/master/300.jpg?width=300&quality=45&auto=format",
+        "category": "article",
+        "pageSection": "Video"
+      },
+      {
+        "title": "England 3-1 Germany: Euro 2026 quarter-final highlights",
+        "href": "https://www.theguardian.com/sport/video/2026/jun/10/euro-2026-england-germany-highlights-video",
+        "thumb": "https://i.guim.co.uk/img/media/def456/master/300.jpg?width=300&quality=45&auto=format",
+        "category": "article",
+        "pageSection": "Video"
+      },
+      {
+        "title": "Deepfakes explained: how AI is blurring reality",
+        "href": "https://www.theguardian.com/technology/video/2026/jun/10/ai-deepfakes-explained-video",
+        "thumb": "https://i.guim.co.uk/img/media/ghi789/master/300.jpg?width=300&quality=45&auto=format",
+        "category": "article",
+        "pageSection": "Video"
+      }
+    ]
+  },
+  "vimeo-showcase.html": {
+    "count": 8,
+    "baseURL": "https://vimeo.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "The Last Glacier — Short Film",
+        "href": "https://vimeo.com/1001234567",
+        "thumb": "https://i.vimeocdn.com/video/1001234567_640x360.jpg?r=pad",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Glacier Films",
+        "href": "https://vimeo.com/glacierfilms",
+        "thumb": null,
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Urban Pulse — City Life Documentary",
+        "href": "https://vimeo.com/1001234568",
+        "thumb": "https://i.vimeocdn.com/video/1001234568_640x360.jpg?r=pad",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Urban Studio",
+        "href": "https://vimeo.com/urbanstudio",
+        "thumb": null,
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Neon Drift — Music Video",
+        "href": "https://vimeo.com/1001234569",
+        "thumb": "https://i.vimeocdn.com/video/1001234569_640x360.jpg?r=pad",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Neon Records",
+        "href": "https://vimeo.com/neonrecords",
+        "thumb": null,
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Brand Story — Craft Brewery",
+        "href": "https://vimeo.com/1001234570",
+        "thumb": "https://i.vimeocdn.com/video/1001234570_640x360.jpg?r=pad",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Craft Visuals",
+        "href": "https://vimeo.com/craftvisuals",
+        "thumb": null,
+        "category": "video",
+        "pageSection": "Other"
+      }
+    ]
+  },
+  "substack-video-post.html": {
+    "count": 3,
+    "baseURL": "https://techpulse.substack.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Diffusion Models Explained: A Visual Guide",
+        "href": "https://techpulse.substack.com/p/diffusion-models-explained",
+        "thumb": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdiffusion-cover.jpg",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Claude 4 vs GPT-4o: Full Benchmark Breakdown",
+        "href": "https://techpulse.substack.com/p/claude-vs-gpt4-benchmark",
+        "thumb": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbenchmark-chart.jpg",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "The AI Video Revolution Is Here",
+        "href": "https://www.youtube.com/embed/HK6y8DAPN_0",
+        "thumb": "https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fai-video-timeline.jpg",
+        "category": "video",
+        "pageSection": "Videos"
+      }
+    ]
+  },
+  "medium-article-cards.html": {
+    "count": 3,
+    "baseURL": "https://medium.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Stop Using ChatGPT for Code. Do This Instead.",
+        "href": "https://medium.com/towards-data-science/stop-using-chatgpt-for-code-do-this-instead-abc123def456",
+        "thumb": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*xKvkMbsS7L0Zp5hWKqX9AA.jpeg",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "The One Design Principle Every Developer Ignores",
+        "href": "https://medium.com/ux-planet/the-one-design-principle-every-developer-ignores-xyz789abc123",
+        "thumb": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*pQ8LkMrNbRe2_Yv7tJw0xA.jpeg",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "TypeScript 5.4 Is a Game-Changer. Here's Why.",
+        "href": "https://medium.com/javascript-in-plain-english/typescript-5-4-is-a-game-changer-heres-why-ghi012jkl345",
+        "thumb": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*mR4NtPkWvFa3bCs2xYe1PQ.jpeg",
+        "category": "article",
+        "pageSection": "Other"
+      }
+    ]
+  },
+  "twitter-video-embed.html": {
+    "count": 7,
+    "baseURL": "https://example-blog.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "pic.twitter.com/launch_video_link",
+        "href": "https://t.co/launch_video_link",
+        "thumb": null,
+        "category": "link",
+        "pageSection": "Other"
+      },
+      {
+        "title": "June 10, 2026",
+        "href": "https://twitter.com/SpaceX/status/1800000000000000001?ref_src=twsrc%5Etfw",
+        "thumb": null,
+        "category": "link",
+        "pageSection": "Other"
+      },
+      {
+        "title": "pic.twitter.com/legs_deployment_video",
+        "href": "https://t.co/legs_deployment_video",
+        "thumb": null,
+        "category": "link",
+        "pageSection": "Other"
+      },
+      {
+        "title": "June 10, 2026",
+        "href": "https://twitter.com/elonmusk/status/1800000000000000002?ref_src=twsrc%5Etfw",
+        "thumb": null,
+        "category": "link",
+        "pageSection": "Other"
+      },
+      {
+        "title": "pic.twitter.com/booster_catch_video",
+        "href": "https://t.co/booster_catch_video",
+        "thumb": null,
+        "category": "link",
+        "pageSection": "Other"
+      },
+      {
+        "title": "June 10, 2026",
+        "href": "https://twitter.com/NASA/status/1800000000000000003?ref_src=twsrc%5Etfw",
+        "thumb": null,
+        "category": "link",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Read our full analysis of IFT-5 →",
+        "href": "https://example-blog.com/spacex-ift5-analysis",
+        "thumb": null,
+        "category": "link",
+        "pageSection": "Other"
+      }
+    ]
+  },
+  "reuters-video.html": {
+    "count": 4,
+    "baseURL": "https://www.reuters.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Gaza ceasefire talks enter critical phase, mediators say",
+        "href": "https://www.reuters.com/world/middle-east/ceasefire-negotiations-latest-update-2026-06-10/",
+        "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
+        "category": "article",
+        "pageSection": "Latest Videos"
+      },
+      {
+        "title": "U.S. adds 280,000 jobs in May, beating expectations",
+        "href": "https://www.reuters.com/business/economy/us-jobs-report-may-2026-analysis-2026-06-10/",
+        "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
+        "category": "article",
+        "pageSection": "Latest Videos"
+      },
+      {
+        "title": "State-sponsored hackers breach European energy infrastructure",
+        "href": "https://www.reuters.com/technology/cyber/major-cyberattack-hits-eu-energy-grid-2026-06-10/",
+        "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
+        "category": "article",
+        "pageSection": "Latest Videos"
+      },
+      {
+        "title": "Wimbledon 2026 draw: Djokovic and Swiatek headline favorites",
+        "href": "https://www.reuters.com/sports/tennis/wimbledon-2026-draw-preview-2026-06-10/",
+        "thumb": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
+        "category": "article",
+        "pageSection": "Latest Videos"
+      }
+    ]
+  },
+  "instagram-embed.html": {
+    "count": 2,
+    "baseURL": "https://fashion-blog.example.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Fashion lookbook reel preview",
+        "href": "https://www.instagram.com/reel/C8x9YZabc12/?utm_source=ig_embed",
+        "thumb": "https://www.instagram.com/p/C8x9YZabc12/media/?size=t",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Behind the scenes shoot",
+        "href": "https://www.instagram.com/p/C7w8XYzde34/?utm_source=ig_embed",
+        "thumb": "https://www.instagram.com/p/C7w8XYzde34/media/?size=t",
+        "category": "article",
+        "pageSection": "Other"
+      }
+    ]
+  },
+  "tiktok-foryou.html": {
+    "count": 3,
+    "baseURL": "https://www.tiktok.com",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "4.2M",
+        "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000001",
+        "thumb": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/osPfmAVlbIXfG3e7oLsBCpPDQBFRBAhc7ABDC?x-expires=1718500000&x-signature=abc123",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "11.7M",
+        "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000002",
+        "thumb": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/qrPgmBWmcJYgH4f8pMtCDqREhcAGBhd8ABEd?x-expires=1718500001&x-signature=def456",
+        "category": "video",
+        "pageSection": "Other"
+      },
+      {
+        "title": "8.9M",
+        "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000003",
+        "thumb": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/sTQimCXncKZhI5g9rNuDErSFicBHCie9BCFe?x-expires=1718500002&x-signature=ghi789",
+        "category": "video",
+        "pageSection": "Other"
+      }
+    ]
+  },
+  "wsj-video.html": {
+    "count": 3,
+    "baseURL": "https://www.wsj.com/",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Markets Rally After Fed Signals Two Rate Cuts in 2026",
+        "href": "https://www.wsj.com/video/series/markets-hub/market-reaction-to-rate-decision-june-2026/AB1234CD-5678-EFGH-IJKL-MN9012OPQRST",
+        "thumb": "https://images.wsj.net/im-12345678?width=700&height=394",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "EV Market Faces Reckoning as Sales Growth Slows",
+        "href": "https://www.wsj.com/video/series/journal-report/future-of-electric-vehicles-2026-outlook/EF5678GH-9012-IJKL-MNOP-QR3456STUVWX",
+        "thumb": "https://images.wsj.net/im-23456789?width=700&height=394",
+        "category": "article",
+        "pageSection": "Other"
+      },
+      {
+        "title": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall",
+        "href": "https://www.wsj.com/video/series/the-economics-of/why-housing-remains-unaffordable-june-2026/GH9012IJ-3456-KLMN-OPQR-ST7890UVWXYZ",
+        "thumb": "https://images.wsj.net/im-34567890?width=700&height=394",
+        "category": "article",
+        "pageSection": "Other"
+      }
+    ]
+  },
+  "nbc-vertvideo-feed.html": {
+    "count": 1,
+    "baseURL": null,
+    "unresolved": 0,
+    "hasBase": false,
+    "items": [
+      {
+        "title": "Image",
+        "href": "https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2026-01/asterisk-43f04b.svg",
+        "thumb": "https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2026-01/asterisk-43f04b.svg",
+        "category": "article",
+        "pageSection": "Images"
+      }
+    ]
+  },
+  "time-entertainment.html": {
+    "count": 3,
+    "baseURL": "https://time.com",
+    "unresolved": 0,
+    "hasBase": true,
+    "items": [
+      {
+        "title": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
+        "href": "https://time.com/article/2026/06/10/every-year-after-finale/",
+        "thumb": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+        "category": "article",
+        "pageSection": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'"
+      },
+      {
+        "title": "Marjane Satrapi Always Defied Convention",
+        "href": "https://time.com/article/2026/06/10/marjane-satrapi-remembrance/",
+        "thumb": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+        "category": "article",
+        "pageSection": "Marjane Satrapi Always Defied Convention"
+      },
+      {
+        "title": "Inside the Surprising Cast of 'Disclosure Day'",
+        "href": "https://time.com/article/2026/06/03/disclosure-day-cast-interview/",
+        "thumb": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+        "category": "article",
+        "pageSection": "Inside the Surprising Cast of 'Disclosure Day'"
+      }
+    ]
   }
 }

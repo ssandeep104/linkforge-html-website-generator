@@ -272,6 +272,94 @@ function extractVideoFromAnchor(a) {
   return null;
 }
 
+// ---------- chrome / navigation anchor filter (issue #10) ----------
+// Many sites embed tag chips, account links, footer nav, and modal dialog
+// links throughout their HTML. Treating those as content items pollutes the
+// output (e.g. Time.com homepage was emitting /tag/movies, /account/my-feed,
+// /account/preferences as articles). This filter drops them by container
+// (<nav>, <header>, <footer>, <dialog>, [role="navigation"]) and by URL
+// pathname prefix (/tag/, /account/, /login/, etc.).
+const CHROME_PATH_PREFIXES = [
+  '/tag/', '/tags/', '/category/', '/categories/', '/topic/', '/topics/',
+  '/section/', '/sections/',
+  '/account/', '/auth/', '/login', '/signin', '/sign-in',
+  '/signup', '/sign-up', '/register',
+  '/subscribe', '/subscription', '/newsletter', '/newsletters',
+  '/about', '/contact', '/privacy', '/terms', '/cookie',
+  '/help', '/support', '/feedback',
+  '/rss', '/sitemap', '/preferences'
+];
+const CHROME_CONTAINER_SELECTOR =
+  'nav, header, footer, dialog, [role="navigation"], [role="dialog"], [aria-modal="true"], ' +
+  '[class*="site-nav"], [class*="site-header"], [class*="site-footer"], ' +
+  '[class*="main-nav"], [class*="main-menu"], [class*="main-header"], [class*="main-footer"], ' +
+  '[class*="global-nav"], [class*="global-header"], [class*="global-footer"], ' +
+  '[id*="site-nav"], [id*="site-header"], [id*="site-footer"]';
+
+function isChromeAnchor(a, resolvedHref) {
+  // Container-based check
+  if (a.closest(CHROME_CONTAINER_SELECTOR)) return true;
+
+  // Path-based check on the RESOLVED href, so /tag/ on relative links works
+  // once base detection succeeds.
+  if (resolvedHref) {
+    try {
+      const pathname = new URL(resolvedHref).pathname;
+      if (CHROME_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + (p.endsWith('/') ? '' : '/')) || pathname.startsWith(p))) {
+        return true;
+      }
+    } catch {}
+  }
+  return false;
+}
+
+// ---------- figure-sibling thumbnail fallback (issue #5 / #10) ----------
+// On many modern news templates (Time.com, Vox, Gutenberg block-editor sites),
+// the article image is in a <figure> sibling of the headline anchor, with NO
+// wrapping <a> on the image itself. Walk up to the nearest <article>/<li> and
+// pull the first non-placeholder image. Mark the chosen <img> in the WeakSet
+// passed in (if any) so the standalone-image walk doesn't re-emit it as an
+// orphan "Image" item.
+function findFigureSiblingThumb(a, baseURL, claimedSet) {
+  const block = a.closest('article, li, [class*="card"], [class*="story"], [class*="teaser"]');
+  if (!block) return null;
+  // Prefer <figure><picture><img> or <figure><img>
+  const candidates = block.querySelectorAll('figure img, picture img, figure picture source[srcset]');
+  for (const cand of candidates) {
+    if (cand.tagName === 'SOURCE') {
+      const ss = cand.getAttribute('srcset');
+      if (!ss) continue;
+      const entries = ss.split(',').map((s) => s.trim()).filter(Boolean);
+      const last = entries[entries.length - 1]?.split(' ')[0];
+      if (last && !looksLikePlaceholder(last)) {
+        const resolved = safeURL(last, baseURL) || last;
+        return { thumb: resolved, claimedEl: cand.closest('picture') || cand };
+      }
+      continue;
+    }
+    const picked = pickImgSrc(cand);
+    if (picked) {
+      const resolved = safeURL(picked, baseURL) || picked;
+      return { thumb: resolved, claimedEl: cand };
+    }
+  }
+  return null;
+}
+
+// ---------- bad-title detector (issue #6) ----------
+// Some sites use anchor text that's a duration ("12:34") or play-count
+// ("1.2M", "4.5K views") instead of a real title. When that happens we want
+// to fall back to another anchor in the same bucket (image alt, aria-label,
+// nested heading) before settling. Returns true if the candidate looks bad.
+function looksLikeBadTitle(t) {
+  if (!t) return true;
+  const s = String(t).trim();
+  if (!s) return true;
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return true; // duration
+  if (/^\d+(\.\d+)?[KMB]?(\s*(views|likes|comments))?$/i.test(s)) return true; // play count
+  return false;
+}
+
 function getAnchorTitle(a) {
   // prefer aria-label, then title attr, then text content, then nested heading, then img alt
   const aria = a.getAttribute('aria-label');
@@ -424,26 +512,81 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // group items the way they appear on the original page (Top News, Sports, etc.)
   const sectionFor = buildSectionMap(doc);
 
-  // 1) anchors with href
-  const anchors = Array.from(doc.querySelectorAll('a[href]'));
-  for (const a of anchors) {
+  // 1) anchors with href — bucketed by resolved href so two-anchor card patterns
+  // (image-link + headline-link → same URL) merge into a single item with the
+  // best title from either half and the best thumbnail from either half.
+  // Also filters out navigation/chrome anchors (tag chips, account links,
+  // footer/nav, modal dialogs) to prevent them polluting the output.
+  // Issues #5 (two-anchor) and #10 (chrome filter, figure-sibling thumb).
+  const claimedImgs = new WeakSet(); // images claimed by article-level synthesis
+  const buckets = new Map(); // href -> { anchors: [a, ...], firstAnchor: a }
+  const rawAnchors = Array.from(doc.querySelectorAll('a[href]'));
+  for (const a of rawAnchors) {
     const rawHref = a.getAttribute('href');
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue;
     const href = safeURL(rawHref, baseURL);
     if (!href) {
-      // Could not resolve — likely a relative URL with no detectable base.
-      // Track it so the UI can prompt the user for a domain.
       if (!/^https?:\/\//i.test(rawHref)) unresolvedCount++;
       continue;
     }
     if (!/^https?:/i.test(href)) continue;
+    if (isChromeAnchor(a, href)) continue; // drop nav/footer/tag/account chrome
+
+    if (!buckets.has(href)) buckets.set(href, { anchors: [], firstAnchor: a });
+    buckets.get(href).anchors.push(a);
+  }
+
+  for (const [href, bucket] of buckets) {
     if (seen.has(href)) continue;
     seen.add(href);
 
-    const title = getAnchorTitle(a) || domainOf(href);
-    let thumb = extractImageFromAnchor(a);
-    if (thumb) thumb = safeURL(thumb, baseURL) || thumb;
-    const video = extractVideoFromAnchor(a);
+    // Best title: try every anchor in the bucket; structured signals beat raw text.
+    let title = null;
+    for (const a of bucket.anchors) {
+      const t = getAnchorTitle(a);
+      if (t && !looksLikeBadTitle(t)) { title = t; break; }
+      if (t && !title) title = t; // keep as last-resort fallback
+    }
+    if (!title) title = domainOf(href);
+
+    // Best thumbnail: try each anchor's direct extraction first, then fall back
+    // to figure-sibling search on the headline anchor's nearest <article>/<li>.
+    let thumb = null;
+    for (const a of bucket.anchors) {
+      const cand = extractImageFromAnchor(a);
+      if (cand) {
+        thumb = safeURL(cand, baseURL) || cand;
+        // mark the <img> we picked so the standalone walk doesn't re-emit it
+        const innerImg = a.querySelector('img');
+        if (innerImg) claimedImgs.add(innerImg);
+        break;
+      }
+    }
+    if (!thumb) {
+      // Try figure-sibling fallback — covers Time.com and similar.
+      for (const a of bucket.anchors) {
+        const found = findFigureSiblingThumb(a, baseURL, claimedImgs);
+        if (found) {
+          thumb = found.thumb;
+          if (found.claimedEl) {
+            // claim the <img> (or every <img> inside the <picture>)
+            if (found.claimedEl.tagName === 'PICTURE') {
+              found.claimedEl.querySelectorAll('img').forEach((i) => claimedImgs.add(i));
+            } else {
+              claimedImgs.add(found.claimedEl);
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // Best video from any anchor in the bucket.
+    let video = null;
+    for (const a of bucket.anchors) {
+      const v = extractVideoFromAnchor(a);
+      if (v) { video = v; break; }
+    }
 
     const item = {
       id: uid(),
@@ -453,7 +596,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       thumbnail: thumb || null,
       video: video || null,
       domain: domainOf(href),
-      pageSection: sectionFor.get(a) || 'Other',
+      pageSection: sectionFor.get(bucket.firstAnchor) || 'Other',
     };
     item.category = classify(item);
     items.push(item);
@@ -480,7 +623,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
 
   // 2) Standalone images on the page (often used in galleries)
   // Only add ones not already attached to anchors above or synthesized from <article>
-  const standaloneImgs = Array.from(doc.querySelectorAll('img')).filter((img) => !img.closest('a[href]') && !synthesizedFromArticles.has(img));
+  const standaloneImgs = Array.from(doc.querySelectorAll('img')).filter(
+    (img) => !img.closest('a[href]') && !synthesizedFromArticles.has(img) && !claimedImgs.has(img)
+  );
   for (const img of standaloneImgs) {
     let src = img.getAttribute('src') || img.getAttribute('data-src');
     if (!src) continue;
