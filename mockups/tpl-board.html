@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Board Template (Mockup)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background: #f6f5f1;
+    color: #111;
+    font-family: var(--sans);
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
+  header.site {
+    margin-bottom: 32px;
+  }
+  .site h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .site .tagline { color: #71717a; font-size: 13px; margin-top: 2px; }
+
+  /* Per-source section */
+  .source { margin-bottom: 48px; }
+  .source-hdr {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #e5e5e0;
+  }
+  .src-name {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .src-pill {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #111;
+    color: #fff;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+  .src-count {
+    color: #71717a;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  /* Masonry */
+  .masonry {
+    column-count: 4;
+    column-gap: 14px;
+  }
+  @media (max-width: 1100px) { .masonry { column-count: 3; } }
+  @media (max-width: 768px) { .masonry { column-count: 2; column-gap: 10px; } }
+  @media (max-width: 480px) { .masonry { column-count: 1; } }
+
+  .pin {
+    break-inside: avoid;
+    margin-bottom: 14px;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .pin .thumb {
+    border-radius: 0;
+    width: 100%;
+    aspect-ratio: var(--ar, 1);
+  }
+  .pin h3 {
+    padding: 8px 10px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.005em;
+  }
+
+  @media (max-width: 768px) {
+    .wrap { padding: 16px 12px; }
+    .site h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>The Board</h1>
+    <div class="tagline">Lorem ipsum · 14 pins · 3 sources</div>
+  </header>
+
+  <!-- SOURCE A -->
+  <section class="source">
+    <div class="source-hdr">
+      <span class="src-pill">SOURCE A</span>
+      <span class="src-name">Visual Notes</span>
+      <span class="src-count">5 pins</span>
+    </div>
+    <div class="masonry">
+      <div class="pin"><div class="thumb" style="--c1:#dc2626;--c2:#f59e0b;--ar:1;">A1</div><h3>Lorem ipsum dolor sit amet</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#7c3aed;--c2:#ec4899;--ar:4/5;">A2</div><h3>Ut enim ad minim veniam</h3></div>
+      <div class="pin"><div class="thumb video" style="--c1:#1e293b;--c2:#475569;--ar:16/9;">A3</div><h3>Duis aute irure dolor</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#be185d;--c2:#f43f5e;--ar:3/4;">A4</div><h3>Sunt in culpa qui officia</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#9333ea;--c2:#06b6d4;--ar:1;">A5</div><h3>Excepteur sint occaecat</h3></div>
+    </div>
+  </section>
+
+  <!-- SOURCE B -->
+  <section class="source">
+    <div class="source-hdr">
+      <span class="src-pill">SOURCE B</span>
+      <span class="src-name">Inspiration</span>
+      <span class="src-count">4 pins</span>
+    </div>
+    <div class="masonry">
+      <div class="pin"><div class="thumb video" style="--c1:#0f172a;--c2:#1e40af;--ar:16/9;">B1</div><h3>Curabitur pretium tincidunt</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#059669;--c2:#84cc16;--ar:1;">B2</div><h3>Etiam vel neque nec dui</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#ea580c;--c2:#facc15;--ar:4/5;">B3</div><h3>Vivamus id enim viverra</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#0891b2;--c2:#10b981;--ar:3/4;">B4</div><h3>Praesent eget metus</h3></div>
+    </div>
+  </section>
+
+  <!-- SOURCE C -->
+  <section class="source">
+    <div class="source-hdr">
+      <span class="src-pill">SOURCE C</span>
+      <span class="src-name">Library</span>
+      <span class="src-count">5 pins</span>
+    </div>
+    <div class="masonry">
+      <div class="pin"><div class="thumb" style="--c1:#4f46e5;--c2:#06b6d4;--ar:3/4;">C1</div><h3>Mauris ut leo cras viverra</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#831843;--c2:#be185d;--ar:1;">C2</div><h3>Aenean vel massa quis mauris</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#365314;--c2:#65a30d;--ar:4/5;">C3</div><h3>Praesent eget metus</h3></div>
+      <div class="pin"><div class="thumb video" style="--c1:#7c2d12;--c2:#ea580c;--ar:16/9;">C4</div><h3>Cras viverra metus rhoncus</h3></div>
+      <div class="pin"><div class="thumb" style="--c1:#1e3a8a;--c2:#0ea5e9;--ar:1;">C5</div><h3>Sed sodales sagittis magna</h3></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stream Template (Mockup)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background: #fff;
+    color: #0f0f0f;
+    font-family: var(--sans);
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.site { margin-bottom: 32px; }
+  .site h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  .site .tagline {
+    color: #71717a;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  /* Sticky source pill row */
+  .source-tabs {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    padding: 12px 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    margin-bottom: 8px;
+    z-index: 10;
+  }
+  .src-tab {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #f4f4f5;
+    font-size: 13px;
+    color: #52525b;
+    font-weight: 500;
+  }
+  .src-tab.active { background: #18181b; color: #fff; }
+
+  .source-block { margin-top: 32px; }
+  .source-hdr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid #f4f4f5;
+    margin-bottom: 0;
+  }
+  .src-pill {
+    background: #18181b;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+  .src-count { color: #a1a1aa; font-size: 12px; }
+
+  .post {
+    padding: 18px 0;
+    border-bottom: 1px solid #f4f4f5;
+    display: flex;
+    gap: 16px;
+  }
+  .post-body { flex: 1; min-width: 0; }
+  .post h3 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+  .post p {
+    color: #52525b;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .post-meta {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #a1a1aa;
+    display: flex;
+    gap: 10px;
+  }
+  .post-meta .dot { color: #d4d4d8; }
+  .post-thumb {
+    flex-shrink: 0;
+    width: 120px;
+    aspect-ratio: 4 / 3;
+  }
+  .post-thumb .thumb { font-size: 18px; }
+
+  @media (max-width: 768px) {
+    .wrap { padding: 16px 16px 60px; }
+    .post-thumb { width: 90px; }
+    .post h3 { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>The Stream</h1>
+    <div class="tagline">Lorem ipsum dolor sit amet · 14 items from 3 sources</div>
+  </header>
+
+  <div class="source-tabs">
+    <div class="src-tab active">All</div>
+    <div class="src-tab">Source A</div>
+    <div class="src-tab">Source B</div>
+    <div class="src-tab">Source C</div>
+  </div>
+
+  <!-- SOURCE A -->
+  <section class="source-block">
+    <div class="source-hdr">
+      <span class="src-pill">SOURCE A</span>
+      <span class="src-count">5 items</span>
+    </div>
+    <article class="post">
+      <div class="post-body">
+        <h3>Lorem ipsum dolor sit amet consectetur adipiscing elit</h3>
+        <p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        <div class="post-meta"><span>source-a.example</span><span class="dot">·</span><span>article</span></div>
+      </div>
+      <div class="post-thumb"><div class="thumb" style="--c1:#dc2626;--c2:#f59e0b;">A1</div></div>
+    </article>
+    <article class="post">
+      <div class="post-body">
+        <h3>Ut enim ad minim veniam quis nostrud exercitation ullamco</h3>
+        <p>Laboris nisi ut aliquip ex ea commodo consequat duis aute irure.</p>
+        <div class="post-meta"><span>source-a.example</span><span class="dot">·</span><span>article</span></div>
+      </div>
+      <div class="post-thumb"><div class="thumb" style="--c1:#7c3aed;--c2:#ec4899;">A2</div></div>
+    </article>
+    <article class="post">
+      <div class="post-body">
+        <h3>Duis aute irure dolor in reprehenderit voluptate velit esse</h3>
+        <div class="post-meta"><span>source-a.example</span><span class="dot">·</span><span>video</span></div>
+      </div>
+      <div class="post-thumb"><div class="thumb video" style="--c1:#1e293b;--c2:#475569;">A3</div></div>
+    </article>
+  </section>
+
+  <!-- SOURCE B -->
+  <section class="source-block">
+    <div class="source-hdr">
+      <span class="src-pill">SOURCE B</span>
+      <span class="src-count">4 items</span>
+    </div>
+    <article class="post">
+      <div class="post-body">
+        <h3>Curabitur pretium tincidunt lacus nulla gravida orci a odio</h3>
+        <p>Nullam varius turpis et commodo pharetra est eros suscipit.</p>
+        <div class="post-meta"><span>source-b.example</span><span class="dot">·</span><span>video</span></div>
+      </div>
+      <div class="post-thumb"><div class="thumb video" style="--c1:#0f172a;--c2:#1e40af;">B1</div></div>
+    </article>
+    <article class="post">
+      <div class="post-body">
+        <h3>Etiam vel neque nec dui dignissim bibendum aliquam</h3>
+        <div class="post-meta"><span>source-b.example</span><span class="dot">·</span><span>link</span></div>
+      </div>
+      <div class="post-thumb"><div class="thumb" style="--c1:#059669;--c2:#84cc16;">B2</div></div>
+    </article>
+  </section>
+
+  <!-- SOURCE C -->
+  <section class="source-block">
+    <div class="source-hdr">
+      <span class="src-pill">SOURCE C</span>
+      <span class="src-count">5 items</span>
+    </div>
+    <article class="post">
+      <div class="post-body">
+        <h3>Mauris ut leo cras viverra metus rhoncus sem nulla mollis</h3>
+        <p>Mauris sit amet nibh donec sodales sagittis magna sed consequat.</p>
+        <div class="post-meta"><span>source-c.example</span><span class="dot">·</span><span>article</span></div>
+      </div>
+      <div class="post-thumb"><div class="thumb" style="--c1:#4f46e5;--c2:#06b6d4;">C1</div></div>
+    </article>
+    <article class="post">
+      <div class="post-body">
+        <h3>Aenean vel massa quis mauris vehicula lacinia ut sapien</h3>
+        <div class="post-meta"><span>source-c.example</span><span class="dot">·</span><span>article</span></div>
+      </div>
+      <div class="post-thumb"><div class="thumb" style="--c1:#831843;--c2:#be185d;">C2</div></div>
+    </article>
+  </section>
+</div>
+</body>
+</html>

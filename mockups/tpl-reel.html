@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reel Template (Apple TV style)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background: #000;
+    color: #f5f5f7;
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { padding: 24px 0 60px; }
+  header.site {
+    padding: 0 48px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .site h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .site nav {
+    display: flex;
+    gap: 24px;
+    font-size: 13px;
+    color: #a1a1a6;
+  }
+  .site nav a.active { color: #fff; font-weight: 500; }
+
+  /* HERO RAIL — big rotating-feel single tile */
+  .hero {
+    position: relative;
+    margin: 0 48px 40px;
+    aspect-ratio: 21 / 9;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1e1b4b, #831843 60%, #f59e0b);
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%);
+  }
+  .hero-meta {
+    position: absolute;
+    bottom: 32px;
+    left: 32px;
+    right: 32px;
+    z-index: 2;
+  }
+  .hero-src-pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(12px);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .hero h2 {
+    font-size: 42px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    max-width: 60%;
+  }
+  .hero p {
+    margin-top: 10px;
+    color: #d4d4d8;
+    font-size: 14px;
+    max-width: 50%;
+  }
+  .hero-actions { margin-top: 18px; display: flex; gap: 10px; }
+  .hero-actions .btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .hero-actions .btn.ghost { background: rgba(255,255,255,0.18); color: #fff; }
+
+  /* RAILS */
+  .rail { margin-bottom: 36px; }
+  .rail-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 48px 12px;
+  }
+  .rail-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .src-badge {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .rail-count {
+    color: #71717a;
+    font-size: 12px;
+  }
+  .rail-track {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 0 48px 8px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .rail-track::-webkit-scrollbar { display: none; }
+
+  /* Each rail has its own aspect ratio — Apple TV mixes posters, landscapes, square */
+  .tile {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .tile h4 {
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+    padding: 0 2px;
+    color: #f5f5f7;
+    letter-spacing: -0.005em;
+  }
+  .tile .sub {
+    font-size: 11px;
+    color: #71717a;
+    margin-top: 2px;
+    padding: 0 2px;
+  }
+
+  /* Aspect variants per rail */
+  .rail.landscape .tile { width: 320px; }
+  .rail.landscape .thumb { aspect-ratio: 16/9; border-radius: 8px; }
+  .rail.portrait .tile { width: 180px; }
+  .rail.portrait .thumb { aspect-ratio: 2/3; border-radius: 8px; }
+  .rail.square .tile { width: 220px; }
+  .rail.square .thumb { aspect-ratio: 1; border-radius: 8px; }
+
+  .tile .play-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.6), transparent 50%);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .tile:hover .play-overlay { opacity: 1; }
+
+  @media (max-width: 768px) {
+    header.site { padding: 0 16px 16px; }
+    .hero { margin: 0 16px 24px; }
+    .hero h2 { font-size: 24px; max-width: 100%; }
+    .hero p { max-width: 100%; font-size: 13px; }
+    .rail-head { padding: 0 16px 10px; }
+    .rail-track { padding: 0 16px 8px; }
+    .rail.landscape .tile { width: 220px; }
+    .rail.portrait .tile { width: 130px; }
+    .rail.square .tile { width: 150px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>The Reel</h1>
+    <nav>
+      <a class="active">Watch</a>
+      <a>All sources</a>
+      <a>Library</a>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-meta">
+      <span class="hero-src-pill">FROM SOURCE A</span>
+      <h2>Lorem ipsum dolor sit amet consectetur</h2>
+      <p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim.</p>
+      <div class="hero-actions">
+        <span class="btn">▶ Play</span>
+        <span class="btn ghost">+ Watchlist</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAIL 1: Source A — landscape -->
+  <div class="rail landscape">
+    <div class="rail-head">
+      <div class="rail-title"><span class="src-badge">SOURCE A</span> Featured</div>
+      <span class="rail-count">5 items</span>
+    </div>
+    <div class="rail-track">
+      <div class="tile"><div class="thumb video" style="--c1:#dc2626;--c2:#f59e0b;">A1</div><h4>Lorem ipsum dolor sit amet</h4><div class="sub">Episode 1 · 24 min</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#7c3aed;--c2:#ec4899;">A2</div><h4>Ut enim ad minim veniam</h4><div class="sub">Episode 2 · 18 min</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#1e293b;--c2:#475569;">A3</div><h4>Duis aute irure dolor</h4><div class="sub">Episode 3 · 32 min</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#be185d;--c2:#f43f5e;">A4</div><h4>Sunt in culpa qui officia</h4><div class="sub">Episode 4 · 21 min</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#9333ea;--c2:#06b6d4;">A5</div><h4>Excepteur sint occaecat</h4><div class="sub">Episode 5 · 27 min</div></div>
+    </div>
+  </div>
+
+  <!-- RAIL 2: Source B — portrait posters (mix of aspect ratios) -->
+  <div class="rail portrait">
+    <div class="rail-head">
+      <div class="rail-title"><span class="src-badge">SOURCE B</span> Series</div>
+      <span class="rail-count">4 items</span>
+    </div>
+    <div class="rail-track">
+      <div class="tile"><div class="thumb video" style="--c1:#0f172a;--c2:#1e40af;">B1</div><h4>Curabitur pretium</h4><div class="sub">Drama · 2024</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#059669;--c2:#84cc16;">B2</div><h4>Etiam vel neque</h4><div class="sub">Comedy · 2025</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#ea580c;--c2:#facc15;">B3</div><h4>Vivamus id enim</h4><div class="sub">Thriller · 2024</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#831843;--c2:#be185d;">B4</div><h4>Aenean vel massa</h4><div class="sub">Doc · 2025</div></div>
+    </div>
+  </div>
+
+  <!-- RAIL 3: Source C — square (clips/shorts) -->
+  <div class="rail square">
+    <div class="rail-head">
+      <div class="rail-title"><span class="src-badge">SOURCE C</span> Clips</div>
+      <span class="rail-count">5 items</span>
+    </div>
+    <div class="rail-track">
+      <div class="tile"><div class="thumb video" style="--c1:#4f46e5;--c2:#06b6d4;">C1</div><h4>Mauris ut leo cras</h4><div class="sub">0:45</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#831843;--c2:#be185d;">C2</div><h4>Aenean vel massa</h4><div class="sub">1:12</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#365314;--c2:#65a30d;">C3</div><h4>Praesent eget metus</h4><div class="sub">0:58</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#0891b2;--c2:#10b981;">C4</div><h4>Cras viverra</h4><div class="sub">2:04</div></div>
+      <div class="tile"><div class="thumb video" style="--c1:#7c2d12;--c2:#ea580c;">C5</div><h4>Sed sodales sagittis</h4><div class="sub">1:30</div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

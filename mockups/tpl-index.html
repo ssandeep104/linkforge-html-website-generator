@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Index Template (Notion-table style)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background: #fff;
+    color: #37352f;
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; }
+  header.site { margin-bottom: 28px; }
+  .site h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .site .tagline {
+    color: #787774;
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .meta-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #787774;
+  }
+  .meta-row .pill {
+    background: #f1f1ef;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: #37352f;
+    font-size: 12px;
+  }
+
+  .table {
+    margin-top: 24px;
+    border-top: 1px solid #e9e9e7;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 36px 1fr 140px 100px 80px;
+    gap: 0;
+    align-items: center;
+    padding: 10px 8px;
+    border-bottom: 1px solid #f0f0ee;
+    font-size: 14px;
+  }
+  .row:hover { background: #f7f7f5; }
+  .row.head {
+    color: #9b9a97;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 8px;
+    border-bottom: 1px solid #e9e9e7;
+  }
+  .row.head:hover { background: transparent; }
+  .row.group {
+    display: block;
+    color: #37352f;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: #fafafa;
+    padding: 10px 12px;
+    margin-top: 16px;
+    border-bottom: 1px solid #e9e9e7;
+  }
+  .row.group:hover { background: #fafafa; }
+  .group-count {
+    color: #9b9a97;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    margin-left: 8px;
+  }
+
+  .ico {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--c1, #6366f1), var(--c2, #06b6d4));
+    color: #fff;
+    font-size: 10px;
+    display: grid;
+    place-items: center;
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+  .title { font-weight: 500; color: #37352f; }
+  .title .url {
+    display: block;
+    color: #9b9a97;
+    font-size: 12px;
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag.article { background: #ddedea; color: #0f5e51; }
+  .tag.video { background: #fce7e6; color: #9f3a38; }
+  .tag.link { background: #ebebea; color: #555; }
+  .date { color: #9b9a97; font-size: 12px; font-family: var(--mono); }
+
+  @media (max-width: 768px) {
+    .wrap { padding: 24px 12px; }
+    .site h1 { font-size: 24px; }
+    .row { grid-template-columns: 28px 1fr 70px; gap: 8px; }
+    .row .date, .row.head .date { display: none; }
+    .row .tag-cell, .row.head .tag-cell { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>The Index</h1>
+    <div class="tagline">Lorem ipsum dolor sit amet · A bookmarked reading list</div>
+    <div class="meta-row">
+      <span class="pill">14 items</span>
+      <span class="pill">3 sources</span>
+      <span>Updated June 12, 2026</span>
+    </div>
+  </header>
+
+  <div class="table">
+    <div class="row head">
+      <div></div>
+      <div>Title</div>
+      <div class="tag-cell">Type</div>
+      <div>Source</div>
+      <div class="date">Date</div>
+    </div>
+
+    <!-- GROUP: Source A -->
+    <div class="row group">Source A <span class="group-count">5 items</span></div>
+    <div class="row">
+      <div class="ico" style="--c1:#dc2626;--c2:#f59e0b;">A1</div>
+      <div class="title">Lorem ipsum dolor sit amet consectetur<span class="url">source-a.example/post-1</span></div>
+      <div class="tag-cell"><span class="tag article">article</span></div>
+      <div>Source A</div>
+      <div class="date">Jun 10</div>
+    </div>
+    <div class="row">
+      <div class="ico" style="--c1:#7c3aed;--c2:#ec4899;">A2</div>
+      <div class="title">Ut enim ad minim veniam quis nostrud<span class="url">source-a.example/post-2</span></div>
+      <div class="tag-cell"><span class="tag article">article</span></div>
+      <div>Source A</div>
+      <div class="date">Jun 09</div>
+    </div>
+    <div class="row">
+      <div class="ico" style="--c1:#1e293b;--c2:#475569;">A3</div>
+      <div class="title">Duis aute irure dolor in reprehenderit<span class="url">source-a.example/video-3</span></div>
+      <div class="tag-cell"><span class="tag video">video</span></div>
+      <div>Source A</div>
+      <div class="date">Jun 08</div>
+    </div>
+
+    <!-- GROUP: Source B -->
+    <div class="row group">Source B <span class="group-count">4 items</span></div>
+    <div class="row">
+      <div class="ico" style="--c1:#0f172a;--c2:#1e40af;">B1</div>
+      <div class="title">Curabitur pretium tincidunt lacus<span class="url">source-b.example/v/big-1</span></div>
+      <div class="tag-cell"><span class="tag video">video</span></div>
+      <div>Source B</div>
+      <div class="date">Jun 11</div>
+    </div>
+    <div class="row">
+      <div class="ico" style="--c1:#059669;--c2:#84cc16;">B2</div>
+      <div class="title">Etiam vel neque nec dui dignissim<span class="url">source-b.example/notes</span></div>
+      <div class="tag-cell"><span class="tag link">link</span></div>
+      <div>Source B</div>
+      <div class="date">Jun 10</div>
+    </div>
+    <div class="row">
+      <div class="ico" style="--c1:#ea580c;--c2:#facc15;">B3</div>
+      <div class="title">Vivamus id enim viverra tristique<span class="url">source-b.example/article-3</span></div>
+      <div class="tag-cell"><span class="tag article">article</span></div>
+      <div>Source B</div>
+      <div class="date">Jun 09</div>
+    </div>
+
+    <!-- GROUP: Source C -->
+    <div class="row group">Source C <span class="group-count">5 items</span></div>
+    <div class="row">
+      <div class="ico" style="--c1:#4f46e5;--c2:#06b6d4;">C1</div>
+      <div class="title">Mauris ut leo cras viverra metus<span class="url">source-c.example/journal/c1</span></div>
+      <div class="tag-cell"><span class="tag article">article</span></div>
+      <div>Source C</div>
+      <div class="date">Jun 12</div>
+    </div>
+    <div class="row">
+      <div class="ico" style="--c1:#831843;--c2:#be185d;">C2</div>
+      <div class="title">Aenean vel massa quis mauris vehicula<span class="url">source-c.example/journal/c2</span></div>
+      <div class="tag-cell"><span class="tag article">article</span></div>
+      <div>Source C</div>
+      <div class="date">Jun 12</div>
+    </div>
+    <div class="row">
+      <div class="ico" style="--c1:#365314;--c2:#65a30d;">C3</div>
+      <div class="title">Praesent eget metus elementum tincidunt<span class="url">source-c.example/journal/c3</span></div>
+      <div class="tag-cell"><span class="tag link">link</span></div>
+      <div>Source C</div>
+      <div class="date">Jun 11</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -193,6 +193,22 @@ function getMetaImage(doc) {
   return null;
 }
 
+// Tier 5 fallback — generates an inline SVG data URI when no real thumbnail
+// is available. Deterministic per item (hue derived from title hash), so the
+// same title always gets the same color. Slots into the existing
+// <img src="..."> pattern in templates without any template changes.
+function syntheticPlaceholder(item) {
+  const text = (item && (item.title || item.domain)) || 'Link';
+  const letter = text.charAt(0).toUpperCase();
+  let hue = 0;
+  for (let i = 0; i < text.length; i++) hue = (hue + text.charCodeAt(i)) % 360;
+  const bg = `hsl(${hue},38%,86%)`;
+  const fg = `hsl(${hue},45%,32%)`;
+  // 400x250 matches the typical card aspect; templates scale via CSS.
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250" viewBox="0 0 400 250"><rect width="400" height="250" fill="${bg}"/><text x="200" y="158" font-size="120" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-weight="600" text-anchor="middle" fill="${fg}">${letter}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
 // Heuristic: looks like a placeholder, blank pixel, or site logo (not the real article thumb)
 function looksLikePlaceholder(url) {
   if (!url) return true;
@@ -623,41 +639,15 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     }
     if (!title) title = domainOf(href);
 
-    // Best thumbnail: try each anchor's direct extraction first, then fall back
-    // to figure-sibling search on the headline anchor's nearest <article>/<li>.
-    let thumb = null;
-    for (const a of bucket.anchors) {
-      const cand = extractImageFromAnchor(a);
-      if (cand) {
-        thumb = safeURL(cand, baseURL) || cand;
-        // mark the <img> we picked so the standalone walk doesn't re-emit it
-        const innerImg = a.querySelector('img');
-        if (innerImg) claimedImgs.add(innerImg);
-        break;
-      }
-    }
-    if (!thumb) {
-      // Try figure-sibling fallback — covers Time.com and similar.
-      for (const a of bucket.anchors) {
-        const found = findFigureSiblingThumb(a, baseURL, claimedImgs);
-        if (found) {
-          thumb = found.thumb;
-          if (found.claimedEl) {
-            // claim the <img> (or every <img> inside the <picture>)
-            if (found.claimedEl.tagName === 'PICTURE') {
-              found.claimedEl.querySelectorAll('img').forEach((i) => claimedImgs.add(i));
-            } else {
-              claimedImgs.add(found.claimedEl);
-            }
-          }
-          break;
-        }
-      }
-    }
+    // Thumbnail priority (per docs/thumbnail-and-chrome-spec.md):
+    //   Tier 1: video poster for the href (run FIRST so a real video preview
+    //           wins over an adjacent <img>, which may be a play-button icon)
+    //   Tier 2: direct <img> / <picture> / background-image / figure-sibling
+    //   Tier 3: og:image fallback (single-item only, handled later)
+    //   Tier 4: synthesized poster from URL pattern (YouTube, etc.) — later
+    //   Tier 5: deterministic SVG placeholder — later
 
-    // Best video from any anchor in the bucket. First try direct extraction
-    // (video inside the anchor), then fall back to sibling lookup which covers
-    // Reddit-style card layouts where the <video> is in a separate slot.
+    // Tier 1 — find a video first.
     let video = null;
     for (const a of bucket.anchors) {
       const v = extractVideoFromAnchor(a);
@@ -672,6 +662,44 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
             claimedVideos.add(found.claimedEl);
             // also claim every <source> child so source-level dedup works
             found.claimedEl.querySelectorAll?.('source').forEach((s) => claimedVideos.add(s));
+          }
+          break;
+        }
+      }
+    }
+
+    let thumb = null;
+    // Promote video.poster to the thumbnail immediately if we found one.
+    if (video && video.poster) {
+      thumb = safeURL(video.poster, baseURL) || video.poster;
+    }
+
+    // Tier 2 — direct image inside / adjacent to the anchor.
+    if (!thumb) {
+      for (const a of bucket.anchors) {
+        const cand = extractImageFromAnchor(a);
+        if (cand) {
+          thumb = safeURL(cand, baseURL) || cand;
+          // mark the <img> we picked so the standalone walk doesn't re-emit it
+          const innerImg = a.querySelector('img');
+          if (innerImg) claimedImgs.add(innerImg);
+          break;
+        }
+      }
+    }
+    if (!thumb) {
+      // figure-sibling fallback — covers Time.com and similar.
+      for (const a of bucket.anchors) {
+        const found = findFigureSiblingThumb(a, baseURL, claimedImgs);
+        if (found) {
+          thumb = found.thumb;
+          if (found.claimedEl) {
+            // claim the <img> (or every <img> inside the <picture>)
+            if (found.claimedEl.tagName === 'PICTURE') {
+              found.claimedEl.querySelectorAll('img').forEach((i) => claimedImgs.add(i));
+            } else {
+              claimedImgs.add(found.claimedEl);
+            }
           }
           break;
         }
@@ -772,13 +800,19 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     articlesWithoutThumb[0].category = 'article';
   }
 
-  // Reclassify items now that thumbs are settled, and synthesize video posters
+  // Reclassify items now that thumbs are settled, and synthesize video posters.
   for (const it of items) {
+    // Tier 4 — synthesize from known URL patterns when no real thumb yet.
     if (it.category === 'video' && !it.thumbnail) {
       const yt = youtubeId(it.href) || (it.video?.src ? youtubeId(it.video.src) : null);
       if (yt) it.thumbnail = `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`;
-      const vi = vimeoId(it.href) || (it.video?.src ? vimeoId(it.video.src) : null);
-      if (vi) it.thumbnail = null; // vimeo needs API; leave blank, will render styled card
+      // Vimeo needs an API — fall through to Tier 5 below.
+    }
+    // Tier 5 — deterministic SVG placeholder for anything still without an image.
+    // Skip standalone gallery items where href === thumbnail (those are pure images).
+    if (!it.thumbnail && it.href !== it.video?.src) {
+      it.thumbnail = syntheticPlaceholder(it);
+      it.thumbnailIsPlaceholder = true; // templates can choose to style differently
     }
     // re-run classify in case thumbnails changed
     it.category = classify(it);
@@ -1471,11 +1505,33 @@ function buildGeneratedSite() {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
 
+  // Group enabled items by source name, preserving the order sources were added.
+  // Also classify each item's media shape so templates (e.g. Reel) can pick rails.
+  const bySource = [];
+  const sourceIndex = new Map();
+  for (const src of state.sources) {
+    if (!sourceIndex.has(src.name)) {
+      sourceIndex.set(src.name, bySource.length);
+      bySource.push({ name: src.name, items: [] });
+    }
+  }
+  for (const it of enabled) {
+    const key = it.sourceName || 'Unsourced';
+    if (!sourceIndex.has(key)) {
+      sourceIndex.set(key, bySource.length);
+      bySource.push({ name: key, items: [] });
+    }
+    bySource[sourceIndex.get(key)].items.push(it);
+  }
+  // Drop empty source groups
+  const sourceGroups = bySource.filter((g) => g.items.length > 0);
+
   const ctx = {
     title: state.site.title,
     tagline: state.site.tagline,
     articles, videos, gallery, links,
     all: enabled,
+    sourceGroups,
     today,
   };
 
@@ -2054,45 +2110,45 @@ function loadSample() {
     name: 'Daily Times — homepage',
     html: `<!doctype html><html>
       <head>
-        <meta property="og:url" content="https://example-news.com/" />
-        <meta property="og:image" content="https://example-news.com/logo.png" />
+        <meta property="og:url" content="https://signal.dev/" />
+        <meta property="og:image" content="https://signal.dev/logo.png" />
       </head>
       <body>
         <section id="top-news" aria-label="Top News">
           <h2>Top News</h2>
-          <a href="https://example-news.com/the-quiet-rise-of-small-towns">
-            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1518002171953-a080ee817e1f?w=800" alt="Sunset over a small town" />
+          <a href="https://signal.dev/the-quiet-rise-of-small-towns">
+            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1518002171953-a080ee817e1f?w=800" alt="Sunset over a small town" />
             <h3>The quiet rise of America's smallest towns</h3>
           </a>
-          <a href="https://example-news.com/inside-the-new-space-race">
-            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800" alt="Rocket launch at night" />
+          <a href="https://signal.dev/inside-the-new-space-race">
+            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800" alt="Rocket launch at night" />
             <h3>Inside the new space race — and who's actually winning</h3>
           </a>
-          <a href="https://example-news.com/coffee-and-the-modern-morning">
-            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800" alt="Pour over coffee" />
+          <a href="https://signal.dev/coffee-and-the-modern-morning">
+            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800" alt="Pour over coffee" />
             <h3>What our morning coffee says about the way we live now</h3>
           </a>
         </section>
 
         <section id="sports" aria-label="Sports">
           <h2>Sports</h2>
-          <a href="https://example-news.com/sports/champions-league-final">
-            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=800" alt="Soccer stadium" />
+          <a href="https://signal.dev/sports/champions-league-final">
+            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=800" alt="Soccer stadium" />
             <h3>The Champions League final — what to watch for</h3>
           </a>
-          <a href="https://example-news.com/sports/grand-slam-preview">
-            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800" alt="Tennis court" />
+          <a href="https://signal.dev/sports/grand-slam-preview">
+            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800" alt="Tennis court" />
             <h3>Grand Slam preview: five storylines to follow</h3>
           </a>
-          <a href="https://example-news.com/sports/marathon-records">
+          <a href="https://signal.dev/sports/marathon-records">
             Why marathon records keep falling
           </a>
         </section>
 
         <section id="entertainment" aria-label="Entertainment">
           <h2>Entertainment</h2>
-          <a href="https://example-news.com/entertainment/summer-blockbusters">
-            <img src="https://example-news.com/logo.png" data-src="https://images.unsplash.com/photo-1489599735188-900a0c1316dd?w=800" alt="Cinema seats" />
+          <a href="https://signal.dev/entertainment/summer-blockbusters">
+            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1489599735188-900a0c1316dd?w=800" alt="Cinema seats" />
             <h3>Summer blockbuster season: the films to watch</h3>
           </a>
           <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
@@ -2105,9 +2161,9 @@ function loadSample() {
 
         <section id="opinion" aria-label="Opinion">
           <h2>Opinion</h2>
-          <a href="https://example-news.com/opinion/why-cities-still-matter">Why cities still matter</a>
-          <a href="https://example-news.com/opinion/the-quiet-power-of-public-libraries">The quiet power of public libraries</a>
-          <a href="https://example-news.com/opinion/saturday-mail">Saturday Mail: readers respond</a>
+          <a href="https://signal.dev/opinion/why-cities-still-matter">Why cities still matter</a>
+          <a href="https://signal.dev/opinion/the-quiet-power-of-public-libraries">The quiet power of public libraries</a>
+          <a href="https://signal.dev/opinion/saturday-mail">Saturday Mail: readers respond</a>
         </section>
       </body>
     </html>`,

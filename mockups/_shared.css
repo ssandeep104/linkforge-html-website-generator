@@ -1,0 +1,36 @@
+/* Shared tokens — but each template overrides per its own personality */
+:root {
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --serif: "Iowan Old Style", "Iowan", Georgia, "Times New Roman", serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; border: none; background: none; }
+
+/* Reusable "fake thumbnail" — a colored gradient block w/ a letter, so we don't need real images */
+.thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--c1, #6366f1), var(--c2, #06b6d4));
+  display: grid;
+  place-items: center;
+  color: rgba(255,255,255,0.65);
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+}
+.thumb.video::after {
+  content: "▶";
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.85);
+}

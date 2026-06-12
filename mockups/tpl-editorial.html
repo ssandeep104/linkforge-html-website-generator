@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Editorial Template (Mockup)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background: #fafaf7;
+    color: #1a1a1a;
+    font-family: var(--serif);
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 32px; }
+  header.site {
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 20px;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+  .site h1 {
+    font-size: 48px;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+  }
+  .site .tagline {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #6b6b6b;
+    margin-top: 8px;
+  }
+
+  /* Source section */
+  .source {
+    margin-bottom: 56px;
+  }
+  .source-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid #1a1a1a;
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+  }
+  .source-name {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .source-count {
+    font-family: var(--sans);
+    font-size: 11px;
+    color: #6b6b6b;
+    letter-spacing: 0.08em;
+  }
+
+  /* Editorial grid: first item large, rest in 3-col */
+  .grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 24px;
+  }
+  .grid .lead {
+    grid-row: span 2;
+  }
+  .card .thumb { aspect-ratio: 4 / 3; border-radius: 0; margin-bottom: 12px; }
+  .lead .thumb { aspect-ratio: 16 / 9; }
+  .card h3 {
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+  }
+  .card.lead h3 { font-size: 32px; }
+  .card.small h3 { font-size: 16px; }
+  .card p {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: #555;
+    margin-top: 6px;
+  }
+
+  @media (max-width: 768px) {
+    .wrap { padding: 24px 16px; }
+    .site h1 { font-size: 32px; }
+    .grid { grid-template-columns: 1fr; }
+    .grid .lead { grid-row: auto; }
+    .card.lead h3 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>The Linkforge Editorial</h1>
+    <div class="tagline">A digest · Lorem ipsum dolor sit amet</div>
+  </header>
+
+  <!-- SOURCE A -->
+  <section class="source">
+    <div class="source-head">
+      <div class="source-name">Source A</div>
+      <div class="source-count">4 items</div>
+    </div>
+    <div class="grid">
+      <article class="card lead">
+        <div class="thumb" style="--c1:#dc2626;--c2:#f59e0b;">A1</div>
+        <h3>Lorem ipsum dolor sit amet consectetur adipiscing elit</h3>
+        <p>Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+      </article>
+      <article class="card small">
+        <div class="thumb" style="--c1:#7c3aed;--c2:#ec4899;">A2</div>
+        <h3>Ut enim ad minim veniam quis nostrud exercitation</h3>
+      </article>
+      <article class="card small">
+        <div class="thumb" style="--c1:#0891b2;--c2:#10b981;">A3</div>
+        <h3>Duis aute irure dolor in reprehenderit in voluptate</h3>
+      </article>
+      <article class="card small">
+        <div class="thumb video" style="--c1:#1e293b;--c2:#475569;">A4</div>
+        <h3>Excepteur sint occaecat cupidatat non proident</h3>
+      </article>
+      <article class="card small">
+        <div class="thumb" style="--c1:#be185d;--c2:#f43f5e;">A5</div>
+        <h3>Sunt in culpa qui officia deserunt mollit anim id est</h3>
+      </article>
+    </div>
+  </section>
+
+  <!-- SOURCE B -->
+  <section class="source">
+    <div class="source-head">
+      <div class="source-name">Source B</div>
+      <div class="source-count">3 items</div>
+    </div>
+    <div class="grid">
+      <article class="card lead">
+        <div class="thumb video" style="--c1:#0f172a;--c2:#1e40af;">B1</div>
+        <h3>Curabitur pretium tincidunt lacus nulla gravida orci a odio</h3>
+        <p>Nullam varius turpis et commodo pharetra est eros suscipit.</p>
+      </article>
+      <article class="card small">
+        <div class="thumb" style="--c1:#059669;--c2:#84cc16;">B2</div>
+        <h3>Etiam vel neque nec dui dignissim bibendum</h3>
+      </article>
+      <article class="card small">
+        <div class="thumb" style="--c1:#ea580c;--c2:#facc15;">B3</div>
+        <h3>Vivamus id enim viverra tristique senectus et netus</h3>
+      </article>
+    </div>
+  </section>
+
+  <!-- SOURCE C -->
+  <section class="source">
+    <div class="source-head">
+      <div class="source-name">Source C</div>
+      <div class="source-count">3 items</div>
+    </div>
+    <div class="grid">
+      <article class="card lead">
+        <div class="thumb" style="--c1:#4f46e5;--c2:#06b6d4;">C1</div>
+        <h3>Mauris ut leo cras viverra metus rhoncus sem nulla mollis</h3>
+        <p>Mauris sit amet nibh donec sodales sagittis magna sed consequat.</p>
+      </article>
+      <article class="card small">
+        <div class="thumb" style="--c1:#831843;--c2:#be185d;">C2</div>
+        <h3>Aenean vel massa quis mauris vehicula lacinia</h3>
+      </article>
+      <article class="card small">
+        <div class="thumb" style="--c1:#365314;--c2:#65a30d;">C3</div>
+        <h3>Praesent eget metus elementum tincidunt nibh</h3>
+      </article>
+    </div>
+  </section>
+</div>
+</body>
+</html>

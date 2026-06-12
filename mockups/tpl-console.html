@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console Template (Terminal/IDE style)</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+  body {
+    background: #0b0d10;
+    color: #c6c8cc;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  header.site {
+    border-bottom: 1px solid #1f2228;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .site h1 {
+    color: #e6e6e7;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    font-family: var(--sans);
+  }
+  .site .meta {
+    margin-top: 6px;
+    color: #6a7077;
+    font-size: 12px;
+  }
+  .site .meta .accent { color: #61dafb; }
+
+  /* Source as commented-out section header */
+  .group { margin-bottom: 28px; }
+  .group-comment {
+    color: #5c6370;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .group-comment .tag {
+    color: #98c379;
+  }
+  .group-comment .count {
+    color: #d19a66;
+  }
+
+  .items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .item {
+    background: #11141a;
+    border: 1px solid #1f2228;
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    transition: background .12s, border-color .12s;
+  }
+  .item:hover {
+    background: #161a21;
+    border-color: #2c3340;
+  }
+  .item .thumb {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    font-size: 14px;
+    aspect-ratio: auto;
+  }
+  .item .body { min-width: 0; flex: 1; }
+  .item h3 {
+    color: #e6e6e7;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    font-family: var(--sans);
+    letter-spacing: -0.005em;
+    margin-bottom: 4px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .item .url {
+    color: #61dafb;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item .kind {
+    color: #c678dd;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+  .item .kind.video { color: #e06c75; }
+  .item .kind.link { color: #d19a66; }
+
+  /* Status bar */
+  .statusbar {
+    margin-top: 40px;
+    padding-top: 12px;
+    border-top: 1px solid #1f2228;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #5c6370;
+  }
+  .statusbar .left { display: flex; gap: 16px; }
+  .statusbar .dot { color: #98c379; }
+
+  @media (max-width: 900px) { .items { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) {
+    .wrap { padding: 16px; }
+    .items { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>~/the-console</h1>
+    <div class="meta">
+      <span>// 14 items · 3 sources · built </span><span class="accent">$ linkforge --template console</span>
+    </div>
+  </header>
+
+  <!-- SOURCE A -->
+  <section class="group">
+    <div class="group-comment">// <span class="tag">source-a</span> <span class="count">[5 items]</span> ────────────────────────────────────────────</div>
+    <div class="items">
+      <div class="item">
+        <div class="thumb" style="--c1:#dc2626;--c2:#f59e0b;">A1</div>
+        <div class="body">
+          <h3>Lorem ipsum dolor sit amet consectetur adipiscing elit</h3>
+          <div class="url">source-a.example/post-1</div>
+          <div class="kind">article</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb" style="--c1:#7c3aed;--c2:#ec4899;">A2</div>
+        <div class="body">
+          <h3>Ut enim ad minim veniam quis nostrud exercitation ullamco</h3>
+          <div class="url">source-a.example/post-2</div>
+          <div class="kind">article</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb video" style="--c1:#1e293b;--c2:#475569;">A3</div>
+        <div class="body">
+          <h3>Duis aute irure dolor in reprehenderit in voluptate velit</h3>
+          <div class="url">source-a.example/v/3</div>
+          <div class="kind video">video</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb" style="--c1:#be185d;--c2:#f43f5e;">A4</div>
+        <div class="body">
+          <h3>Sunt in culpa qui officia deserunt mollit anim id est</h3>
+          <div class="url">source-a.example/post-4</div>
+          <div class="kind">article</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb" style="--c1:#9333ea;--c2:#06b6d4;">A5</div>
+        <div class="body">
+          <h3>Excepteur sint occaecat cupidatat non proident</h3>
+          <div class="url">source-a.example/notes</div>
+          <div class="kind link">link</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOURCE B -->
+  <section class="group">
+    <div class="group-comment">// <span class="tag">source-b</span> <span class="count">[4 items]</span> ────────────────────────────────────────────</div>
+    <div class="items">
+      <div class="item">
+        <div class="thumb video" style="--c1:#0f172a;--c2:#1e40af;">B1</div>
+        <div class="body">
+          <h3>Curabitur pretium tincidunt lacus nulla gravida orci a odio</h3>
+          <div class="url">source-b.example/v/big-1</div>
+          <div class="kind video">video</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb" style="--c1:#059669;--c2:#84cc16;">B2</div>
+        <div class="body">
+          <h3>Etiam vel neque nec dui dignissim bibendum aliquam</h3>
+          <div class="url">source-b.example/notes</div>
+          <div class="kind link">link</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb" style="--c1:#ea580c;--c2:#facc15;">B3</div>
+        <div class="body">
+          <h3>Vivamus id enim viverra tristique senectus et netus</h3>
+          <div class="url">source-b.example/article-3</div>
+          <div class="kind">article</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOURCE C -->
+  <section class="group">
+    <div class="group-comment">// <span class="tag">source-c</span> <span class="count">[5 items]</span> ────────────────────────────────────────────</div>
+    <div class="items">
+      <div class="item">
+        <div class="thumb" style="--c1:#4f46e5;--c2:#06b6d4;">C1</div>
+        <div class="body">
+          <h3>Mauris ut leo cras viverra metus rhoncus sem nulla mollis</h3>
+          <div class="url">source-c.example/journal/c1</div>
+          <div class="kind">article</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb" style="--c1:#831843;--c2:#be185d;">C2</div>
+        <div class="body">
+          <h3>Aenean vel massa quis mauris vehicula lacinia ut sapien</h3>
+          <div class="url">source-c.example/journal/c2</div>
+          <div class="kind">article</div>
+        </div>
+      </div>
+      <div class="item">
+        <div class="thumb" style="--c1:#365314;--c2:#65a30d;">C3</div>
+        <div class="body">
+          <h3>Praesent eget metus elementum tincidunt nibh</h3>
+          <div class="url">source-c.example/journal/c3</div>
+          <div class="kind link">link</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="statusbar">
+    <div class="left">
+      <span class="dot">●</span> ready
+      <span>14 items</span>
+      <span>3 sources</span>
+    </div>
+    <div>linkforge v0.4</div>
+  </div>
+</div>
+</body>
+</html>

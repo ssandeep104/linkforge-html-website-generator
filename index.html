@@ -3,16 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Linkforge — Build a beautiful news site from any HTML</title>
+    <title>Linkforge — paste HTML, get a site built from links</title>
     <meta
       name="description"
-      content="Paste HTML from any site. Linkforge extracts every link, thumbnail, and video preview, then bundles them into a beautiful aggregated reading experience."
+      content="Linkforge extracts every link, thumbnail, and video preview from any HTML and renders it into one of six tech-tool layouts. Client-side, source-grouped, zero backend."
     />
-    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-    <link
-      href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=gambarino@400&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="./style.css" />
     <link
       rel="icon"
@@ -54,15 +51,13 @@
       </header>
 
       <section class="hero">
-        <p class="eyebrow">A two-step generator</p>
+        <p class="eyebrow">// link extractor → site generator</p>
         <h1 class="display">
-          Turn any pile of HTML into a
-          <em>site of your own.</em>
+          Paste HTML. Get a
+          <em>site built from links.</em>
         </h1>
         <p class="lede">
-          Paste HTML from any websites — news, research, photography, video, your
-          own bookmarks. Linkforge pulls out every link, thumbnail, and preview, then
-          lets you choose how it should look.
+          Drop HTML from any source — news, research, video, photography, your own bookmarks. Linkforge pulls every link, thumbnail, and preview, then renders it into one of six layouts. Client-side, no backend.
         </p>
       </section>
 
@@ -132,27 +127,24 @@
 
       <section class="how">
         <div class="how__item">
-          <span class="how__num">01</span>
-          <h3>Paste or upload</h3>
+          <span class="how__num">01 / INPUT</span>
+          <h3>Paste or upload HTML</h3>
           <p>
-            Drop in raw HTML from any news, blog, or video site. Add as many
-            sources as you want.
+            Drop raw HTML from any site. Add as many sources as you want — Linkforge keeps them grouped end-to-end.
           </p>
         </div>
         <div class="how__item">
-          <span class="how__num">02</span>
-          <h3>Review &amp; refine</h3>
+          <span class="how__num">02 / REVIEW</span>
+          <h3>Pick the layout</h3>
           <p>
-            See every extracted link, thumbnail, and video card. Drop the
-            duds, keep the gems.
+            Untick the duds. Choose one of six templates — editorial, stream, reel, console, wall, timeline. Source grouping is preserved.
           </p>
         </div>
         <div class="how__item">
-          <span class="how__num">03</span>
-          <h3>Publish</h3>
+          <span class="how__num">03 / SHIP</span>
+          <h3>Download or publish</h3>
           <p>
-            Generate a standalone HTML file you can host anywhere. No backend.
-            No tracking.
+            Export standalone HTML or push to a `*.vercel.app` URL with one click. No tracking, no backend, no lock-in.
           </p>
         </div>
       </section>
