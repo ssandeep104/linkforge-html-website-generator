@@ -1,0 +1,10 @@
+{
+  "name": "linkforge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Client-side HTML aggregator. Serverless /api/publish handler for Vercel deploys.",
+  "type": "module",
+  "engines": {
+    "node": "20.x"
+  }
+}

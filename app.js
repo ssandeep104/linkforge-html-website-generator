@@ -1907,6 +1907,95 @@ $('#btn-parse').addEventListener('click', gotoReview);
 $('#btn-generate').addEventListener('click', gotoOutput);
 $('#btn-download').addEventListener('click', downloadHtml);
 
+// ---------- Publish to Vercel ----------
+// Opens the modal pre-filled with a slug derived from the page title, then
+// POSTs the generated HTML + slug to /api/publish, which is a Node serverless
+// function on this same Vercel deployment that handles the Vercel REST API
+// call server-side (so we never expose VERCEL_TOKEN to the browser).
+function slugFromTitle(t) {
+  return String(t || 'site')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 52) || 'site';
+}
+
+function openPublishModal() {
+  const modal = $('#publish-modal');
+  const input = $('#publish-slug');
+  const preview = $('#publish-url-preview');
+  const status = $('#publish-status');
+  const slug = slugFromTitle(state.site.title);
+  input.value = slug;
+  preview.textContent = `linkforge-${slug}.vercel.app`;
+  status.hidden = true;
+  status.removeAttribute('data-state');
+  status.textContent = '';
+  modal.hidden = false;
+  setTimeout(() => input.focus(), 30);
+}
+
+function closePublishModal() {
+  $('#publish-modal').hidden = true;
+}
+
+function updatePublishPreview() {
+  const raw = $('#publish-slug').value;
+  const cleaned = slugFromTitle(raw);
+  $('#publish-url-preview').textContent = `linkforge-${cleaned || 'site'}.vercel.app`;
+}
+
+async function doPublish() {
+  const btn = $('#publish-confirm');
+  const status = $('#publish-status');
+  const slug = slugFromTitle($('#publish-slug').value);
+  if (!slug) {
+    status.hidden = false;
+    status.dataset.state = 'error';
+    status.textContent = 'Please enter a slug.';
+    return;
+  }
+  const html = $('#preview-frame')._html || buildGeneratedSite();
+  btn.disabled = true;
+  btn.textContent = 'Publishing\u2026';
+  status.hidden = false;
+  status.removeAttribute('data-state');
+  status.textContent = 'Uploading to Vercel\u2026';
+  try {
+    const resp = await fetch('/api/publish', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ slug, html }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) {
+      const detail = (data && (data.error || data.detail)) || `HTTP ${resp.status}`;
+      throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    }
+    status.dataset.state = 'success';
+    status.innerHTML = `Live at <a href="${data.url}" target="_blank" rel="noopener">${data.url}</a> (state: ${data.state || 'ready'}). Initial DNS may take ~30s.`;
+    showToast('Published to ' + data.url);
+  } catch (err) {
+    status.dataset.state = 'error';
+    status.textContent = 'Publish failed: ' + (err && err.message ? err.message : err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Publish';
+  }
+}
+
+$('#btn-publish-vercel').addEventListener('click', openPublishModal);
+$('#publish-confirm').addEventListener('click', doPublish);
+$('#publish-slug').addEventListener('input', updatePublishPreview);
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-publish-close]')) closePublishModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#publish-modal').hidden) closePublishModal();
+});
+
 // file upload
 // If the first source is empty, fill it with the first uploaded file instead
 // of appending a new card. (Otherwise users see Source 1 sit empty while their

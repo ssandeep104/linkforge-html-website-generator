@@ -1,0 +1,8 @@
+# Tests and screenshots — not needed for the live editor
+tests/
+assets/
+.github/
+.git/
+.nojekyll
+*.md
+!README.md

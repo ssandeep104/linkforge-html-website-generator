@@ -348,6 +348,18 @@
             </svg>
             Download HTML
           </button>
+          <button class="btn btn--ghost btn--sm" type="button" id="btn-publish-vercel" title="Publish to a public URL">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 2L2 20h20L12 2z" />
+            </svg>
+            Publish to Vercel
+          </button>
           <button
             class="icon-btn"
             data-theme-toggle
@@ -356,6 +368,27 @@
           ></button>
         </div>
       </header>
+
+      <!-- Publish-to-Vercel dialog -->
+      <div id="publish-modal" class="publish-modal" hidden role="dialog" aria-modal="true" aria-labelledby="publish-modal-title">
+        <div class="publish-modal__backdrop" data-publish-close></div>
+        <div class="publish-modal__panel">
+          <h2 class="publish-modal__title" id="publish-modal-title">Publish to Vercel</h2>
+          <p class="publish-modal__desc">Your page will be live at <code id="publish-url-preview">linkforge-….vercel.app</code></p>
+          <label class="publish-modal__label" for="publish-slug">URL slug</label>
+          <div class="publish-modal__slug-row">
+            <span class="publish-modal__prefix">linkforge-</span>
+            <input type="text" id="publish-slug" class="publish-modal__input" autocomplete="off" spellcheck="false" />
+            <span class="publish-modal__suffix">.vercel.app</span>
+          </div>
+          <p class="publish-modal__hint">Lowercase letters, numbers, and dashes only. Re-using a slug overwrites the previous deploy.</p>
+          <div class="publish-modal__actions">
+            <button type="button" class="btn btn--ghost btn--sm" data-publish-close>Cancel</button>
+            <button type="button" class="btn btn--primary btn--sm" id="publish-confirm">Publish</button>
+          </div>
+          <div class="publish-modal__status" id="publish-status" hidden></div>
+        </div>
+      </div>
 
       <div class="preview-frame-wrap">
         <iframe
