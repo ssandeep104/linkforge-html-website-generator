@@ -102,13 +102,33 @@ export default async function handler(req, res) {
     return bad(res, 502, 'vercel deploy failed', dep.body || dep.raw);
   }
 
-  // Pick the production-style URL: prefer the project's public alias
-  // (<project>.vercel.app); fall back to the per-deployment URL.
-  const aliases = (dep.body && (dep.body.alias || dep.body.aliasAssignedAt && dep.body.alias)) || [];
+  // Pro-plan default puts SSO protection on every new project, which would
+  // 401 any visitor without a Vercel login. Strip it so published pages are
+  // genuinely public. Failure here is non-fatal — the deployment still
+  // exists; we just warn in the response.
+  let protectionRemoved = true;
+  let protectionWarning = null;
+  try {
+    const patch = await vercelFetch(`/v9/projects/${projectName}`, token, teamId, {
+      method: 'PATCH',
+      body: JSON.stringify({ ssoProtection: null, passwordProtection: null }),
+    });
+    if (!patch.ok) {
+      protectionRemoved = false;
+      protectionWarning = `could not disable SSO protection (${patch.status}); page may require Vercel login`;
+    }
+  } catch (e) {
+    protectionRemoved = false;
+    protectionWarning = `protection-removal request failed: ${e.message}`;
+  }
+
+  // Pick the public URL. Vercel always serves <project>.vercel.app for the
+  // project's production deployment (e.g. linkforge-myslug.vercel.app), but
+  // the v13/deployments response only lists the team-suffixed long alias
+  // initially — the short alias is added asynchronously. We construct the
+  // canonical short URL deterministically; it goes live within a few seconds.
   const directUrl = dep.body?.url ? `https://${dep.body.url}` : null;
-  const publicAlias = aliases && aliases.length
-    ? `https://${aliases[0]}`
-    : `https://${projectName}.vercel.app`;
+  const publicAlias = `https://${projectName}.vercel.app`;
 
   res.statusCode = 200;
   res.setHeader('content-type', 'application/json');
@@ -120,6 +140,8 @@ export default async function handler(req, res) {
     url: publicAlias,
     deploymentUrl: directUrl,
     state: dep.body?.readyState || dep.body?.status || 'QUEUED',
+    protectionRemoved,
+    warning: protectionWarning,
   }));
 }
 
