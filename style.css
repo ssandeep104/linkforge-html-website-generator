@@ -1559,128 +1559,10 @@ a:hover {
   font-weight: 500;
 }
 
-/* ===================================================
- * Publish-to-Vercel modal (added with Vercel migration)
- * =================================================== */
-.publish-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.publish-modal[hidden] { display: none; }
-.publish-modal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(20, 18, 14, 0.55);
-  backdrop-filter: blur(3px);
-}
-.publish-modal__panel {
-  position: relative;
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 28px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
-}
-.publish-modal__title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px;
-  letter-spacing: -0.01em;
-}
-.publish-modal__desc {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin: 0 0 18px;
-}
-.publish-modal__desc code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  background: var(--color-surface-offset);
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: var(--color-text);
-}
-.publish-modal__label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
-  margin: 0 0 6px;
-}
-.publish-modal__slug-row {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--color-surface);
-}
-.publish-modal__prefix,
-.publish-modal__suffix {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 10px;
-  font-size: 13px;
-  color: var(--color-text-muted);
-  background: var(--color-surface-offset);
-  white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.publish-modal__input {
-  flex: 1;
-  border: none;
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  outline: none;
-  min-width: 0;
-}
-.publish-modal__input:focus { background: var(--color-surface); }
-.publish-modal__hint {
-  font-size: 12px;
-  color: var(--color-text-faint);
-  margin: 8px 0 20px;
-}
-.publish-modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.publish-modal__status {
-  margin-top: 16px;
-  padding: 10px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  word-break: break-all;
-}
-.publish-modal__status[data-state="success"] {
-  border-color: #16a34a;
-  background: rgba(22, 163, 74, 0.08);
-}
-.publish-modal__status[data-state="error"] {
-  border-color: #dc2626;
-  background: rgba(220, 38, 38, 0.08);
-}
-.publish-modal__status a {
-  color: var(--color-text);
-  font-weight: 600;
-  text-decoration: underline;
-}
+/* =====================================================
+   Publish-to-Vercel modal styles were removed alongside
+   the feature itself — see app.js for rationale.
+   ===================================================== */
 
 /* =====================================================
    TECHIE REDESIGN — Linear/Vercel/Raycast vibe override
@@ -2246,44 +2128,6 @@ body {
 
 #preview-frame {
   background: #fff; /* generated sites set their own colors */
-}
-
-/* ---------- publish modal ---------- */
-.publish-modal__panel {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-lg);
-}
-
-.publish-modal__title {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: var(--text-lg);
-  letter-spacing: -0.02em;
-  color: var(--color-text);
-}
-
-.publish-modal__desc code,
-.publish-modal__prefix,
-.publish-modal__suffix {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.publish-modal__input {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-}
-
-.publish-modal__input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 /* ---------- toast ---------- */
