@@ -420,33 +420,72 @@ function looksLikeBadTitle(t) {
   if (!s) return true;
   if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return true; // duration
   if (/^\d+(\.\d+)?[KMB]?(\s*(views|likes|comments))?$/i.test(s)) return true; // play count
+  if (looksLikeCode(s)) return true; // inline <script>/onerror handler bleeding through textContent
   return false;
+}
+
+// ---------- code-leak detector ----------
+// CNN and other news sites embed inline <script> blocks (image onerror
+// handlers, lazy-load shims) inside <article>/<figure>/<a>. The browser's
+// .textContent walks through *all* descendants including <script>, so the
+// raw JS source bleeds into anchor / headline text. Detect a string that
+// looks like source code so we can fall back to a safer title candidate.
+function looksLikeCode(s) {
+  if (!s || s.length < 30) return false;
+  // Strong programming-language signals
+  if (/\bfunction\s*\w*\s*\(/.test(s)) return true;
+  if (/=>\s*\{/.test(s)) return true;
+  if (/\bvar\s|\blet\s|\bconst\s/.test(s) && /[=;{}]/.test(s)) return true;
+  if (/document\.(getElementById|querySelector|createElement)/.test(s)) return true;
+  if (/\.(removeAttribute|setAttribute|appendChild|addEventListener)\s*\(/.test(s)) return true;
+  // Punctuation-density heuristic: real prose has very few of ;{}=()
+  const codeChars = (s.match(/[;{}=()]/g) || []).length;
+  const ratio = codeChars / s.length;
+  if (s.length > 80 && ratio > 0.08) return true;
+  return false;
+}
+
+// ---------- visible text extractor ----------
+// Like .textContent, but strips <script>/<style>/<noscript>/<template>
+// descendants first. Required because some sites (CNN, MSN, etc.) embed
+// inline JS inside <article>/<figure>/<a>, and .textContent walks through
+// <script> too — so the raw JS source bleeds into titles.
+function visibleText(el) {
+  if (!el) return '';
+  const clone = el.cloneNode(true);
+  for (const bad of clone.querySelectorAll('script, style, noscript, template')) {
+    bad.remove();
+  }
+  return clone.textContent.replace(/\s+/g, ' ').trim();
 }
 
 function getAnchorTitle(a) {
   // Order of preference: aria-label → title attr → nested heading → textContent
   // → [class*="title"] descendant → img alt. Each candidate is filtered by
   // looksLikeBadTitle() (#6) so a video tile labelled only "1:23" or "4.5K
-  // views" falls through to a real headline if one exists.
+  // views" falls through to a real headline if one exists. textContent paths
+  // use visibleText() to strip <script>/<style>/<noscript> first — otherwise
+  // inline JS (CNN onerror handlers) bleeds into the title.
   const aria = a.getAttribute('aria-label');
   if (aria?.trim() && !looksLikeBadTitle(aria)) return aria.trim();
   const ttl = a.getAttribute('title');
   if (ttl?.trim() && !looksLikeBadTitle(ttl)) return ttl.trim();
   const heading = a.querySelector('h1, h2, h3, h4, h5, h6');
-  const headingText = heading?.textContent.trim();
+  const headingText = visibleText(heading);
   if (headingText && !looksLikeBadTitle(headingText)) return headingText;
-  const text = a.textContent.replace(/\s+/g, ' ').trim();
+  const text = visibleText(a);
   if (text && text.length > 2 && !looksLikeBadTitle(text)) return text;
   const titleEl = a.querySelector('[class*="title" i], [class*="headline" i]');
-  const titleElText = titleEl?.textContent.trim();
+  const titleElText = visibleText(titleEl);
   if (titleElText && !looksLikeBadTitle(titleElText)) return titleElText;
   const img = a.querySelector('img[alt]');
   if (img?.getAttribute('alt')?.trim()) return img.getAttribute('alt').trim();
   // Last resort: return whatever we had even if it looked bad — better than null.
+  // But still gate code-leaks: an onerror handler is never a usable title.
   if (aria?.trim()) return aria.trim();
   if (ttl?.trim()) return ttl.trim();
-  if (headingText) return headingText;
-  if (text && text.length > 2) return text;
+  if (headingText && !looksLikeCode(headingText)) return headingText;
+  if (text && text.length > 2 && !looksLikeCode(text)) return text;
   return null;
 }
 
@@ -830,24 +869,38 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
 // Returns null if we can't even derive a title + (href or thumbnail).
 function synthesizeFromArticle(art, baseURL, sourceName) {
   // --- title ---
+  // All textContent reads go through visibleText() so inline <script> sources
+  // (CNN onerror handlers, MSN lazy-load shims) don't leak into the title.
   let title = null;
   // Headline containers commonly used by news sites
   const headline = art.querySelector('[class*="headline"] p, [class*="headline"] h1, [class*="headline"] h2, [class*="headline"] h3, [class*="caption"] p');
-  if (headline) title = headline.textContent.replace(/\s+/g, ' ').trim();
+  if (headline) {
+    const t = visibleText(headline);
+    if (t && !looksLikeCode(t)) title = t;
+  }
   // Generic headline-like child
   if (!title) {
     const h = art.querySelector('h1, h2, h3, h4');
-    if (h) title = h.textContent.replace(/\s+/g, ' ').trim();
+    if (h) {
+      const t = visibleText(h);
+      if (t && !looksLikeCode(t)) title = t;
+    }
   }
   // aria-label on an inner role="group" (NYT betamax)
   if (!title) {
     const grp = art.querySelector('[role="group"][aria-label], [aria-label]');
-    if (grp) title = grp.getAttribute('aria-label').replace(/\s+/g, ' ').trim();
+    if (grp) {
+      const t = grp.getAttribute('aria-label').replace(/\s+/g, ' ').trim();
+      if (t && !looksLikeCode(t)) title = t;
+    }
   }
-  // First <p> as last resort
+  // First <p> as last resort — but skip <p> that's only a script/style wrapper.
   if (!title) {
-    const p = art.querySelector('p');
-    if (p) title = p.textContent.replace(/\s+/g, ' ').trim();
+    const ps = art.querySelectorAll('p');
+    for (const p of ps) {
+      const t = visibleText(p);
+      if (t && !looksLikeCode(t)) { title = t; break; }
+    }
   }
   if (title && title.length > 280) title = title.slice(0, 280);
   if (!title) return null;
