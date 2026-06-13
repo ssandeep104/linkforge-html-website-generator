@@ -444,15 +444,24 @@ function findSiblingVideo(a, baseURL) {
 // nested heading) before settling. Returns true if the candidate looks bad.
 function looksLikeBadTitle(t) {
   if (!t) return true;
-  const s = String(t).trim();
+  let s = String(t).trim();
+  if (!s) return true;
+  // Strip leading bullets / dashes / arrows / non-letter punctuation so
+  // "• Video 0:48 CNN" matches the same chip pattern as "Video 0:48 CNN".
+  s = s.replace(/^[\s•·●◦▪▫‣⁃·\-–—>»►◉○♦]+/, '').trim();
   if (!s) return true;
   if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return true; // duration
   if (/^\d+(\.\d+)?[KMB]?(\s*(views|likes|comments))?$/i.test(s)) return true; // play count
-  // "Video 0:39 CNN", "Video 1:13 CNN/Reuters", "Watch • 2:34" — the duration+source
-  // chip that news sites bolt onto a tile and that bubbles up through textContent
-  // when there's no real headline link nearby.
-  if (/^(video|watch|play|listen)[\s•·–—:|]*\d{1,2}:\d{2}(:\d{2})?(\s*[•·–—|]?\s*[A-Za-z][A-Za-z .\/&]{0,40})?$/i.test(s)) return true;
-  if (/^\d{1,2}:\d{2}(:\d{2})?\s*[•·–—|]?\s*[A-Za-z][A-Za-z .\/&]{0,40}$/.test(s)) return true; // "0:39 CNN"
+  // Source-attribution chip: optional "Video/Watch/Play/Listen" verb, a duration,
+  // then an attribution string that can include slashes, ampersands, @handles,
+  // and 1-6 words. Matches: "Video 0:39 CNN", "Video 1:13 CNN/Reuters",
+  // "Video 0:29 Gaston Valdez/Facebook", "Watch • 2:34", "0:39 CNN",
+  // "Video 1:13 @johnnystorms/X", "Video 0:48 getty images".
+  // Source group regex: 1-6 tokens of letters/digits/@/. with separators
+  // (space, slash, &, dot). Cap at 60 chars to avoid eating real headlines.
+  const SRC = '[\\s•·–—:|]*[A-Za-z@][A-Za-z0-9 .\\/&@_-]{0,60}';
+  if (new RegExp('^(video|watch|play|listen)[\\s•·–—:|]*\\d{1,2}:\\d{2}(:\\d{2})?(' + SRC + ')?$', 'i').test(s)) return true;
+  if (new RegExp('^\\d{1,2}:\\d{2}(:\\d{2})?' + SRC + '$').test(s)) return true; // "0:39 CNN"
   if (looksLikeCode(s)) return true; // inline <script>/onerror handler bleeding through textContent
   return false;
 }
@@ -905,46 +914,78 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   // All textContent reads go through visibleText() so inline <script> sources
   // (CNN onerror handlers, MSN lazy-load shims) don't leak into the title.
   let title = null;
+  // Each candidate must pass looksLikeBadTitle (which already includes
+  // looksLikeCode) so "• Video 0:48 CNN" chips and JS source leaks don't
+  // win when a real headline exists.
+  const tryTitle = (s) => (s && !looksLikeBadTitle(s)) ? s : null;
   // Headline containers commonly used by news sites
   const headline = art.querySelector('[class*="headline"] p, [class*="headline"] h1, [class*="headline"] h2, [class*="headline"] h3, [class*="caption"] p');
-  if (headline) {
-    const t = visibleText(headline);
-    if (t && !looksLikeCode(t)) title = t;
-  }
+  if (headline) title = tryTitle(visibleText(headline));
   // Generic headline-like child
   if (!title) {
-    const h = art.querySelector('h1, h2, h3, h4');
-    if (h) {
-      const t = visibleText(h);
-      if (t && !looksLikeCode(t)) title = t;
+    const hs = art.querySelectorAll('h1, h2, h3, h4');
+    for (const h of hs) {
+      const t = tryTitle(visibleText(h));
+      if (t) { title = t; break; }
     }
   }
   // aria-label on an inner role="group" (NYT betamax)
   if (!title) {
-    const grp = art.querySelector('[role="group"][aria-label], [aria-label]');
-    if (grp) {
-      const t = grp.getAttribute('aria-label').replace(/\s+/g, ' ').trim();
-      if (t && !looksLikeCode(t)) title = t;
+    const grps = art.querySelectorAll('[role="group"][aria-label], [aria-label]');
+    for (const grp of grps) {
+      const t = tryTitle(grp.getAttribute('aria-label').replace(/\s+/g, ' ').trim());
+      if (t) { title = t; break; }
     }
   }
-  // First <p> as last resort — but skip <p> that's only a script/style wrapper.
+  // First <p> as last resort — but skip <p> that's only a script/style wrapper
+  // or a duration/source chip.
   if (!title) {
     const ps = art.querySelectorAll('p');
     for (const p of ps) {
-      const t = visibleText(p);
-      if (t && !looksLikeCode(t)) { title = t; break; }
+      const t = tryTitle(visibleText(p));
+      if (t) { title = t; break; }
     }
+  }
+  // Final relaxation: if every candidate looked like a chip/code, fall back
+  // to the first heading's raw text (better than null — caller will dedupe).
+  if (!title) {
+    const h = art.querySelector('h1, h2, h3, h4, p');
+    const t = h ? visibleText(h) : '';
+    if (t && !looksLikeCode(t)) title = t;
   }
   if (title && title.length > 280) title = title.slice(0, 280);
   if (!title) return null;
 
   // --- thumbnail ---
+  // Try (in order): poster-classed <img>, <video poster="…">, <picture><source srcset>,
+  // any <img>, then inline background-image on a media-like wrapper.
   let thumb = null;
   const poster = art.querySelector('img[data-testid*="poster"], img[class*="poster"], img[class*="thumb"]');
   if (poster) thumb = pickImgSrc(poster);
   if (!thumb) {
+    const vid = art.querySelector('video[poster]');
+    if (vid) thumb = vid.getAttribute('poster');
+  }
+  if (!thumb) {
+    const pic = art.querySelector('picture source[srcset]');
+    if (pic) {
+      // grab the largest entry from the srcset
+      const ss = pic.getAttribute('srcset') || '';
+      const last = ss.split(',').pop()?.trim().split(/\s+/)[0];
+      if (last) thumb = last;
+    }
+  }
+  if (!thumb) {
     const anyImg = art.querySelector('img');
     if (anyImg) thumb = pickImgSrc(anyImg);
+  }
+  if (!thumb) {
+    // Inline background-image on a media/thumb/hero wrapper
+    const bgEl = art.querySelector('[style*="background-image"], [class*="thumb"][style], [class*="image"][style], [class*="media"][style], [class*="hero"][style]');
+    if (bgEl) {
+      const m = (bgEl.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
+      if (m) thumb = m[2];
+    }
   }
   if (thumb) thumb = safeURL(thumb, baseURL) || thumb;
   if (thumb && !/^https?:/i.test(thumb)) thumb = null;
@@ -1073,6 +1114,13 @@ function renderSources() {
     nameInput.addEventListener('input', () => {
       src.name = nameInput.value;
       src.customName = nameInput.value.trim().length > 0;
+      // Re-stamp already-parsed items with the new source name so the rendered
+      // page groups them under the typed label instead of UNSOURCED. Without
+      // this, items keep whatever sourceName they got at paste time (often '').
+      if (src.items && src.items.length) {
+        for (const it of src.items) it.sourceName = src.name;
+      }
+      updateCounts();
     });
     textarea.addEventListener('input', () => {
       src.html = textarea.value;
@@ -1091,6 +1139,10 @@ function runParse(src, card) {
   const meta = parseSourceWithMeta(src.html, src.name, {
     overrideBase: src.overrideBase || undefined,
   });
+  // Stamp every item with the source id so the renderer can group them even
+  // if the user later edits the source name (sourceName captured at parse
+  // time would otherwise be stale or empty).
+  for (const it of meta.items) it.sourceId = src.id;
   src.items = meta.items;
   src.unresolvedCount = meta.unresolvedCount;
   src.detectedBase = meta.baseURL;
@@ -1592,22 +1644,41 @@ function buildGeneratedSite() {
   });
 
   // Group enabled items by source name, preserving the order sources were added.
-  // Also classify each item's media shape so templates (e.g. Reel) can pick rails.
+  // Each source's display name (typed value, or auto "Source N") is the canonical
+  // group label. Items keep an `id` ref to their source so we can re-resolve the
+  // name at render time even if the name was edited after paste.
   const bySource = [];
-  const sourceIndex = new Map();
-  for (const src of state.sources) {
-    if (!sourceIndex.has(src.name)) {
-      sourceIndex.set(src.name, bySource.length);
-      bySource.push({ name: src.name, items: [] });
-    }
-  }
+  const sourceIndex = new Map(); // sourceId -> bySource index
+  const idToName = new Map();    // sourceId -> display name
+  state.sources.forEach((src, idx) => {
+    const name = displayName(src, idx);
+    idToName.set(src.id, name);
+    sourceIndex.set(src.id, bySource.length);
+    bySource.push({ name, items: [] });
+  });
+  // Build a name->bySource fallback for items whose sourceId we can't map.
+  const nameIndex = new Map();
+  state.sources.forEach((src, idx) => {
+    const name = displayName(src, idx);
+    if (!nameIndex.has(name)) nameIndex.set(name, sourceIndex.get(src.id));
+  });
   for (const it of enabled) {
-    const key = it.sourceName || 'Unsourced';
-    if (!sourceIndex.has(key)) {
-      sourceIndex.set(key, bySource.length);
-      bySource.push({ name: key, items: [] });
+    // Prefer sourceId binding (survives name edits). Fall back to sourceName lookup,
+    // then to a free-standing "Unsourced" bucket as a last resort.
+    let bucketIdx = it.sourceId ? sourceIndex.get(it.sourceId) : undefined;
+    if (bucketIdx === undefined && it.sourceName) bucketIdx = nameIndex.get(it.sourceName);
+    if (bucketIdx === undefined) {
+      const key = it.sourceName || 'Unsourced';
+      if (!nameIndex.has(key)) {
+        nameIndex.set(key, bySource.length);
+        bySource.push({ name: key, items: [] });
+      }
+      bucketIdx = nameIndex.get(key);
     }
-    bySource[sourceIndex.get(key)].items.push(it);
+    // Overwrite item.sourceName with the current canonical name (so cards/kickers
+    // reflect the latest typed value).
+    if (it.sourceId && idToName.has(it.sourceId)) it.sourceName = idToName.get(it.sourceId);
+    bySource[bucketIdx].items.push(it);
   }
   // Drop empty source groups
   const sourceGroups = bySource.filter((g) => g.items.length > 0);
