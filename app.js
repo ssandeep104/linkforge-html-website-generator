@@ -420,6 +420,11 @@ function looksLikeBadTitle(t) {
   if (!s) return true;
   if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return true; // duration
   if (/^\d+(\.\d+)?[KMB]?(\s*(views|likes|comments))?$/i.test(s)) return true; // play count
+  // "Video 0:39 CNN", "Video 1:13 CNN/Reuters", "Watch • 2:34" — the duration+source
+  // chip that news sites bolt onto a tile and that bubbles up through textContent
+  // when there's no real headline link nearby.
+  if (/^(video|watch|play|listen)[\s•·–—:|]*\d{1,2}:\d{2}(:\d{2})?(\s*[•·–—|]?\s*[A-Za-z][A-Za-z .\/&]{0,40})?$/i.test(s)) return true;
+  if (/^\d{1,2}:\d{2}(:\d{2})?\s*[•·–—|]?\s*[A-Za-z][A-Za-z .\/&]{0,40}$/.test(s)) return true; // "0:39 CNN"
   if (looksLikeCode(s)) return true; // inline <script>/onerror handler bleeding through textContent
   return false;
 }
