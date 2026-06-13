@@ -4,7 +4,7 @@ Turn any pile of HTML into a site of your own.
 
 Paste raw HTML from news, research, photography, video, or your own bookmarks. Linkforge pulls out every link, thumbnail, and preview, then lets you pick what goes in and generates a finished site in one of six editorial templates.
 
-**Live editor:** [linkforge.vercel.app](https://linkforge.vercel.app)
+**Live editor:** [linkforge-omega.vercel.app](https://linkforge-omega.vercel.app)
 
 ## What it does
 
