@@ -345,11 +345,18 @@ function isChromeAnchor(a, resolvedHref) {
 // passed in (if any) so the standalone-image walk doesn't re-emit it as an
 // orphan "Image" item.
 function findFigureSiblingThumb(a, baseURL, claimedSet) {
-  const block = a.closest('article, li, [class*="card"], [class*="story"], [class*="teaser"]');
+  const block = a.closest('article, li, [class*="card"], [class*="story"], [class*="teaser"], [class*="item"], [class*="tile"], [class*="post"]');
   if (!block) return null;
-  // Prefer <figure><picture><img> or <figure><img>
-  const candidates = block.querySelectorAll('figure img, picture img, figure picture source[srcset]');
+  // Tier A — prefer <figure><picture><img> / <figure><img> / div-wrapped thumb.
+  // Real-world news sites often wrap thumbs in <div class="thumb|image|media|poster|hero">
+  // instead of <figure>, so we look for those too.
+  const candidates = block.querySelectorAll(
+    'figure img, picture img, figure picture source[srcset], ' +
+    '[class*="thumb" i] img, [class*="image" i] img, [class*="media" i] img, ' +
+    '[class*="poster" i] img, [class*="hero" i] img, [class*="photo" i] img'
+  );
   for (const cand of candidates) {
+    if (claimedSet && claimedSet.has(cand)) continue;
     if (cand.tagName === 'SOURCE') {
       const ss = cand.getAttribute('srcset');
       if (!ss) continue;
@@ -361,6 +368,27 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
       }
       continue;
     }
+    const picked = pickImgSrc(cand);
+    if (picked) {
+      const resolved = safeURL(picked, baseURL) || picked;
+      return { thumb: resolved, claimedEl: cand };
+    }
+  }
+  // Tier B — block-level background-image (some CMSes inline the thumb as CSS).
+  const styled = block.querySelectorAll('[style*="background"]');
+  for (const el of styled) {
+    const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/i);
+    if (m && !looksLikePlaceholder(m[1])) {
+      const resolved = safeURL(m[1], baseURL) || m[1];
+      return { thumb: resolved, claimedEl: el };
+    }
+  }
+  // Tier C — last-resort: ANY non-placeholder <img> anywhere in the block.
+  // Catches arbitrary layouts (NBC, MSN, Bloomberg variants) where the thumb
+  // lives in a wrapper with no class hint at all.
+  const allImgs = block.querySelectorAll('img');
+  for (const cand of allImgs) {
+    if (claimedSet && claimedSet.has(cand)) continue;
     const picked = pickImgSrc(cand);
     if (picked) {
       const resolved = safeURL(picked, baseURL) || picked;
