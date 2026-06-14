@@ -502,33 +502,144 @@ function visibleText(el) {
 }
 
 function getAnchorTitle(a) {
-  // Order of preference: aria-label → title attr → nested heading → textContent
-  // → [class*="title"] descendant → img alt. Each candidate is filtered by
-  // looksLikeBadTitle() (#6) so a video tile labelled only "1:23" or "4.5K
-  // views" falls through to a real headline if one exists. textContent paths
-  // use visibleText() to strip <script>/<style>/<noscript> first — otherwise
-  // inline JS (CNN onerror handlers) bleeds into the title.
+  // Back-compat wrapper: collect all candidates, return the first that passes
+  // the bad-title filter, else the first non-code candidate, else null.
+  const cands = collectTitleCandidates(a);
+  for (const c of cands) if (!looksLikeBadTitle(c.value)) return c.value;
+  for (const c of cands) if (!looksLikeCode(c.value)) return c.value;
+  return cands[0]?.value || null;
+}
+
+// ---------- Strategy-list extractors ----------
+// Each extractor returns a candidate {value, strategy, label} or null. The
+// orchestrator runs them in order and collects every non-null result, deduped
+// by value. The first candidate is the default winner; the user can swap to
+// any other strategy via the Review-step picker.
+//
+// Design contract:
+//   - Extractors are pure: input = (anchor, container?, baseURL) → output
+//   - The `strategy` field is a STABLE identifier (don't rename casually —
+//     it's used as the dropdown selection key).
+//   - The `label` field is human-readable for the dropdown.
+
+function collectTitleCandidates(a) {
+  const out = [];
+  const push = (value, strategy, label) => {
+    if (!value) return;
+    const v = String(value).trim();
+    if (!v) return;
+    // dedup by normalized value
+    if (out.some((c) => c.value === v)) return;
+    out.push({ value: v.slice(0, 280), strategy, label });
+  };
   const aria = a.getAttribute('aria-label');
-  if (aria?.trim() && !looksLikeBadTitle(aria)) return aria.trim();
+  push(aria, 'anchor-aria-label', 'aria-label');
   const ttl = a.getAttribute('title');
-  if (ttl?.trim() && !looksLikeBadTitle(ttl)) return ttl.trim();
+  push(ttl, 'anchor-title-attr', 'title attribute');
   const heading = a.querySelector('h1, h2, h3, h4, h5, h6');
-  const headingText = visibleText(heading);
-  if (headingText && !looksLikeBadTitle(headingText)) return headingText;
-  const text = visibleText(a);
-  if (text && text.length > 2 && !looksLikeBadTitle(text)) return text;
+  if (heading) push(visibleText(heading), 'anchor-heading', `<${heading.tagName.toLowerCase()}>`);
   const titleEl = a.querySelector('[class*="title" i], [class*="headline" i]');
-  const titleElText = visibleText(titleEl);
-  if (titleElText && !looksLikeBadTitle(titleElText)) return titleElText;
+  if (titleEl && titleEl !== heading) push(visibleText(titleEl), 'anchor-title-class', 'class=title/headline');
+  push(visibleText(a), 'anchor-visible-text', 'anchor text');
   const img = a.querySelector('img[alt]');
-  if (img?.getAttribute('alt')?.trim()) return img.getAttribute('alt').trim();
-  // Last resort: return whatever we had even if it looked bad — better than null.
-  // But still gate code-leaks: an onerror handler is never a usable title.
-  if (aria?.trim()) return aria.trim();
-  if (ttl?.trim()) return ttl.trim();
-  if (headingText && !looksLikeCode(headingText)) return headingText;
-  if (text && text.length > 2 && !looksLikeCode(text)) return text;
-  return null;
+  if (img?.getAttribute('alt')?.trim()) push(img.getAttribute('alt'), 'anchor-img-alt', 'image alt');
+  // Container-level fallbacks — nearest article/li/figure that ISN'T the anchor.
+  const container = a.closest('article, li, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i], figure');
+  if (container && container !== a) {
+    const ch = container.querySelector('h1, h2, h3, h4');
+    if (ch && !a.contains(ch)) push(visibleText(ch), 'container-heading', `container <${ch.tagName.toLowerCase()}>`);
+    const cTitle = container.querySelector('[class*="title" i], [class*="headline" i]');
+    if (cTitle && !a.contains(cTitle) && cTitle !== ch) push(visibleText(cTitle), 'container-title-class', 'container class=title');
+    const cAria = container.getAttribute('aria-label');
+    if (cAria && container !== a) push(cAria, 'container-aria-label', 'container aria-label');
+    const cap = container.querySelector('figcaption, [class*="caption" i]');
+    if (cap) push(visibleText(cap), 'container-caption', 'caption');
+  }
+  return out;
+}
+
+function collectThumbCandidates(a, baseURL) {
+  const out = [];
+  const push = (value, strategy, label) => {
+    if (!value) return;
+    const resolved = safeURL(value, baseURL) || value;
+    if (!/^https?:/i.test(resolved)) return;
+    if (out.some((c) => c.value === resolved)) return;
+    out.push({ value: resolved, strategy, label });
+  };
+  // 1. <img> inside the anchor
+  const innerImg = a.querySelector('img');
+  if (innerImg) push(pickImgSrc(innerImg), 'anchor-img', 'anchor <img>');
+  // 2. <picture><source srcset> inside the anchor — pick the largest entry
+  const innerPic = a.querySelector('picture source[srcset]');
+  if (innerPic) {
+    const ss = innerPic.getAttribute('srcset') || '';
+    const last = ss.split(',').pop()?.trim().split(/\s+/)[0];
+    if (last) push(last, 'anchor-picture-srcset', 'picture srcset');
+  }
+  // 3. inline background-image on anchor or anchor descendant
+  const bgEl = a.matches?.('[style*="background-image"]') ? a : a.querySelector('[style*="background-image"]');
+  if (bgEl) {
+    const m = (bgEl.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
+    if (m) push(m[2], 'anchor-bg-image', 'background-image');
+  }
+  // 4. Container-level images (figure-sibling, hero/poster/thumb classed)
+  const container = a.closest('article, li, figure, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i]');
+  if (container && container !== a) {
+    const cPosters = container.querySelectorAll('img[class*="thumb" i], img[class*="poster" i], img[class*="hero" i], img[class*="image" i], img[class*="media" i], img[class*="photo" i]');
+    cPosters.forEach((img) => push(pickImgSrc(img), 'container-class-img', 'container thumb/hero/poster img'));
+    // video poster on a container <video>
+    const vid = container.querySelector('video[poster]');
+    if (vid) push(vid.getAttribute('poster'), 'container-video-poster', 'video poster');
+    // picture source
+    const cPic = container.querySelector('picture source[srcset]');
+    if (cPic) {
+      const ss = cPic.getAttribute('srcset') || '';
+      const last = ss.split(',').pop()?.trim().split(/\s+/)[0];
+      if (last) push(last, 'container-picture-srcset', 'container picture srcset');
+    }
+    // bg-image on container
+    const cBg = container.querySelector('[style*="background-image"]');
+    if (cBg) {
+      const m = (cBg.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
+      if (m) push(m[2], 'container-bg-image', 'container background-image');
+    }
+    // any-img fallback
+    const anyImg = container.querySelector('img');
+    if (anyImg) push(pickImgSrc(anyImg), 'container-any-img', 'any container <img>');
+  }
+  return out;
+}
+
+function collectVideoCandidates(a, baseURL) {
+  // Video previews are intentionally low-priority. We still expose candidates
+  // so the picker dropdown can list them; templates choose whether to use them.
+  const out = [];
+  const push = (info, strategy, label) => {
+    if (!info?.url) return;
+    const resolved = safeURL(info.url, baseURL) || info.url;
+    if (!/^https?:/i.test(resolved)) return;
+    if (out.some((c) => c.value === resolved)) return;
+    out.push({ value: resolved, strategy, label, info: { ...info, url: resolved } });
+  };
+  // anchor-embedded <video>/<source>
+  const v = extractVideoFromAnchor(a);
+  if (v) push(v, 'anchor-video', 'anchor <video>');
+  // container-embedded
+  const container = a.closest('article, li, figure, [class*="item" i], [class*="card" i], [class*="tile" i]');
+  if (container && container !== a) {
+    const containerVid = container.querySelector('video');
+    if (containerVid) {
+      const src = containerVid.getAttribute('src') || containerVid.querySelector('source')?.getAttribute('src');
+      if (src) push({ url: src, kind: 'inline' }, 'container-video', 'container <video>');
+    }
+  }
+  // data-* attributes commonly used for hover-play
+  for (const attr of ['data-video', 'data-video-src', 'data-hover-video', 'data-preview-video', 'data-mp4']) {
+    const val = a.getAttribute(attr) || container?.getAttribute(attr);
+    if (val) push({ url: val, kind: 'data-attr' }, `data-attr-${attr}`, `${attr} attribute`);
+  }
+  return out;
 }
 
 // ---------- page-section detection ----------
@@ -787,6 +898,42 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       }
     }
 
+    // Collect ALL candidates for title/thumb/video across every anchor in the
+    // bucket so the Review-step picker can offer alternatives. Defaults stay
+    // identical to the old behavior — winner is whatever the legacy code
+    // chose above. The picker only surfaces when 2+ distinct candidates exist.
+    const titleCandidates = [];
+    const thumbCandidates = [];
+    const videoCandidates = [];
+    const seenTitles = new Set();
+    const seenThumbs = new Set();
+    const seenVideos = new Set();
+    for (const a of bucket.anchors) {
+      for (const c of collectTitleCandidates(a)) {
+        if (seenTitles.has(c.value)) continue;
+        seenTitles.add(c.value);
+        titleCandidates.push(c);
+      }
+      for (const c of collectThumbCandidates(a, baseURL)) {
+        if (seenThumbs.has(c.value)) continue;
+        seenThumbs.add(c.value);
+        thumbCandidates.push(c);
+      }
+      for (const c of collectVideoCandidates(a, baseURL)) {
+        if (seenVideos.has(c.value)) continue;
+        seenVideos.add(c.value);
+        videoCandidates.push(c);
+      }
+    }
+    // If our chosen winner didn't come from a strategy (e.g. domain fallback),
+    // make sure it still appears as the first option so the picker shows it.
+    if (title && !titleCandidates.some((c) => c.value === title)) {
+      titleCandidates.unshift({ value: title, strategy: 'fallback', label: 'fallback' });
+    }
+    if (thumb && !thumbCandidates.some((c) => c.value === thumb)) {
+      thumbCandidates.unshift({ value: thumb, strategy: 'fallback', label: 'fallback' });
+    }
+
     const item = {
       id: uid(),
       sourceName,
@@ -794,6 +941,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       title: title.slice(0, 280),
       thumbnail: thumb || null,
       video: video || null,
+      titleCandidates,
+      thumbCandidates,
+      videoCandidates,
       domain: domainOf(href),
       pageSection: sectionFor.get(bucket.firstAnchor) || 'Other',
     };
@@ -833,13 +983,17 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     if (!IMAGE_EXT.test(src)) continue;
     if (seen.has(src)) continue;
     seen.add(src);
+    const altTitle = img.getAttribute('alt')?.trim() || 'Image';
     items.push({
       id: uid(),
       sourceName,
       href: src,
-      title: img.getAttribute('alt')?.trim() || 'Image',
+      title: altTitle,
       thumbnail: src,
       video: null,
+      titleCandidates: [{ value: altTitle, strategy: 'standalone-img-alt', label: 'image alt' }],
+      thumbCandidates: [{ value: src, strategy: 'standalone-img', label: 'standalone <img>' }],
+      videoCandidates: [],
       domain: domainOf(src),
       category: 'gallery',
       pageSection: sectionFor.get(img) || 'Images',
@@ -859,13 +1013,18 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     // only count actual video sources
     if (!isVideoHref(src) && !(v.tagName === 'VIDEO')) continue;
     seen.add(src);
+    const vTitle = v.getAttribute('title') || 'Video';
+    const vPoster = v.getAttribute('poster') || null;
     items.push({
       id: uid(),
       sourceName,
       href: src,
-      title: v.getAttribute('title') || 'Video',
-      thumbnail: v.getAttribute('poster') || null,
+      title: vTitle,
+      thumbnail: vPoster,
       video: { src },
+      titleCandidates: [{ value: vTitle, strategy: 'standalone-video-title', label: 'video title attr' }],
+      thumbCandidates: vPoster ? [{ value: vPoster, strategy: 'standalone-video-poster', label: 'video poster' }] : [],
+      videoCandidates: [{ value: src, strategy: 'standalone-video', label: 'standalone <video>', info: { url: src } }],
       domain: domainOf(src),
       category: 'video',
       pageSection: sectionFor.get(v) || 'Videos',
@@ -1043,6 +1202,9 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
     title,
     thumbnail: thumb || null,
     video: videoInfo,
+    titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+    thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+    videoCandidates: videoInfo?.url ? [{ value: videoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: videoInfo }] : [],
     domain: domainOf(href),
   };
   item.category = videoInfo ? 'video' : (thumb ? 'article' : 'link');
@@ -1325,19 +1487,188 @@ function gotoReview() {
     }
     return;
   }
-  // flatten and dedupe by href, keep pageSection
+  flattenSourcesIntoItems({ resetEnabled: true });
+  renderReview();
+  showScreen('step-review');
+}
+
+// Apply each source's strategy choice then flatten src.items into state.items.
+// Preserves per-item `enabled` toggles across re-flattens unless resetEnabled.
+function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
+  // remember enabled state by href before we rebuild
+  const prevEnabled = new Map();
+  if (!resetEnabled) {
+    for (const it of state.items || []) prevEnabled.set(it.href, it.enabled);
+  }
+  for (const src of state.sources) {
+    applySourceStrategy(src);
+  }
   const all = [];
   const seen = new Set();
   for (const src of state.sources) {
     for (const it of src.items) {
       if (seen.has(it.href)) continue;
       seen.add(it.href);
-      all.push({ ...it, enabled: true, pageSection: it.pageSection || 'Other' });
+      const enabled = resetEnabled ? true : (prevEnabled.has(it.href) ? prevEnabled.get(it.href) : true);
+      all.push({ ...it, enabled, pageSection: it.pageSection || 'Other' });
     }
   }
   state.items = all;
+}
+
+// ---------- candidate-picker support ----------
+// Each source stores src.strategy = {title, thumb, video} with the user's
+// chosen extractor name. Applying it walks the source's items and updates
+// item.title/thumbnail/video from the saved candidate lists. No re-parse needed.
+function applySourceStrategy(src) {
+  const strat = src.strategy || {};
+  for (const it of src.items || []) {
+    if (strat.title && it.titleCandidates?.length) {
+      const pick = it.titleCandidates.find((c) => c.strategy === strat.title);
+      if (pick) it.title = pick.value;
+    }
+    if (strat.thumb && it.thumbCandidates?.length) {
+      const pick = it.thumbCandidates.find((c) => c.strategy === strat.thumb);
+      if (pick) it.thumbnail = pick.value;
+      else if (strat.thumb === '__none__') it.thumbnail = null;
+    }
+    if (strat.video && it.videoCandidates?.length) {
+      const pick = it.videoCandidates.find((c) => c.strategy === strat.video);
+      if (pick) it.video = pick.info || { url: pick.value };
+      else if (strat.video === '__none__') it.video = null;
+    }
+  }
+}
+
+// Build the option list for a source's title/thumb/video picker. Each option
+// is a strategy that produced at least one candidate across the source's
+// items, with a sample preview value the user can see in the dropdown.
+function buildPickerOptionsForSource(src, field) {
+  const candKey = field === 'title' ? 'titleCandidates'
+    : field === 'thumb' ? 'thumbCandidates'
+    : 'videoCandidates';
+  const byStrategy = new Map();
+  for (const it of src.items || []) {
+    for (const c of it[candKey] || []) {
+      if (!byStrategy.has(c.strategy)) {
+        byStrategy.set(c.strategy, { strategy: c.strategy, label: c.label, sample: c.value, count: 0 });
+      }
+      byStrategy.get(c.strategy).count++;
+    }
+  }
+  return Array.from(byStrategy.values());
+}
+
+// Initialize src.strategy from the parser's default winner (first candidate).
+// This makes the dropdown show the right value on first render.
+function seedDefaultStrategies(src) {
+  if (!src) return;
+  src.strategy = src.strategy || {};
+  for (const it of src.items || []) {
+    if (!src.strategy.title && it.titleCandidates?.length) {
+      // pick the strategy whose value equals the current it.title, else first
+      const match = it.titleCandidates.find((c) => c.value === it.title);
+      src.strategy.title = (match || it.titleCandidates[0]).strategy;
+    }
+    if (!src.strategy.thumb && it.thumbCandidates?.length) {
+      const match = it.thumbCandidates.find((c) => c.value === it.thumbnail);
+      src.strategy.thumb = (match || it.thumbCandidates[0]).strategy;
+    }
+    if (src.strategy.title && src.strategy.thumb) break;
+  }
+  // video defaults to none (opt-in)
+  if (!src.strategy.video) src.strategy.video = '__none__';
+}
+
+function renderSourceStrategyPicker() {
+  const root = $('#source-strategy');
+  if (!root) return;
+  // Only render rows where the source has 2+ strategies for title OR thumb
+  // OR any video candidates (video is opt-in). Sources with a single
+  // unambiguous extractor don't need UI.
+  const rows = [];
+  for (const src of state.sources) {
+    seedDefaultStrategies(src);
+    const titleOpts = buildPickerOptionsForSource(src, 'title');
+    const thumbOpts = buildPickerOptionsForSource(src, 'thumb');
+    const videoOpts = buildPickerOptionsForSource(src, 'video');
+    const showTitle = titleOpts.length >= 2;
+    const showThumb = thumbOpts.length >= 2;
+    const showVideo = videoOpts.length >= 1;
+    if (!showTitle && !showThumb && !showVideo) continue;
+    rows.push({ src, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo });
+  }
+  if (rows.length === 0) { root.hidden = true; root.innerHTML = ''; return; }
+  root.hidden = false;
+  root.innerHTML = `
+    <div class="strategy-picker__head">
+      <h3>How should links from each source look?</h3>
+      <p class="muted">When a source offers more than one way to grab the title or image, pick the one that fits best. Your choice applies to every link from that source.</p>
+    </div>
+    <div class="strategy-picker__list">
+      ${rows.map(({ src, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo }) => `
+        <div class="strategy-row" data-src-id="${escapeAttr(src.id)}">
+          <div class="strategy-row__source">
+            <span class="strategy-row__name">${escapeText(src.name || 'Untitled source')}</span>
+            <span class="strategy-row__count muted">${(src.items || []).length} link${(src.items || []).length === 1 ? '' : 's'}</span>
+          </div>
+          <div class="strategy-row__fields">
+            ${showTitle ? renderStrategySelect('title', src, titleOpts) : ''}
+            ${showThumb ? renderStrategySelect('thumb', src, thumbOpts, { allowNone: true }) : ''}
+            ${showVideo ? renderStrategySelect('video', src, videoOpts, { allowNone: true, optional: true }) : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  // bind change handlers
+  root.querySelectorAll('select[data-strategy-field]').forEach((sel) => {
+    sel.addEventListener('change', onStrategyChange);
+  });
+}
+
+function renderStrategySelect(field, src, options, opts = {}) {
+  const { allowNone = false, optional = false } = opts;
+  const labelText = field === 'title' ? 'Title' : field === 'thumb' ? 'Image' : 'Video preview';
+  const current = src.strategy?.[field] || (options[0]?.strategy) || '__none__';
+  const optHtml = options.map((o) => {
+    const sample = truncate(o.sample || '', 48);
+    const optLabel = `${o.label} — ${sample || '(empty)'} · ${o.count} link${o.count === 1 ? '' : 's'}`;
+    return `<option value="${escapeAttr(o.strategy)}" ${o.strategy === current ? 'selected' : ''}>${escapeText(optLabel)}</option>`;
+  }).join('');
+  const noneHtml = allowNone
+    ? `<option value="__none__" ${current === '__none__' ? 'selected' : ''}>${optional ? 'No video preview' : `No ${field}`}</option>`
+    : '';
+  return `
+    <label class="strategy-field">
+      <span class="strategy-field__label">${labelText}</span>
+      <select data-strategy-field="${field}" data-src-id="${escapeAttr(src.id)}">
+        ${optHtml}
+        ${noneHtml}
+      </select>
+    </label>
+  `;
+}
+
+function onStrategyChange(e) {
+  const sel = e.currentTarget;
+  const srcId = sel.dataset.srcId;
+  const field = sel.dataset.strategyField;
+  const value = sel.value;
+  const src = state.sources.find((s) => s.id === srcId);
+  if (!src) return;
+  src.strategy = src.strategy || {};
+  src.strategy[field] = value;
+  // Re-flatten so the new title/thumb/video shows up in state.items, then
+  // re-render the categories panel. Preserve user's enabled toggles.
+  flattenSourcesIntoItems({ resetEnabled: false });
   renderReview();
-  showScreen('step-review');
+}
+
+function truncate(s, n) {
+  if (!s) return '';
+  s = String(s).replace(/\s+/g, ' ').trim();
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
 
 function renderReview() {
@@ -1349,6 +1680,7 @@ function renderReview() {
     <span>${sources.size} source${sources.size === 1 ? '' : 's'}</span>
   `;
 
+  renderSourceStrategyPicker();
   renderTemplatePicker();
 
   const root = $('#categories');
