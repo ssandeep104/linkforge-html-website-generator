@@ -1114,11 +1114,16 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     (img) => !img.closest('a[href]') && !synthesizedFromArticles.has(img) && !claimedImgs.has(img)
   );
   for (const img of standaloneImgs) {
-    let src = img.getAttribute('src') || img.getAttribute('data-src');
+    // Use pickImgSrc so we honor lazy-load conventions AND its last-ditch
+    // fallback (returns raw src even when every candidate looks like a
+    // placeholder). Trust the markup: if it's an <img>, it's an image.
+    let src = pickImgSrc(img) || img.getAttribute('src') || img.getAttribute('data-src');
     if (!src) continue;
     src = safeURL(src, baseURL) || src;
     if (!/^https?:/i.test(src)) continue;
-    if (!IMAGE_EXT.test(src)) continue;
+    // No IMAGE_EXT filter — modern CDNs serve images from extensionless URLs
+    // (imgix, Cloudinary, opaque CMS routes). If the markup says <img src="X">,
+    // X is the image, regardless of what the URL looks like.
     if (seen.has(src)) continue;
     seen.add(src);
     const altTitle = img.getAttribute('alt')?.trim() || 'Image';
