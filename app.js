@@ -1711,17 +1711,18 @@ function seedDefaultStrategies(src) {
 function renderSourceStrategyPicker() {
   const root = $('#source-strategy');
   if (!root) return;
-  // Only render rows where the source has 2+ strategies for title OR thumb
-  // OR any video candidates (video is opt-in). Sources with a single
-  // unambiguous extractor don't need UI.
+  // Always show the picker for every source that has any items — user wants
+  // to pick title and image for everything, even when there's no ambiguity.
+  // The defaults are the parser's best guess; the dropdown lets the user
+  // confirm or override.
   const rows = [];
   for (const src of state.sources) {
     seedDefaultStrategies(src);
     const titleOpts = buildPickerOptionsForSource(src, 'title');
     const thumbOpts = buildPickerOptionsForSource(src, 'thumb');
     const videoOpts = buildPickerOptionsForSource(src, 'video');
-    const showTitle = titleOpts.length >= 2;
-    const showThumb = thumbOpts.length >= 2;
+    const showTitle = titleOpts.length >= 1;
+    const showThumb = thumbOpts.length >= 1;
     const showVideo = videoOpts.length >= 1;
     if (!showTitle && !showThumb && !showVideo) continue;
     rows.push({ src, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo });
