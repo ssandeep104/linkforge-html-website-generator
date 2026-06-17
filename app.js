@@ -245,10 +245,17 @@ function pickImgSrc(img) {
   // finally, the visible src
   push(img.getAttribute('src'));
 
-  // First non-placeholder wins. If everything looks like a placeholder,
-  // return null so we don't fall back to the site logo.
+  // First non-placeholder wins.
   for (const c of candidates) {
     if (!looksLikePlaceholder(c)) return c;
+  }
+  // Last-ditch: if every candidate looked like a placeholder but the <img>
+  // has a non-empty, non-data: src attribute, return it anyway. Better to
+  // show what the user literally wrote in the HTML than to silently drop it.
+  // (If you have an <img src="X">, X is the thumbnail — trust the markup.)
+  const rawSrc = img.getAttribute('src');
+  if (rawSrc && rawSrc.trim() && !rawSrc.trim().toLowerCase().startsWith('data:')) {
+    return rawSrc.trim();
   }
   return null;
 }
