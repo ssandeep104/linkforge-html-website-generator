@@ -398,6 +398,97 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
   return null;
 }
 
+// ---------- adjacent-sibling <img> fallback (flat HTML lists) ----------
+// Catches the case where someone writes a plain list like:
+//   <a href="/post1">Title</a>
+//   <img src="/thumb1.jpg">
+// with NO surrounding <article>/<li>/card wrapper. findFigureSiblingThumb
+// bails out because there is no card-shaped ancestor. We look in three
+// places (in order):
+//   1. The anchor's immediately following / preceding element siblings
+//      (within a small hop budget, skipping plain text nodes).
+//   2. The next adjacent <img> in document order whose closest anchor
+//      is THIS anchor (i.e. not closer to a later anchor).
+//   3. Children of the immediate parent (paragraph, div) outside the anchor.
+function findAdjacentSiblingThumb(a, allAnchors, baseURL, claimedSet) {
+  const tryImg = (img) => {
+    if (!img || (claimedSet && claimedSet.has(img))) return null;
+    const picked = pickImgSrc(img);
+    if (!picked) return null;
+    return { thumb: safeURL(picked, baseURL) || picked, claimedEl: img };
+  };
+  const isImg = (el) => el && el.tagName === 'IMG';
+  const SCAN_HOPS = 3; // how many element siblings to look at on each side
+
+  // Step 1 — walk forward/backward sibling elements from the anchor.
+  // Stop if we hit another anchor (its thumb, not ours).
+  let cur = a.nextElementSibling;
+  for (let i = 0; cur && i < SCAN_HOPS; i++) {
+    if (cur.tagName === 'A') break;
+    if (isImg(cur)) {
+      const r = tryImg(cur);
+      if (r) return r;
+    }
+    // also look one level inside (e.g. <p><img></p>)
+    const inner = cur.querySelector?.('img');
+    if (inner && !cur.querySelector?.('a[href]')) {
+      const r = tryImg(inner);
+      if (r) return r;
+    }
+    cur = cur.nextElementSibling;
+  }
+  cur = a.previousElementSibling;
+  for (let i = 0; cur && i < SCAN_HOPS; i++) {
+    if (cur.tagName === 'A') break;
+    if (isImg(cur)) {
+      const r = tryImg(cur);
+      if (r) return r;
+    }
+    cur = cur.previousElementSibling;
+  }
+
+  // Step 2 — children of the immediate parent that are NOT inside any anchor.
+  // Handles <div><a>title</a><img></div> and similar generic wrappers.
+  const parent = a.parentElement;
+  if (parent && !/^(BODY|HTML|MAIN)$/.test(parent.tagName)) {
+    // Make sure no other anchor sits between us and the img — if there are
+    // multiple anchors in this parent, each anchor should only claim its
+    // nearest image.
+    const parentAnchors = parent.querySelectorAll(':scope > a[href], :scope a[href]');
+    const parentImgs = parent.querySelectorAll(':scope > img, :scope img');
+    for (const img of parentImgs) {
+      if (claimedSet && claimedSet.has(img)) continue;
+      // Skip imgs inside any anchor — those are handled by extractImageFromAnchor.
+      if (img.closest('a[href]')) continue;
+      // Skip if there's a closer anchor in the parent than `a`.
+      let nearest = null;
+      let nearestDist = Infinity;
+      for (const other of parentAnchors) {
+        // distance = position diff in document order
+        const cmp = img.compareDocumentPosition(other);
+        // we only care about which anchor is textually closest — use a cheap
+        // index-based proximity by walking the parent's children once.
+        if (cmp & Node.DOCUMENT_POSITION_PRECEDING || cmp & Node.DOCUMENT_POSITION_FOLLOWING) {
+          // good enough — pick the closest by sibling-index difference
+          const dist = Math.abs(
+            Array.prototype.indexOf.call(parent.children, other.closest(':scope > *') || other) -
+            Array.prototype.indexOf.call(parent.children, img.closest(':scope > *') || img)
+          );
+          if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = other;
+          }
+        }
+      }
+      if (nearest === a) {
+        const r = tryImg(img);
+        if (r) return r;
+      }
+    }
+  }
+  return null;
+}
+
 // ---------- sibling video fallback (issue #5 follow-up: Reddit shreddit-post) ----------
 // On Reddit (and any card-based feed using web components), the post anchor
 // is in one slot and the <video> is in a sibling slot of the same card. The
@@ -583,6 +674,33 @@ function collectThumbCandidates(a, baseURL) {
     const m = (bgEl.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
     if (m) push(m[2], 'anchor-bg-image', 'background-image');
   }
+  // 3b. Adjacent-sibling <img> outside the anchor (flat lists with no card wrapper).
+  // We scan forward/backward sibling elements of the anchor and also same-parent
+  // images that aren't inside another anchor.
+  const scanForAdjacentImgs = () => {
+    const seen = new Set();
+    const collect = (img) => {
+      if (!img || seen.has(img)) return;
+      seen.add(img);
+      const v = pickImgSrc(img);
+      if (v) push(v, 'adjacent-sibling-img', 'adjacent <img>');
+    };
+    let sib = a.nextElementSibling;
+    for (let i = 0; sib && i < 3; i++) {
+      if (sib.tagName === 'A') break;
+      if (sib.tagName === 'IMG') collect(sib);
+      const inner = sib.querySelector?.('img');
+      if (inner && !sib.querySelector?.('a[href]')) collect(inner);
+      sib = sib.nextElementSibling;
+    }
+    sib = a.previousElementSibling;
+    for (let i = 0; sib && i < 3; i++) {
+      if (sib.tagName === 'A') break;
+      if (sib.tagName === 'IMG') collect(sib);
+      sib = sib.previousElementSibling;
+    }
+  };
+  scanForAdjacentImgs();
   // 4. Container-level images (figure-sibling, hero/poster/thumb classed)
   const container = a.closest('article, li, figure, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i]');
   if (container && container !== a) {
@@ -893,6 +1011,19 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
               claimedImgs.add(found.claimedEl);
             }
           }
+          break;
+        }
+      }
+    }
+    if (!thumb) {
+      // adjacent-sibling fallback — covers flat <a>...</a><img> lists with no
+      // card wrapper. Each anchor only claims an <img> if it's the nearest
+      // anchor to that <img> in the parent.
+      for (const a of bucket.anchors) {
+        const found = findAdjacentSiblingThumb(a, rawAnchors, baseURL, claimedImgs);
+        if (found) {
+          thumb = found.thumb;
+          if (found.claimedEl) claimedImgs.add(found.claimedEl);
           break;
         }
       }
