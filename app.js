@@ -224,32 +224,25 @@ function looksLikePlaceholder(url) {
 // Pick the best <img> src across normal + lazy-load attributes.
 // Prefers data-src / data-original / srcset over src when src looks like a placeholder.
 function pickImgSrc(img) {
-  const candidates = [];
-  const push = (v) => { if (v && typeof v === 'string') candidates.push(v.trim()); };
-
-  // Lazy-load conventions used by major CMSes (TOI, WordPress, Drupal, NYT, etc.)
-  push(img.getAttribute('data-src'));
-  push(img.getAttribute('data-original'));
-  push(img.getAttribute('data-lazy-src'));
-  push(img.getAttribute('data-lazy'));
-  push(img.getAttribute('data-srcset')?.split(',').pop()?.trim().split(' ')[0]); // largest in lazy srcset
-  push(img.getAttribute('data-hi-res-src'));
-  push(img.getAttribute('data-full-src'));
-  push(img.getAttribute('data-img'));
-  // srcset — take the largest entry (last one)
-  const srcset = img.getAttribute('srcset');
-  if (srcset) {
-    const entries = srcset.split(',').map((s) => s.trim()).filter(Boolean);
-    if (entries.length) push(entries[entries.length - 1].split(' ')[0]);
-  }
-  // finally, the visible src
-  push(img.getAttribute('src'));
-
-  // Trust the markup — return the first non-empty candidate.
-  // No placeholder/heuristic filtering here. If the user wrote <img src="X">,
-  // X is the thumbnail. The picker lets the user override if it's wrong.
-  for (const c of candidates) {
-    if (c) return c;
+  // Trust the markup. If <img> has a src, that's the thumbnail. Period.
+  // We do NOT parse srcset to "pick the largest" — srcset URLs can contain
+  // commas inside their path (CDN transform syntax), which breaks naive
+  // splitting. The picker exposes srcset/data-* values as alternates the
+  // user can switch to manually.
+  const src = img.getAttribute('src');
+  if (src && src.trim()) return src.trim();
+  // Only if src is missing/empty, fall back to lazy-load attributes.
+  const fallbacks = [
+    img.getAttribute('data-src'),
+    img.getAttribute('data-original'),
+    img.getAttribute('data-lazy-src'),
+    img.getAttribute('data-lazy'),
+    img.getAttribute('data-hi-res-src'),
+    img.getAttribute('data-full-src'),
+    img.getAttribute('data-img'),
+  ];
+  for (const v of fallbacks) {
+    if (v && typeof v === 'string' && v.trim()) return v.trim();
   }
   return null;
 }
