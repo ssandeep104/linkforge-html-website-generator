@@ -33,7 +33,14 @@ function srcLabel(group) {
 // Items with a usable thumbnail get card treatment; items without get sent
 // to the "More links" tail. We treat empty/falsy thumbnails as no-preview.
 function hasPreview(item) {
-  return !!(item && item.thumbnail && String(item.thumbnail).trim());
+  if (!item || !item.thumbnail) return false;
+  const t = String(item.thumbnail).trim();
+  if (!t) return false;
+  // Defense in depth: reject any synthetic letter/placeholder thumbnail.
+  // Real thumbs are http(s) or absolute paths; synthetic ones are inline
+  // SVG data URIs flagged via item.thumbnailIsPlaceholder.
+  if (item.thumbnailIsPlaceholder) return false;
+  return true;
 }
 
 // Split a flat item list into [withPreview, linkOnly] preserving order.

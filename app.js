@@ -1048,12 +1048,10 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       if (yt) it.thumbnail = `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`;
       // Vimeo needs an API — fall through to Tier 5 below.
     }
-    // Tier 5 — deterministic SVG placeholder for anything still without an image.
-    // Skip standalone gallery items where href === thumbnail (those are pure images).
-    if (!it.thumbnail && it.href !== it.video?.src) {
-      it.thumbnail = syntheticPlaceholder(it);
-      it.thumbnailIsPlaceholder = true; // templates can choose to style differently
-    }
+    // Tier 5 placeholder REMOVED — items without a real thumbnail must stay
+    // null so partitionGroups() in templates.js can route them to the
+    // "More links" tail. Previously we filled in a deterministic SVG letter
+    // placeholder here, which made every item look like it had a preview.
     // re-run classify in case thumbnails changed
     it.category = classify(it);
     it.enabled = true;
