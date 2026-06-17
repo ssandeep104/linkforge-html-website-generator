@@ -245,17 +245,11 @@ function pickImgSrc(img) {
   // finally, the visible src
   push(img.getAttribute('src'));
 
-  // First non-placeholder wins.
+  // Trust the markup — return the first non-empty candidate.
+  // No placeholder/heuristic filtering here. If the user wrote <img src="X">,
+  // X is the thumbnail. The picker lets the user override if it's wrong.
   for (const c of candidates) {
-    if (!looksLikePlaceholder(c)) return c;
-  }
-  // Last-ditch: if every candidate looked like a placeholder but the <img>
-  // has a non-empty, non-data: src attribute, return it anyway. Better to
-  // show what the user literally wrote in the HTML than to silently drop it.
-  // (If you have an <img src="X">, X is the thumbnail — trust the markup.)
-  const rawSrc = img.getAttribute('src');
-  if (rawSrc && rawSrc.trim() && !rawSrc.trim().toLowerCase().startsWith('data:')) {
-    return rawSrc.trim();
+    if (c) return c;
   }
   return null;
 }
@@ -274,14 +268,14 @@ function extractImageFromAnchor(a) {
     if (ss) {
       const entries = ss.split(',').map((s) => s.trim()).filter(Boolean);
       const last = entries[entries.length - 1]?.split(' ')[0];
-      if (last && !looksLikePlaceholder(last)) return last;
+      if (last) return last;
     }
   }
   // background-image inline style
   const styled = Array.from(a.querySelectorAll('[style*="background"]'));
   for (const el of styled) {
     const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/i);
-    if (m && !looksLikePlaceholder(m[1])) return m[1];
+    if (m) return m[1];
   }
   return null;
 }
@@ -369,7 +363,7 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
       if (!ss) continue;
       const entries = ss.split(',').map((s) => s.trim()).filter(Boolean);
       const last = entries[entries.length - 1]?.split(' ')[0];
-      if (last && !looksLikePlaceholder(last)) {
+      if (last) {
         const resolved = safeURL(last, baseURL) || last;
         return { thumb: resolved, claimedEl: cand.closest('picture') || cand };
       }
@@ -385,7 +379,7 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
   const styled = block.querySelectorAll('[style*="background"]');
   for (const el of styled) {
     const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/i);
-    if (m && !looksLikePlaceholder(m[1])) {
+    if (m) {
       const resolved = safeURL(m[1], baseURL) || m[1];
       return { thumb: resolved, claimedEl: el };
     }

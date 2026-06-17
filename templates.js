@@ -35,12 +35,7 @@ function srcLabel(group) {
 function hasPreview(item) {
   if (!item || !item.thumbnail) return false;
   const t = String(item.thumbnail).trim();
-  if (!t) return false;
-  // Defense in depth: reject any synthetic letter/placeholder thumbnail.
-  // Real thumbs are http(s) or absolute paths; synthetic ones are inline
-  // SVG data URIs flagged via item.thumbnailIsPlaceholder.
-  if (item.thumbnailIsPlaceholder) return false;
-  return true;
+  return !!t;
 }
 
 // Split a flat item list into [withPreview, linkOnly] preserving order.
