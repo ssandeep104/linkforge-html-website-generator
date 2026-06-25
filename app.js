@@ -908,6 +908,112 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   const claimedVideos = new WeakSet(); // <video>/<iframe> claimed by anchor-bucket items (#5/Reddit)
   const buckets = new Map(); // href -> { anchors: [a, ...], firstAnchor: a }
   const rawAnchors = Array.from(doc.querySelectorAll('a[href]'));
+
+  // Pre-pass: card-level grouping (the "byline-anchor" / uploader fix).
+  //
+  // Many feed layouts (Vimeo, YouTube, Reddit, etc.) put TWO+ anchors with
+  // DIFFERENT hrefs inside a single visual card:
+  //   <div class="video-card">
+  //     <a href="/videos/clip-A"><img>...</a>          ← primary content link
+  //     <div class="titleContainer">
+  //       <a href="/videos/clip-A">Clip A</a>          ← same href, merges in bucket
+  //     </div>
+  //     <a href="/channels/foo">Foo Channel</a>       ← byline link, NOT a card
+  //     <a class="avatar" href="/channels/foo"></a>   ← byline avatar, NOT a card
+  //   </div>
+  //
+  // The basic bucket-by-href merges the two clip-A anchors. But the channel
+  // anchors have a different href and would otherwise emit their own card.
+  // Visually that looks like a duplicate of the video (same thumbnail block,
+  // similar title because the container fallback pulls the whole card's text).
+  //
+  // Rule: inside a card wrapper, the anchor that owns the thumbnail (has an
+  // <img>/<video>/<picture> child or has a thumbnail-shaped class) is the
+  // PRIMARY. All other anchors in that card whose href differs from the
+  // primary are demoted to byline chrome.
+  const demotedAnchors = new WeakSet();
+  // Only run card-demotion when the wrapper class strongly suggests a single
+  // visual media card (video-card, thumb-container, post-card, etc.). Broad
+  // selectors like `li[class]` or `[class*="item"]` would over-match generic
+  // list wrappers (Twitter blog posts, news lists) and silently drop legit
+  // anchors. Be conservative: false negatives keep the duplicate (annoying);
+  // false positives delete real content (catastrophic).
+  const CARD_SELECTOR =
+    'article[class*="card" i], div[class*="card" i], li[class*="card" i], ' +
+    'article[class*="tile" i], div[class*="tile" i], li[class*="tile" i], ' +
+    'article[class*="thumb" i], div[class*="thumb" i], li[class*="thumb" i], ' +
+    'div[class*="video-card" i], div[class*="video-thumb" i], div[class*="video-item" i], ' +
+    'div[class*="post-card" i], div[class*="post-tile" i], ' +
+    'div[class*="feed-item" i], div[class*="grid-item" i], div[class*="list-item" i]';
+  const cards = Array.from(doc.querySelectorAll(CARD_SELECTOR));
+  // Sort smallest-first so a nested card wins over its ancestor wrapper.
+  cards.sort((a, b) => a.querySelectorAll('a[href]').length - b.querySelectorAll('a[href]').length);
+  const cardClaimed = new WeakSet(); // anchors already assigned to a card
+  for (const card of cards) {
+    const anchors = Array.from(card.querySelectorAll('a[href]'))
+      .filter((a) => !cardClaimed.has(a));
+    if (anchors.length < 2) continue;
+    // Group these anchors by their (raw) href so same-href siblings merge.
+    const byHref = new Map();
+    for (const a of anchors) {
+      const h = a.getAttribute('href') || '';
+      if (!byHref.has(h)) byHref.set(h, []);
+      byHref.get(h).push(a);
+    }
+    if (byHref.size < 2) continue; // single href in card — bucket handles it
+    // We only demote when there's STRONG evidence of byline/uploader anchors
+    // sharing the wrapper with a content anchor. The signals:
+    //   - one href group has a thumbnail-bearing anchor (img/video/picture inside)
+    //   - the OTHER href group has byline-shaped class names or path prefixes
+    let primaryHref = null;
+    let primaryScore = 0;
+    const groupScores = new Map();
+    for (const [h, group] of byHref) {
+      let score = 0;
+      let hasThumbAnchor = false;
+      for (const a of group) {
+        if (a.querySelector('img, video, picture, iframe')) { score += 10; hasThumbAnchor = true; }
+        const cls = (a.getAttribute('class') || '').toLowerCase();
+        if (/thumb|poster|media|hero|preview|player/.test(cls)) score += 4;
+        if (/uploader|avatar|author|byline|user-?(link|name)|channel-?link/.test(cls)) score -= 8;
+        try {
+          const p = new URL(safeURL(h, baseURL) || h).pathname;
+          if (/^\/(channels?|users?|u|profile|author|by)\//i.test(p) || /^\/@/.test(p)) score -= 4;
+        } catch {}
+        if (a.getAttribute('aria-label')) score += 1;
+      }
+      groupScores.set(h, { score, hasThumbAnchor });
+      if (score > primaryScore) {
+        primaryScore = score;
+        primaryHref = h;
+      }
+    }
+    // Guardrails before demoting:
+    //   1. Primary must have a thumbnail anchor (else don't trust the verdict)
+    //   2. Primary's score must clearly beat the runner-up (delta >= 6)
+    if (!primaryHref || !groupScores.get(primaryHref).hasThumbAnchor) continue;
+    const others = [...groupScores.entries()].filter(([h]) => h !== primaryHref);
+    const worstOther = others.reduce((min, [, v]) => Math.min(min, v.score), Infinity);
+    if (primaryScore - worstOther < 6) continue;
+    // Demote everything not in the primary group.
+    for (const [h, group] of byHref) {
+      for (const a of group) cardClaimed.add(a);
+      if (h !== primaryHref) {
+        // Only demote anchors whose own score is clearly byline-shaped,
+        // not random secondary content links inside an article.
+        for (const a of group) {
+          const cls = (a.getAttribute('class') || '').toLowerCase();
+          const isBylineClass = /uploader|avatar|author|byline|user-?(link|name)|channel-?link/.test(cls);
+          let isBylinePath = false;
+          try {
+            const p = new URL(safeURL(h, baseURL) || h).pathname;
+            isBylinePath = /^\/(channels?|users?|u|profile|author|by)\//i.test(p) || /^\/@/.test(p);
+          } catch {}
+          if (isBylineClass || isBylinePath) demotedAnchors.add(a);
+        }
+      }
+    }
+  }
   for (const a of rawAnchors) {
     const rawHref = a.getAttribute('href');
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue;
@@ -917,6 +1023,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       continue;
     }
     if (!/^https?:/i.test(href)) continue;
+    if (demotedAnchors.has(a)) continue; // byline / uploader / avatar inside a card
     if (isChromeAnchor(a, href)) continue; // drop nav/footer/tag/account chrome
     // Drop URL-shortener / tracker hosts (#6). These appear inside Twitter
     // oEmbed blockquotes (t.co), LinkedIn previews (lnkd.in), etc. and are
