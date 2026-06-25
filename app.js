@@ -1631,12 +1631,32 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
   for (const src of state.sources) {
     applySourceStrategy(src);
   }
+  // Exact-href dedup, with a "richest-wins" tie-break so the card that has
+  // both title + thumbnail beats a thinner duplicate of the same URL.
+  // The user's rule: only ever ONE card per exact href. Final, global.
+  // Richness score: thumb (2) + non-domain title (1) + video (1).
+  const richness = (it) => {
+    let s = 0;
+    if (it.thumbnail) s += 2;
+    if (it.title && it.title !== it.domain) s += 1;
+    if (it.video) s += 1;
+    return s;
+  };
+  const byHref = new Map(); // href -> { item, srcIdx, itemIdx }
+  state.sources.forEach((src, srcIdx) => {
+    (src.items || []).forEach((it, itemIdx) => {
+      const existing = byHref.get(it.href);
+      if (!existing || richness(it) > richness(existing.item)) {
+        byHref.set(it.href, { item: it, srcIdx, itemIdx });
+      }
+    });
+  });
+  // Rebuild in original source order, dropping non-winners.
   const all = [];
-  const seen = new Set();
   for (const src of state.sources) {
-    for (const it of src.items) {
-      if (seen.has(it.href)) continue;
-      seen.add(it.href);
+    for (const it of src.items || []) {
+      const winner = byHref.get(it.href);
+      if (!winner || winner.item !== it) continue;
       const enabled = resetEnabled ? true : (prevEnabled.has(it.href) ? prevEnabled.get(it.href) : true);
       all.push({ ...it, enabled, pageSection: it.pageSection || 'Other' });
     }

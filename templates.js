@@ -53,11 +53,43 @@ function splitItems(items) {
 //   previewGroups: [{name, items}]  — only items that have a thumbnail
 //   linkGroups:    [{name, items}]  — only items without a thumbnail
 // Empty groups are dropped.
+//
+// Final-render guarantees (user spec):
+//   1. No href appears more than once across the entire output.
+//   2. If an item rendered as a preview card, it never also appears in
+//      "More links" — even if a thinner duplicate of the same href exists
+//      in another source group.
+//   3. "More links" itself is href-deduped across groups.
 function partitionGroups(sourceGroups) {
+  // Pass 1 — collect every href that will render as a preview card.
+  const previewHrefs = new Set();
+  for (const g of sourceGroups || []) {
+    for (const it of g.items || []) {
+      if (hasPreview(it)) previewHrefs.add(it.href);
+    }
+  }
+  // Pass 2 — build the two buckets, deduping each by href globally.
   const previewGroups = [];
   const linkGroups = [];
+  const seenPreview = new Set();
+  const seenLink = new Set();
   for (const g of sourceGroups || []) {
-    const { withPreview, linkOnly } = splitItems(g.items);
+    const withPreview = [];
+    const linkOnly = [];
+    for (const it of g.items || []) {
+      if (hasPreview(it)) {
+        if (seenPreview.has(it.href)) continue;
+        seenPreview.add(it.href);
+        withPreview.push(it);
+      } else {
+        // If any source has a richer (thumb-bearing) version of this href,
+        // the card already shows above — don't repeat it in More links.
+        if (previewHrefs.has(it.href)) continue;
+        if (seenLink.has(it.href)) continue;
+        seenLink.add(it.href);
+        linkOnly.push(it);
+      }
+    }
     if (withPreview.length) previewGroups.push({ name: g.name, items: withPreview });
     if (linkOnly.length) linkGroups.push({ name: g.name, items: linkOnly });
   }
@@ -161,32 +193,38 @@ function suggestTemplate(counts) {
 // =====================================================
 const MORE_LINKS_CSS_LIGHT = `
   .more-links { margin-top: 56px; padding-top: 28px; border-top: 1px solid #e5e5e5; }
-  .more-links__heading { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b6b; margin: 0 0 20px; font-family: inherit; }
-  .more-links__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px 40px; }
+  .more-links__heading { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b6b; margin: 0 0 24px; font-family: inherit; }
+  .more-links__grid { display: flex; flex-direction: column; gap: 36px; }
   .more-links__group { min-width: 0; }
-  .more-links__src { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #111; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #d4d4d4; }
+  .more-links__src { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #111; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #d4d4d4; }
   .more-links__list { list-style: none; margin: 0; padding: 0; }
-  .more-links__list li { padding: 6px 0; font-size: 14px; line-height: 1.45; border-bottom: 1px solid #f4f4f5; }
+  .more-links__list li { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding: 10px 0; font-size: 15px; line-height: 1.45; border-bottom: 1px solid #f4f4f5; }
   .more-links__list li:last-child { border-bottom: 0; }
-  .more-links__list a { color: #0a0a0a; }
+  .more-links__list a { color: #0a0a0a; flex: 1 1 auto; min-width: 0; }
   .more-links__list a:hover { color: #2563eb; text-decoration: underline; }
-  .more-links__domain { display: block; font-size: 11px; color: #9a9a9a; margin-top: 2px; font-family: ui-monospace, Menlo, monospace; }
-  @media (max-width: 700px) { .more-links__grid { grid-template-columns: 1fr; gap: 24px; } }
+  .more-links__domain { flex: 0 0 auto; font-size: 11px; color: #9a9a9a; font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.02em; }
+  @media (max-width: 600px) {
+    .more-links__list li { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .more-links__domain { margin-top: 0; }
+  }
 `;
 
 const MORE_LINKS_CSS_DARK = `
   .more-links { margin-top: 56px; padding-top: 28px; border-top: 1px solid #1f2228; }
-  .more-links__heading { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #71717a; margin: 0 0 20px; font-family: inherit; }
-  .more-links__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px 40px; }
+  .more-links__heading { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #71717a; margin: 0 0 24px; font-family: inherit; }
+  .more-links__grid { display: flex; flex-direction: column; gap: 36px; }
   .more-links__group { min-width: 0; }
-  .more-links__src { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #e6e6e7; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #2c3340; }
+  .more-links__src { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #e6e6e7; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #2c3340; }
   .more-links__list { list-style: none; margin: 0; padding: 0; }
-  .more-links__list li { padding: 6px 0; font-size: 14px; line-height: 1.45; border-bottom: 1px solid #1a1d22; }
+  .more-links__list li { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding: 10px 0; font-size: 15px; line-height: 1.45; border-bottom: 1px solid #1a1d22; }
   .more-links__list li:last-child { border-bottom: 0; }
-  .more-links__list a { color: #d4d4d8; }
+  .more-links__list a { color: #d4d4d8; flex: 1 1 auto; min-width: 0; }
   .more-links__list a:hover { color: #61dafb; text-decoration: underline; }
-  .more-links__domain { display: block; font-size: 11px; color: #6a7077; margin-top: 2px; font-family: ui-monospace, Menlo, monospace; }
-  @media (max-width: 700px) { .more-links__grid { grid-template-columns: 1fr; gap: 24px; } }
+  .more-links__domain { flex: 0 0 auto; font-size: 11px; color: #6a7077; font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.02em; }
+  @media (max-width: 600px) {
+    .more-links__list li { flex-direction: column; align-items: flex-start; gap: 2px; }
+    .more-links__domain { margin-top: 0; }
+  }
 `;
 
 function shell({ title, tagline, today, body, css, bodyClass = '' }) {
