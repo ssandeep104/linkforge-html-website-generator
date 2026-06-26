@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="https://app.example.com/">
+  <title>Example SPA — JS-rendered</title>
+
+  <!-- Simulates a JS-rendered SPA: the rendered DOM has no real <a> links
+       to articles (the app would inject them after hydration), but the
+       <script type="application/ld+json"> block already exposes the index.
+       Linkforge should still produce cards from these orphan entries. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "VideoObject",
+        "url": "https://app.example.com/v/atlas-launches",
+        "name": "Atlas Mission Launches at Dawn",
+        "thumbnailUrl": "https://cdn.example.com/atlas-thumb.jpg",
+        "description": "First successful crewed launch from the new pad.",
+        "uploadDate": "2026-06-20"
+      },
+      {
+        "@type": "NewsArticle",
+        "url": "https://app.example.com/a/transit-tax-passes",
+        "headline": "Transit Tax Passes by 6-Point Margin",
+        "image": "https://cdn.example.com/transit-tax.jpg",
+        "description": "Voters approved the fifteen-year sales tax extension."
+      },
+      {
+        "@type": "Article",
+        "url": "https://app.example.com/a/hospital-strike-day-3",
+        "headline": "Hospital Workers Enter Day Three of Strike",
+        "image": "https://cdn.example.com/strike.jpg"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- Empty SPA shell — no anchors, no images. Everything has to come from JSON-LD. -->
+    <p>Loading…</p>
+  </div>
+</body>
+</html>

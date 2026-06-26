@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="https://www.example-mag.com/">
+  <title>Long Reads — Example Mag</title>
+
+  <!-- @graph wrapper with a CollectionPage that holds an ItemList of BlogPostings -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "url": "https://www.example-mag.com/",
+        "name": "Example Mag"
+      },
+      {
+        "@type": "CollectionPage",
+        "url": "https://www.example-mag.com/long-reads/",
+        "mainEntity": {
+          "@type": "ItemList",
+          "itemListElement": [
+            {
+              "@type": "BlogPosting",
+              "url": "https://www.example-mag.com/long-reads/the-quiet-city",
+              "headline": "The Quiet City: A Year Without Cars",
+              "image": "https://cdn.example-mag.com/quiet-city-hero.jpg",
+              "description": "What we learned when the downtown loop went pedestrian-only for twelve months.",
+              "author": { "@type": "Person", "name": "Marcus Chen" }
+            },
+            {
+              "@type": "BlogPosting",
+              "url": "https://www.example-mag.com/long-reads/midnight-bakers",
+              "headline": "The Midnight Bakers Who Feed the Morning Shift",
+              "image": "https://cdn.example-mag.com/bakers-hero.jpg",
+              "description": "Inside the 24-hour bakery that supplies half the city's hospitals."
+            },
+            {
+              "@type": "BlogPosting",
+              "url": "https://www.example-mag.com/long-reads/library-as-home",
+              "headline": "When the Library Is Home",
+              "image": "https://cdn.example-mag.com/library-hero.jpg"
+            }
+          ]
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main>
+    <ul class="long-reads">
+      <li><a href="/long-reads/the-quiet-city"><img src="https://cdn.example-mag.com/quiet-city-thumb.jpg" alt=""><span>Quiet City</span></a></li>
+      <li><a href="/long-reads/midnight-bakers"><img src="https://cdn.example-mag.com/bakers-thumb.jpg" alt=""><span>Midnight Bakers</span></a></li>
+      <li><a href="/long-reads/library-as-home"><img src="https://cdn.example-mag.com/library-thumb.jpg" alt=""><span>Library as Home</span></a></li>
+    </ul>
+  </main>
+</body>
+</html>

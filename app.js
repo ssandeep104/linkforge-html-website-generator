@@ -840,6 +840,164 @@ function buildSectionMap(doc) {
   return map;
 }
 
+// =====================================================================
+// JSON-LD / Schema.org extraction
+// =====================================================================
+// Modern news + video sites ship full-fidelity metadata in
+// <script type="application/ld+json">: headline, description, image, url,
+// datePublished, author. This is authoritative — it's what the site wants
+// Google/Facebook/Twitter to see. We treat it as a high-priority candidate
+// source alongside DOM scraping.
+//
+// Output shape: an array of { url, headline, description, image, datePublished,
+//                              author, schemaType }.
+// Each entry either ENRICHES an existing bucket (if its url matches an anchor
+// href in the same page) or stands alone as a new card (if not). The user
+// still picks which value to use via the existing strategy picker.
+function extractJsonLd(doc, baseURL) {
+  const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+  if (!scripts.length) return { entries: [], scriptCount: 0, parsedCount: 0 };
+  const entries = [];
+  let parsedCount = 0;
+  for (const s of scripts) {
+    let raw = (s.textContent || '').trim();
+    if (!raw) continue;
+    // Some CMS wrap LD+JSON in HTML comments or CDATA.
+    raw = raw.replace(/^<!--/, '').replace(/-->$/, '').replace(/^\/\/<!\[CDATA\[/, '').replace(/\/\/]]>$/, '').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch {
+      // Tolerate trailing commas / unescaped newlines by trying a lenient re-parse.
+      try { parsed = JSON.parse(raw.replace(/,(\s*[}\]])/g, '$1')); }
+      catch { continue; }
+    }
+    parsedCount++;
+    // Flatten @graph into top-level nodes.
+    const nodes = [];
+    const queue = Array.isArray(parsed) ? [...parsed] : [parsed];
+    while (queue.length) {
+      const n = queue.shift();
+      if (!n || typeof n !== 'object') continue;
+      if (Array.isArray(n['@graph'])) { for (const g of n['@graph']) queue.push(g); continue; }
+      nodes.push(n);
+      // CollectionPage / WebPage / WebSite often nest the actual content under
+      // mainEntity (sometimes mainEntityOfPage). Drill in.
+      if (n.mainEntity && typeof n.mainEntity === 'object') queue.push(n.mainEntity);
+      if (n.mainEntityOfPage && typeof n.mainEntityOfPage === 'object' && !Array.isArray(n.mainEntityOfPage)) {
+        // Only drill if it looks like a content node (has its own @type/itemListElement),
+        // not a bare { @id: url } reference.
+        if (n.mainEntityOfPage['@type'] || n.mainEntityOfPage.itemListElement) queue.push(n.mainEntityOfPage);
+      }
+      // ItemList: each itemListElement is usually { position, url } or
+      // { item: { ... } } — dive into the inner item.
+      if (Array.isArray(n.itemListElement)) {
+        for (const el of n.itemListElement) {
+          if (el && typeof el === 'object') {
+            if (el.item) queue.push(el.item);
+            else queue.push(el);
+          }
+        }
+      }
+    }
+    for (const n of nodes) {
+      const t = jsonLdTypes(n);
+      if (!t.length) continue;
+      // Article-shaped schemas — each one becomes an entry.
+      const isContent = t.some((x) => /^(NewsArticle|Article|BlogPosting|VideoObject|Report|TechArticle|OpinionNewsArticle|AnalysisNewsArticle|LiveBlogPosting|SocialMediaPosting|Movie|TVEpisode|PodcastEpisode|Recipe|Product|CreativeWork)$/i.test(x));
+      const isListPosition = t.some((x) => /^ListItem$/i.test(x));
+      if (!isContent && !isListPosition) continue;
+      const url = pickJsonLdUrl(n, baseURL);
+      if (!url) continue;
+      const headline = pickJsonLdString(n.headline) || pickJsonLdString(n.name) || pickJsonLdString(n.alternativeHeadline);
+      const description = pickJsonLdString(n.description) || pickJsonLdString(n.abstract);
+      const image = pickJsonLdImage(n.image, baseURL) || pickJsonLdImage(n.thumbnailUrl, baseURL) || pickJsonLdImage(n.thumbnail, baseURL);
+      const datePublished = pickJsonLdString(n.datePublished) || pickJsonLdString(n.dateCreated);
+      const author = pickJsonLdAuthor(n.author);
+      const schemaType = t[0];
+      entries.push({ url, headline, description, image, datePublished, author, schemaType });
+    }
+  }
+  // Dedupe by url, keeping the richest entry per url.
+  const byUrl = new Map();
+  const richness = (e) => (e.headline ? 2 : 0) + (e.image ? 2 : 0) + (e.description ? 1 : 0);
+  for (const e of entries) {
+    const existing = byUrl.get(e.url);
+    if (!existing || richness(e) > richness(existing)) byUrl.set(e.url, e);
+  }
+  return { entries: [...byUrl.values()], scriptCount: scripts.length, parsedCount };
+}
+
+function jsonLdTypes(node) {
+  const raw = node['@type'];
+  if (!raw) return [];
+  return (Array.isArray(raw) ? raw : [raw]).map((x) => String(x));
+}
+
+function pickJsonLdString(v) {
+  if (!v) return null;
+  if (typeof v === 'string') return v.trim() || null;
+  if (Array.isArray(v)) { for (const x of v) { const s = pickJsonLdString(x); if (s) return s; } return null; }
+  if (typeof v === 'object') return pickJsonLdString(v['@value']) || pickJsonLdString(v.name) || pickJsonLdString(v.text);
+  return null;
+}
+
+function pickJsonLdUrl(node, baseURL) {
+  // Prefer canonical .url, then mainEntityOfPage.
+  const cands = [
+    node.url,
+    node['@id'],
+    node.mainEntityOfPage && (typeof node.mainEntityOfPage === 'string' ? node.mainEntityOfPage : node.mainEntityOfPage['@id'] || node.mainEntityOfPage.url),
+    node.identifier && (typeof node.identifier === 'string' ? node.identifier : node.identifier.value),
+  ];
+  for (const c of cands) {
+    if (!c || typeof c !== 'string') continue;
+    const resolved = safeURL(c, baseURL);
+    if (resolved && /^https?:/i.test(resolved)) return resolved;
+  }
+  return null;
+}
+
+function pickJsonLdImage(v, baseURL) {
+  if (!v) return null;
+  if (typeof v === 'string') {
+    const r = safeURL(v, baseURL);
+    return r && /^https?:/i.test(r) ? r : null;
+  }
+  if (Array.isArray(v)) {
+    // Prefer the largest image (highest width × height) when ImageObjects exist.
+    let bestUrl = null, bestArea = -1;
+    for (const item of v) {
+      const u = pickJsonLdImage(item, baseURL);
+      if (!u) continue;
+      let area = 0;
+      if (item && typeof item === 'object') {
+        const w = Number(item.width || item['width']) || 0;
+        const h = Number(item.height || item['height']) || 0;
+        area = w * h;
+      }
+      if (area > bestArea) { bestArea = area; bestUrl = u; }
+    }
+    return bestUrl;
+  }
+  if (typeof v === 'object') {
+    if (v.url) return pickJsonLdImage(v.url, baseURL);
+    if (v.contentUrl) return pickJsonLdImage(v.contentUrl, baseURL);
+    if (v['@id']) return pickJsonLdImage(v['@id'], baseURL);
+  }
+  return null;
+}
+
+function pickJsonLdAuthor(v) {
+  if (!v) return null;
+  if (typeof v === 'string') return v.trim() || null;
+  if (Array.isArray(v)) {
+    const names = v.map(pickJsonLdAuthor).filter(Boolean);
+    return names.length ? names.join(', ') : null;
+  }
+  if (typeof v === 'object') return pickJsonLdString(v.name) || pickJsonLdString(v['@id']);
+  return null;
+}
+
 // Parse a source's HTML into items.
 // Returns an array of items (back-compat — callers can also read `.meta` for
 // the unresolved-anchors info via parseSourceWithMeta below).
@@ -888,6 +1046,16 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
 
   // Allow caller to override base (e.g. user typed a domain into the prompt).
   if (opts.overrideBase) baseURL = opts.overrideBase;
+
+  // JSON-LD pass — collect schema.org metadata before walking the DOM so we
+  // can enrich anchor buckets with authoritative headline/image/description
+  // and also emit standalone cards for entries whose URL doesn't appear as
+  // an anchor in the pasted HTML. The user picks via the existing strategy
+  // picker; nothing here is silently chosen.
+  const jsonLdResult = extractJsonLd(doc, baseURL);
+  const jsonLdByUrl = new Map();
+  for (const e of jsonLdResult.entries) jsonLdByUrl.set(e.url, e);
+  const jsonLdMatchedUrls = new Set(); // urls consumed by anchor buckets
 
   const fallbackImage = getMetaImage(doc);
   const items = [];
@@ -1137,9 +1305,30 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     const titleCandidates = [];
     const thumbCandidates = [];
     const videoCandidates = [];
+    const descriptionCandidates = [];
     const seenTitles = new Set();
     const seenThumbs = new Set();
     const seenVideos = new Set();
+    const seenDescriptions = new Set();
+    // JSON-LD enrichment: if any schema.org entry matches this bucket's href,
+    // prepend its values so they're the top-ranked picks in the picker. The
+    // user still chooses; this just surfaces authoritative metadata first.
+    const jsonLdEntry = jsonLdByUrl.get(href);
+    if (jsonLdEntry) {
+      jsonLdMatchedUrls.add(href);
+      if (jsonLdEntry.headline && !seenTitles.has(jsonLdEntry.headline)) {
+        seenTitles.add(jsonLdEntry.headline);
+        titleCandidates.push({ value: jsonLdEntry.headline, strategy: 'jsonld-headline', label: 'JSON-LD headline' });
+      }
+      if (jsonLdEntry.image && !seenThumbs.has(jsonLdEntry.image)) {
+        seenThumbs.add(jsonLdEntry.image);
+        thumbCandidates.push({ value: jsonLdEntry.image, strategy: 'jsonld-image', label: 'JSON-LD image' });
+      }
+      if (jsonLdEntry.description && !seenDescriptions.has(jsonLdEntry.description)) {
+        seenDescriptions.add(jsonLdEntry.description);
+        descriptionCandidates.push({ value: jsonLdEntry.description, strategy: 'jsonld-description', label: 'JSON-LD description' });
+      }
+    }
     for (const a of bucket.anchors) {
       for (const c of collectTitleCandidates(a)) {
         if (seenTitles.has(c.value)) continue;
@@ -1165,6 +1354,11 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     if (thumb && !thumbCandidates.some((c) => c.value === thumb)) {
       thumbCandidates.unshift({ value: thumb, strategy: 'fallback', label: 'fallback' });
     }
+    // If JSON-LD provided a stronger title/image, promote them to defaults.
+    if (jsonLdEntry) {
+      if (jsonLdEntry.headline) title = jsonLdEntry.headline;
+      if (jsonLdEntry.image) thumb = jsonLdEntry.image;
+    }
 
     const item = {
       id: uid(),
@@ -1173,9 +1367,12 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       title: title.slice(0, 280),
       thumbnail: thumb || null,
       video: video || null,
+      description: jsonLdEntry?.description || null,
       titleCandidates,
       thumbCandidates,
       videoCandidates,
+      descriptionCandidates,
+      jsonLd: jsonLdEntry || null,
       domain: domainOf(href),
       pageSection: sectionFor.get(bucket.firstAnchor) || 'Other',
     };
@@ -1231,6 +1428,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       titleCandidates: [{ value: altTitle, strategy: 'standalone-img-alt', label: 'image alt' }],
       thumbCandidates: [{ value: src, strategy: 'standalone-img', label: 'standalone <img>' }],
       videoCandidates: [],
+      descriptionCandidates: [],
       domain: domainOf(src),
       category: 'gallery',
       pageSection: sectionFor.get(img) || 'Images',
@@ -1262,6 +1460,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       titleCandidates: [{ value: vTitle, strategy: 'standalone-video-title', label: 'video title attr' }],
       thumbCandidates: vPoster ? [{ value: vPoster, strategy: 'standalone-video-poster', label: 'video poster' }] : [],
       videoCandidates: [{ value: src, strategy: 'standalone-video', label: 'standalone <video>', info: { url: src } }],
+      descriptionCandidates: [],
       domain: domainOf(src),
       category: 'video',
       pageSection: sectionFor.get(v) || 'Videos',
@@ -1294,7 +1493,58 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     it.enabled = true;
   }
 
-  return { items, unresolvedCount, hasBase: !!baseURL, baseURL: baseURL || null };
+  // JSON-LD orphans — entries whose URL doesn't match any anchor we found.
+  // Per user spec: still surface them; let the user decide. These items have
+  // no DOM anchor backing them, only schema.org metadata. They float to the
+  // top of the review list because they're typically the highest-confidence
+  // signal on a page (the site itself declaring "this is the article").
+  for (const entry of jsonLdResult.entries) {
+    if (jsonLdMatchedUrls.has(entry.url)) continue;
+    if (seen.has(entry.url)) continue;
+    seen.add(entry.url);
+    const titleCandidates = [];
+    const thumbCandidates = [];
+    const descriptionCandidates = [];
+    if (entry.headline) titleCandidates.push({ value: entry.headline, strategy: 'jsonld-headline', label: 'JSON-LD headline' });
+    if (entry.image) thumbCandidates.push({ value: entry.image, strategy: 'jsonld-image', label: 'JSON-LD image' });
+    if (entry.description) descriptionCandidates.push({ value: entry.description, strategy: 'jsonld-description', label: 'JSON-LD description' });
+    const item = {
+      id: uid(),
+      sourceName,
+      href: entry.url,
+      title: (entry.headline || entry.url).slice(0, 280),
+      thumbnail: entry.image || null,
+      video: null,
+      description: entry.description || null,
+      titleCandidates,
+      thumbCandidates,
+      videoCandidates: [],
+      descriptionCandidates,
+      jsonLd: entry,
+      domain: domainOf(entry.url),
+      pageSection: 'JSON-LD',
+      enabled: true,
+    };
+    item.category = classify(item);
+    items.push(item);
+  }
+
+  // Sort: JSON-LD–backed items first (authoritative), then everything else
+  // in DOM order. The user explicitly asked for high-confidence picks to
+  // float to the top of the review list.
+  items.sort((a, b) => {
+    const aLd = a.jsonLd ? 1 : 0;
+    const bLd = b.jsonLd ? 1 : 0;
+    return bLd - aLd;
+  });
+
+  return {
+    items,
+    unresolvedCount,
+    hasBase: !!baseURL,
+    baseURL: baseURL || null,
+    jsonLdMeta: { scriptCount: jsonLdResult.scriptCount, parsedCount: jsonLdResult.parsedCount, entryCount: jsonLdResult.entries.length, matchedCount: jsonLdMatchedUrls.size, orphanCount: jsonLdResult.entries.length - jsonLdMatchedUrls.size },
+  };
 }
 
 // Build an item from a self-contained <article> when the article has no
@@ -1440,6 +1690,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
     titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
     thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
     videoCandidates: videoInfo?.url ? [{ value: videoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: videoInfo }] : [],
+    descriptionCandidates: [],
     domain: domainOf(href),
   };
   item.category = videoInfo ? 'video' : (thumb ? 'article' : 'link');
@@ -1546,7 +1797,7 @@ function runParse(src, card) {
   // "Empty source" — we got non-empty HTML but zero items. Likely a JS-rendered
   // page or a snippet that needs different selectors. Track so we can show a hint.
   src.emptyAfterParse = !!(src.html.trim() && meta.items.length === 0 && meta.unresolvedCount === 0);
-  updateStats(card, meta.items);
+  updateStats(card, meta.items, meta.jsonLdMeta);
   renderBanner(src, card);
   updateCounts();
 }
@@ -1658,15 +1909,26 @@ async function probeHost(origin) {
   }
 }
 
-function updateStats(card, items) {
+function updateStats(card, items, jsonLdMeta) {
   const stats = card.querySelector('.source-card__stats');
   const nonVideo = items.filter((i) => i.category === 'link' || i.category === 'article').length;
   const images = items.filter((i) => i.thumbnail).length;
   const videos = items.filter((i) => i.category === 'video').length;
+  // JSON-LD badge: shows when the source had at least one <script type="application/ld+json">
+  // we successfully parsed. Even zero matched entries is interesting signal — it tells the
+  // user the page exposes structured data we read.
+  let jsonLdBadge = '';
+  if (jsonLdMeta && jsonLdMeta.scriptCount > 0) {
+    const n = jsonLdMeta.entryCount || 0;
+    const label = n === 1 ? '1 schema indexed' : `${n} schemas indexed`;
+    const title = `${jsonLdMeta.scriptCount} <script type="application/ld+json"> block${jsonLdMeta.scriptCount === 1 ? '' : 's'} parsed · ${jsonLdMeta.matchedCount} matched to anchors · ${jsonLdMeta.orphanCount} orphan${jsonLdMeta.orphanCount === 1 ? '' : 's'}`;
+    jsonLdBadge = `<span class="source-card__schema-badge" title="${escapeAttr(title)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>${escapeText(label)}</span>`;
+  }
   stats.innerHTML = `
     <span><strong>${nonVideo}</strong> items</span>
     <span><strong>${images}</strong> with image</span>
     <span><strong>${videos}</strong> videos</span>
+    ${jsonLdBadge}
   `;
 }
 

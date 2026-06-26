@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="https://www.example-news.com/">
+  <title>Breaking: Local Stories — Example News</title>
+
+  <!-- JSON-LD: a single NewsArticle that should enrich the anchor below -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    "url": "https://www.example-news.com/2026/06/26/city-council-approves-budget",
+    "headline": "City Council Approves $4.2B Budget After Marathon Session",
+    "description": "After nine hours of public testimony, council passed the FY2027 budget 7-2, with new investments in transit and parks.",
+    "image": {
+      "@type": "ImageObject",
+      "url": "https://cdn.example-news.com/images/2026/06/council-vote-1600.jpg",
+      "width": 1600,
+      "height": 900
+    },
+    "author": { "@type": "Person", "name": "Priya Ramachandran" },
+    "datePublished": "2026-06-26T08:30:00-05:00"
+  }
+  </script>
+
+  <!-- JSON-LD: an ItemList that nests two more articles, including one with no anchor on the page (orphan) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "url": "https://www.example-news.com/2026/06/25/transit-rollout",
+        "name": "Light Rail Expansion Hits Construction Milestone",
+        "image": "https://cdn.example-news.com/images/2026/06/rail.jpg"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "item": {
+          "@type": "Article",
+          "url": "https://www.example-news.com/2026/06/24/parks-funding",
+          "headline": "Parks Department Lands Federal Grant for Greenway",
+          "description": "A $12M grant will accelerate work on the southside greenway.",
+          "image": "https://cdn.example-news.com/images/2026/06/greenway.jpg"
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main>
+    <!-- Anchor that should be enriched by the NewsArticle above -->
+    <article>
+      <a href="/2026/06/26/city-council-approves-budget">
+        <img src="https://cdn.example-news.com/images/2026/06/council-vote-thumb.jpg" alt="Council vote">
+        <h2>Council OKs Budget</h2>
+      </a>
+    </article>
+
+    <!-- Anchor for the first ItemList entry, also gets enriched -->
+    <article>
+      <a href="/2026/06/25/transit-rollout">
+        <h3>Transit Update</h3>
+      </a>
+    </article>
+
+    <!-- NO anchor for parks-funding article — should appear as a JSON-LD orphan card -->
+  </main>
+</body>
+</html>
