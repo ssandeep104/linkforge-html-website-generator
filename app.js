@@ -221,6 +221,168 @@ function looksLikePlaceholder(url) {
   return false;
 }
 
+// Parse a srcset attribute robustly, respecting commas that appear inside
+// URLs (CDN transform syntax like Cloudinary's `f_auto,q_auto/...`, Imgix
+// param strings, data: URIs with base64, etc.).
+//
+// WHATWG srcset spec: each comma-separated entry is "URL [descriptor]" where
+// the descriptor is `Nw`, `Nx`, or `Nh`. We scan token by token: take a URL,
+// optionally take a descriptor, then expect either end-of-string or a comma
+// followed by whitespace as the entry separator.
+//
+// Returns an array of { url, descriptor } in source order. Empty array on
+// failure — callers should fall back to anchor <img>/data-* extraction.
+function parseSrcset(srcset) {
+  if (!srcset || typeof srcset !== 'string') return [];
+  const out = [];
+  let i = 0;
+  const n = srcset.length;
+  const isWS = (c) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f';
+  while (i < n) {
+    // Skip leading whitespace and stray commas
+    while (i < n && (isWS(srcset[i]) || srcset[i] === ',')) i++;
+    if (i >= n) break;
+    // Read URL — ends at first whitespace, OR at a comma that's followed by
+    // whitespace (entry separator) or end-of-string.
+    const urlStart = i;
+    while (i < n) {
+      const c = srcset[i];
+      if (isWS(c)) break;
+      if (c === ',') {
+        // Lookahead: is this comma an entry separator or a comma inside the
+        // URL? Spec says: a comma in srcset only terminates a URL when it's
+        // immediately followed by whitespace or end-of-input. CDN URLs that
+        // contain `f_auto,q_auto/...` don't have whitespace after the comma,
+        // so we keep going.
+        const next = i + 1 < n ? srcset[i + 1] : '';
+        if (next === '' || isWS(next)) break;
+      }
+      i++;
+    }
+    const url = srcset.slice(urlStart, i).replace(/,+$/, '');
+    // Skip whitespace; optional descriptor follows up to next comma+ws or EOI
+    while (i < n && isWS(srcset[i])) i++;
+    let descriptor = '';
+    const descStart = i;
+    while (i < n) {
+      const c = srcset[i];
+      if (c === ',') break;
+      i++;
+    }
+    descriptor = srcset.slice(descStart, i).trim();
+    if (url) out.push({ url, descriptor });
+    // Consume the entry-separator comma (if any)
+    if (i < n && srcset[i] === ',') i++;
+  }
+  return out;
+}
+
+// Expand every URL hiding inside an <img> element (and its containing
+// <picture>, if any) into picker candidates. The user gets to choose; we
+// don't try to outsmart them by picking the "largest" or "freshest".
+//
+// Returns an array of { value, strategy, label }, deduped on value.
+// strategy/label are passed straight through to the picker UI.
+function expandImageCandidates(img, picture) {
+  const out = [];
+  const seen = new Set();
+  const push = (value, strategy, label) => {
+    if (!value || typeof value !== 'string') return;
+    const v = value.trim();
+    if (!v || seen.has(v)) return;
+    seen.add(v);
+    out.push({ value: v, strategy, label });
+  };
+
+  // Each variant gets a UNIQUE strategy key so the per-source picker can
+  // surface every <source>/<img>/<srcset>/<data-*> variant separately.
+  // The picker collapses candidates by strategy key, so if two variants
+  // (say, AVIF 1600w and WebP 800w) share a key, only one appears in the
+  // dropdown. Hence the `:type:media:descriptor` suffix.
+  const slug = (s) => (s || '').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase();
+
+  // --- <picture><source> siblings of the <img> ---
+  // <picture> can hold multiple <source> elements: AVIF, WebP, JPEG fallbacks,
+  // plus art-direction sources gated by `media="(max-width: ...)"`. Each one
+  // can have its own srcset with multiple density/width variants. The user
+  // may legitimately want the AVIF high-res, the WebP mobile, etc.
+  if (picture) {
+    const sources = picture.querySelectorAll('source');
+    sources.forEach((s) => {
+      const type = s.getAttribute('type') || '';
+      const media = s.getAttribute('media') || '';
+      const tag = [type, media].filter(Boolean).join(' · ');
+      const entries = parseSrcset(s.getAttribute('srcset') || '');
+      entries.forEach((entry) => {
+        const desc = entry.descriptor ? ` · ${entry.descriptor}` : '';
+        const label = `picture <source>${tag ? ` (${tag})` : ''}${desc}`;
+        const key = ['picture-source', slug(type), slug(media), slug(entry.descriptor)].filter(Boolean).join(':');
+        push(entry.url, key, label);
+      });
+      // Some sources use plain `src` instead of `srcset`
+      const plainSrc = s.getAttribute('src');
+      if (plainSrc) {
+        const key = ['picture-source-src', slug(type), slug(media)].filter(Boolean).join(':');
+        push(plainSrc, key, `picture <source>${tag ? ` (${tag})` : ''}`);
+      }
+    });
+  }
+
+  if (!img) return out;
+
+  // --- <img src> ---
+  const src = img.getAttribute('src');
+  if (src) push(src, 'img-src', '<img src>');
+
+  // --- <img srcset> (when img is used standalone or alongside picture sources) ---
+  const imgSrcset = img.getAttribute('srcset');
+  if (imgSrcset) {
+    parseSrcset(imgSrcset).forEach((entry) => {
+      const desc = entry.descriptor ? ` · ${entry.descriptor}` : '';
+      const key = ['img-srcset', slug(entry.descriptor)].filter(Boolean).join(':');
+      push(entry.url, key, `<img srcset>${desc}`);
+    });
+  }
+
+  // --- Every lazy-load / hi-res data-* attribute we recognize ---
+  // We expose ALL of them as candidates, even when <img src> is present — the
+  // user said: "give all those options and let the user select". On lazy-load
+  // sites, the real high-res lives in data-src / data-original / data-hi-res-src,
+  // while src is a low-quality placeholder.
+  const dataAttrs = [
+    ['data-src', 'data-src'],
+    ['data-original', 'data-original'],
+    ['data-original-src', 'data-original-src'],
+    ['data-lazy-src', 'data-lazy-src'],
+    ['data-lazy', 'data-lazy'],
+    ['data-hi-res-src', 'data-hi-res-src'],
+    ['data-full-src', 'data-full-src'],
+    ['data-img', 'data-img'],
+    ['data-srcset', 'data-srcset (largest)'],
+    ['data-image', 'data-image'],
+    ['data-large-file', 'data-large-file'],
+    ['data-medium-file', 'data-medium-file'],
+    ['data-orig-file', 'data-orig-file'],
+    ['data-flickity-lazyload', 'data-flickity-lazyload'],
+  ];
+  for (const [attr, label] of dataAttrs) {
+    const v = img.getAttribute(attr);
+    if (!v) continue;
+    if (attr === 'data-srcset') {
+      // Same parser handles data-srcset (some lazy-load libs use it)
+      parseSrcset(v).forEach((entry) => {
+        const desc = entry.descriptor ? ` · ${entry.descriptor}` : '';
+        const key = ['img-data-srcset', slug(entry.descriptor)].filter(Boolean).join(':');
+        push(entry.url, key, `<img data-srcset>${desc}`);
+      });
+    } else {
+      push(v, 'img-' + attr, `<img ${label}>`);
+    }
+  }
+
+  return out;
+}
+
 // Pick the best <img> src across normal + lazy-load attributes.
 // Prefers data-src / data-original / srcset over src when src looks like a placeholder.
 function pickImgSrc(img) {
@@ -652,15 +814,14 @@ function collectThumbCandidates(a, baseURL) {
     if (out.some((c) => c.value === resolved)) return;
     out.push({ value: resolved, strategy, label });
   };
-  // 1. <img> inside the anchor
+  // 1. <img>/<picture> inside the anchor — surface EVERY URL the markup
+  // exposes: <picture><source srcset> entries (all of them, with type/media
+  // descriptors), <img src>, <img srcset> entries, and every lazy-load
+  // data-* attribute. The user picks; we don't pre-decide.
   const innerImg = a.querySelector('img');
-  if (innerImg) push(pickImgSrc(innerImg), 'anchor-img', 'anchor <img>');
-  // 2. <picture><source srcset> inside the anchor — pick the largest entry
-  const innerPic = a.querySelector('picture source[srcset]');
-  if (innerPic) {
-    const ss = innerPic.getAttribute('srcset') || '';
-    const last = ss.split(',').pop()?.trim().split(/\s+/)[0];
-    if (last) push(last, 'anchor-picture-srcset', 'picture srcset');
+  const innerPicture = a.querySelector('picture');
+  if (innerImg || innerPicture) {
+    expandImageCandidates(innerImg, innerPicture).forEach((c) => push(c.value, c.strategy, c.label));
   }
   // 3. inline background-image on anchor or anchor descendant
   const bgEl = a.matches?.('[style*="background-image"]') ? a : a.querySelector('[style*="background-image"]');
@@ -703,13 +864,18 @@ function collectThumbCandidates(a, baseURL) {
     // video poster on a container <video>
     const vid = container.querySelector('video[poster]');
     if (vid) push(vid.getAttribute('poster'), 'container-video-poster', 'video poster');
-    // picture source
-    const cPic = container.querySelector('picture source[srcset]');
-    if (cPic) {
-      const ss = cPic.getAttribute('srcset') || '';
-      const last = ss.split(',').pop()?.trim().split(/\s+/)[0];
-      if (last) push(last, 'container-picture-srcset', 'container picture srcset');
-    }
+    // picture sources — expand every <source> + <img> in every <picture>.
+    // Container scope means the candidate list can get long; that's fine,
+    // the picker is the right place to dig through alternates.
+    const cPictures = container.querySelectorAll('picture');
+    cPictures.forEach((pic) => {
+      const picImg = pic.querySelector('img');
+      expandImageCandidates(picImg, pic).forEach((c) => {
+        // Re-label container-scoped candidates so they don't masquerade as
+        // anchor-scoped picks in the picker.
+        push(c.value, 'container-' + c.strategy, 'container ' + c.label);
+      });
+    });
     // bg-image on container
     const cBg = container.querySelector('[style*="background-image"]');
     if (cBg) {

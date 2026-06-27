@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="https://www.example-news.com/">
+</head>
+<body>
+  <main>
+    <!--
+      Card 1 — full <picture> with multiple <source> elements (AVIF, WebP,
+      art-direction mobile JPEG) and an <img> fallback that ALSO carries
+      its own srcset plus two data-* attributes. Every URL below should
+      show up as a picker candidate.
+    -->
+    <article>
+      <a href="/2026/06/26/breaking-news">
+        <picture>
+          <source type="image/avif"
+                  srcset="https://cdn.example-news.com/hero-800.avif 800w,
+                          https://cdn.example-news.com/hero-1600.avif 1600w,
+                          https://cdn.example-news.com/hero-2400.avif 2400w">
+          <source type="image/webp"
+                  srcset="https://cdn.example-news.com/hero-800.webp 800w,
+                          https://cdn.example-news.com/hero-1600.webp 1600w">
+          <source media="(max-width: 600px)"
+                  srcset="https://cdn.example-news.com/hero-mobile-400.jpg 1x,
+                          https://cdn.example-news.com/hero-mobile-800.jpg 2x">
+          <img src="https://cdn.example-news.com/hero-fallback-1200.jpg"
+               srcset="https://cdn.example-news.com/hero-800.jpg 800w,
+                       https://cdn.example-news.com/hero-1600.jpg 1600w"
+               data-src="https://cdn.example-news.com/hero-lazy-1200.jpg"
+               data-original="https://cdn.example-news.com/hero-original-2400.jpg"
+               alt="Breaking news">
+        </picture>
+        <h2>Breaking: Council Approves Budget</h2>
+      </a>
+    </article>
+
+    <!--
+      Card 2 — CDN URL inside srcset has a comma in it (Cloudinary
+      `f_auto,q_auto` transform syntax). Naive comma-split would mangle
+      both URLs; our parser must keep them intact.
+    -->
+    <article>
+      <a href="/2026/06/25/transit">
+        <picture>
+          <source type="image/webp"
+                  srcset="https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_800/v1/transit.webp 800w,
+                          https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/transit.webp 1600w">
+          <img src="https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/transit.jpg"
+               alt="Transit">
+        </picture>
+      </a>
+    </article>
+
+    <!--
+      Card 3 — standalone <img> with srcset, no <picture>. Plus a tracking
+      pixel-sized data-* placeholder we should still expose as a candidate
+      (user picks).
+    -->
+    <article>
+      <a href="/2026/06/24/parks">
+        <img src="https://cdn.example-news.com/parks-fallback.jpg"
+             srcset="https://cdn.example-news.com/parks-400.jpg 400w,
+                     https://cdn.example-news.com/parks-800.jpg 800w,
+                     https://cdn.example-news.com/parks-1200.jpg 1200w,
+                     https://cdn.example-news.com/parks-1600.jpg 1600w"
+             data-hi-res-src="https://cdn.example-news.com/parks-original-3200.jpg"
+             alt="Parks">
+        <h2>Parks Department Lands Federal Grant</h2>
+      </a>
+    </article>
+  </main>
+</body>
+</html>
