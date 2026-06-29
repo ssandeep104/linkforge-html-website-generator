@@ -2,7 +2,8 @@
    LINKFORGE — client-side HTML aggregator
    ===================================================== */
 
-const state = {
+// Exposed on window for in-browser test diagnostics (no behavior change).
+const state = window.__lfState = {
   sources: [], // {id, name, html, items[]}
   items: [], // flattened, with .enabled flag
   site: { title: 'Daily Reader', tagline: 'A curated front page, built from the web.', template: 'editorial' },
@@ -277,6 +278,20 @@ function parseSrcset(srcset) {
   return out;
 }
 
+// Extract numeric width from a srcset descriptor. `1600w` → 1600, `2x` →
+// 2 (treated as low priority, returns 2). Empty / unparseable → 0.
+// Used by the umbrella-candidate logic to pick the highest-resolution URL
+// per <source> / <srcset> for the cross-category "any size" option.
+function parseDescriptorWidth(desc) {
+  if (!desc) return 0;
+  const m = String(desc).trim().match(/^(\d+(?:\.\d+)?)(w|x)?$/i);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  // density descriptors (1x, 2x) are usually small numbers — keep them under
+  // width descriptors which are usually >100
+  return m[2] && m[2].toLowerCase() === 'x' ? n : n;
+}
+
 // Expand every URL hiding inside an <img> element (and its containing
 // <picture>, if any) into picker candidates. The user gets to choose; we
 // don't try to outsmart them by picking the "largest" or "freshest".
@@ -285,12 +300,19 @@ function parseSrcset(srcset) {
 // strategy/label are passed straight through to the picker UI.
 function expandImageCandidates(img, picture) {
   const out = [];
+  // Dedupe on (strategy, value) tuples — NOT on value alone. The same URL can
+  // legitimately appear under multiple strategy keys (e.g. `img-srcset:1600w`
+  // and the umbrella `img-srcset:any`); both must reach the picker so the
+  // user can pick the umbrella for cross-category selection without losing
+  // the detailed option for fine control.
   const seen = new Set();
   const push = (value, strategy, label) => {
     if (!value || typeof value !== 'string') return;
     const v = value.trim();
-    if (!v || seen.has(v)) return;
-    seen.add(v);
+    if (!v) return;
+    const key = strategy + '\0' + v;
+    if (seen.has(key)) return;
+    seen.add(key);
     out.push({ value: v, strategy, label });
   };
 
@@ -306,26 +328,51 @@ function expandImageCandidates(img, picture) {
   // plus art-direction sources gated by `media="(max-width: ...)"`. Each one
   // can have its own srcset with multiple density/width variants. The user
   // may legitimately want the AVIF high-res, the WebP mobile, etc.
+  //
+  // We emit TWO tiers of candidates so the per-source picker works across
+  // categories of links that use different markup shapes:
+  //   - DETAILED: one candidate per (type, media, descriptor) — exact match,
+  //     but tied to one specific category of href.
+  //   - UMBRELLA: one candidate per (type, media) and one per <picture>,
+  //     using the highest-descriptor URL inside. These match every href that
+  //     has *any* variant in that family, so picking "picture <source> (any)"
+  //     works whether the href has 800w or 2400w.
   if (picture) {
     const sources = picture.querySelectorAll('source');
+    let anyPictureBest = null;
     sources.forEach((s) => {
       const type = s.getAttribute('type') || '';
       const media = s.getAttribute('media') || '';
       const tag = [type, media].filter(Boolean).join(' · ');
       const entries = parseSrcset(s.getAttribute('srcset') || '');
+      let sourceBest = null;
+      let sourceBestW = -1;
       entries.forEach((entry) => {
         const desc = entry.descriptor ? ` · ${entry.descriptor}` : '';
         const label = `picture <source>${tag ? ` (${tag})` : ''}${desc}`;
         const key = ['picture-source', slug(type), slug(media), slug(entry.descriptor)].filter(Boolean).join(':');
         push(entry.url, key, label);
+        const w = parseDescriptorWidth(entry.descriptor);
+        if (w >= sourceBestW) { sourceBestW = w; sourceBest = entry.url; }
       });
       // Some sources use plain `src` instead of `srcset`
       const plainSrc = s.getAttribute('src');
       if (plainSrc) {
         const key = ['picture-source-src', slug(type), slug(media)].filter(Boolean).join(':');
         push(plainSrc, key, `picture <source>${tag ? ` (${tag})` : ''}`);
+        if (!sourceBest) sourceBest = plainSrc;
       }
+      // UMBRELLA per <source>: any descriptor inside this type/media combo
+      if (sourceBest && (type || media)) {
+        const umbrellaKey = ['picture-source', slug(type), slug(media), 'any'].filter(Boolean).join(':');
+        push(sourceBest, umbrellaKey, `picture <source>${tag ? ` (${tag})` : ''} · any size`);
+      }
+      if (sourceBest && !anyPictureBest) anyPictureBest = sourceBest;
     });
+    // UMBRELLA per <picture>: first <source>'s best URL, regardless of type/media
+    if (anyPictureBest) {
+      push(anyPictureBest, 'picture-source:any', 'picture <source> · any');
+    }
   }
 
   if (!img) return out;
@@ -335,13 +382,21 @@ function expandImageCandidates(img, picture) {
   if (src) push(src, 'img-src', '<img src>');
 
   // --- <img srcset> (when img is used standalone or alongside picture sources) ---
+  // Detailed entries + UMBRELLA `img-srcset:any` that picks the largest descriptor
+  // per item, so the picker option works across hrefs with different descriptor sets.
   const imgSrcset = img.getAttribute('srcset');
   if (imgSrcset) {
-    parseSrcset(imgSrcset).forEach((entry) => {
+    const entries = parseSrcset(imgSrcset);
+    let bestUrl = null;
+    let bestW = -1;
+    entries.forEach((entry) => {
       const desc = entry.descriptor ? ` · ${entry.descriptor}` : '';
       const key = ['img-srcset', slug(entry.descriptor)].filter(Boolean).join(':');
       push(entry.url, key, `<img srcset>${desc}`);
+      const w = parseDescriptorWidth(entry.descriptor);
+      if (w >= bestW) { bestW = w; bestUrl = entry.url; }
     });
+    if (bestUrl) push(bestUrl, 'img-srcset:any', '<img srcset> · any size (largest)');
   }
 
   // --- Every lazy-load / hi-res data-* attribute we recognize ---
@@ -370,11 +425,17 @@ function expandImageCandidates(img, picture) {
     if (!v) continue;
     if (attr === 'data-srcset') {
       // Same parser handles data-srcset (some lazy-load libs use it)
-      parseSrcset(v).forEach((entry) => {
+      const entries = parseSrcset(v);
+      let bestUrl = null;
+      let bestW = -1;
+      entries.forEach((entry) => {
         const desc = entry.descriptor ? ` · ${entry.descriptor}` : '';
         const key = ['img-data-srcset', slug(entry.descriptor)].filter(Boolean).join(':');
         push(entry.url, key, `<img data-srcset>${desc}`);
+        const w = parseDescriptorWidth(entry.descriptor);
+        if (w >= bestW) { bestW = w; bestUrl = entry.url; }
       });
+      if (bestUrl) push(bestUrl, 'img-data-srcset:any', '<img data-srcset> · any size (largest)');
     } else {
       push(v, 'img-' + attr, `<img ${label}>`);
     }
@@ -807,11 +868,14 @@ function collectTitleCandidates(a) {
 
 function collectThumbCandidates(a, baseURL) {
   const out = [];
+  // Dedupe on (strategy, resolved value) — same URL under different strategy
+  // keys (e.g. detailed `img-srcset:1600w` vs umbrella `img-srcset:any`) are
+  // both retained so the picker can surface both options.
   const push = (value, strategy, label) => {
     if (!value) return;
     const resolved = safeURL(value, baseURL) || value;
     if (!/^https?:/i.test(resolved)) return;
-    if (out.some((c) => c.value === resolved)) return;
+    if (out.some((c) => c.value === resolved && c.strategy === strategy)) return;
     out.push({ value: resolved, strategy, label });
   };
   // 1. <img>/<picture> inside the anchor — surface EVERY URL the markup
@@ -1496,19 +1560,29 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       }
     }
     for (const a of bucket.anchors) {
+      // Dedupe on (strategy, value) so the same URL can appear under multiple
+      // strategy keys — e.g. detailed `img-srcset:1600w` and umbrella
+      // `img-srcset:any` both reach the picker even though they resolve to the
+      // same URL. Without the strategy in the dedupe key, the umbrella gets
+      // silently dropped and the picker shows only descriptor-specific options
+      // tied to one category of links.
+      const tupleKey = (c) => c.strategy + '\0' + c.value;
       for (const c of collectTitleCandidates(a)) {
-        if (seenTitles.has(c.value)) continue;
-        seenTitles.add(c.value);
+        const k = tupleKey(c);
+        if (seenTitles.has(k)) continue;
+        seenTitles.add(k);
         titleCandidates.push(c);
       }
       for (const c of collectThumbCandidates(a, baseURL)) {
-        if (seenThumbs.has(c.value)) continue;
-        seenThumbs.add(c.value);
+        const k = tupleKey(c);
+        if (seenThumbs.has(k)) continue;
+        seenThumbs.add(k);
         thumbCandidates.push(c);
       }
       for (const c of collectVideoCandidates(a, baseURL)) {
-        if (seenVideos.has(c.value)) continue;
-        seenVideos.add(c.value);
+        const k = tupleKey(c);
+        if (seenVideos.has(k)) continue;
+        seenVideos.add(k);
         videoCandidates.push(c);
       }
     }
@@ -2223,23 +2297,58 @@ function applySourceStrategy(src) {
   }
 }
 
-// Build the option list for a source's title/thumb/video picker. Each option
-// is a strategy that produced at least one candidate across the source's
-// items, with a sample preview value the user can see in the dropdown.
+// Build the per-source picker option list as a UNION across every item in
+// the source. Each strategy key collapses to one option, but we now track
+// how many distinct items it matched, plus whether values vary across items
+// (so the dropdown label can show "varies" instead of one specific URL,
+// which would otherwise make the option look tied to a single href).
 function buildPickerOptionsForSource(src, field) {
   const candKey = field === 'title' ? 'titleCandidates'
     : field === 'thumb' ? 'thumbCandidates'
     : 'videoCandidates';
+  const totalItems = (src.items || []).length;
   const byStrategy = new Map();
   for (const it of src.items || []) {
+    const seenForItem = new Set();
     for (const c of it[candKey] || []) {
       if (!byStrategy.has(c.strategy)) {
-        byStrategy.set(c.strategy, { strategy: c.strategy, label: c.label, sample: c.value, count: 0 });
+        byStrategy.set(c.strategy, {
+          strategy: c.strategy,
+          label: c.label,
+          sample: c.value,
+          count: 0,
+          values: new Set(),
+        });
       }
-      byStrategy.get(c.strategy).count++;
+      const slot = byStrategy.get(c.strategy);
+      // count items not raw candidate hits — a single item could contribute
+      // the same strategy twice (e.g. two data-* attrs with identical key).
+      if (!seenForItem.has(c.strategy)) {
+        slot.count++;
+        seenForItem.add(c.strategy);
+      }
+      slot.values.add(c.value);
     }
   }
-  return Array.from(byStrategy.values());
+  // Sort: umbrella `:any` and broader (high-count) options bubble up; ties broken
+  // by label so the dropdown is stable. Detailed descriptor options drop below.
+  const out = Array.from(byStrategy.values()).map((o) => ({
+    strategy: o.strategy,
+    label: o.label,
+    sample: o.sample,
+    count: o.count,
+    totalItems,
+    varies: o.values.size > 1,
+    coverage: o.count / Math.max(1, totalItems),
+    isUmbrella: /(?::any\b|:any$)/.test(o.strategy),
+  }));
+  out.sort((a, b) => {
+    // Umbrella first when coverage is comparable, otherwise highest coverage wins
+    if (b.coverage !== a.coverage) return b.coverage - a.coverage;
+    if (a.isUmbrella !== b.isUmbrella) return a.isUmbrella ? -1 : 1;
+    return a.label.localeCompare(b.label);
+  });
+  return out;
 }
 
 // Initialize src.strategy from the parser's default winner (first candidate).
@@ -2315,11 +2424,32 @@ function renderStrategySelect(field, src, options, opts = {}) {
   const { allowNone = false, optional = false } = opts;
   const labelText = field === 'title' ? 'Title' : field === 'thumb' ? 'Image' : 'Video preview';
   const current = src.strategy?.[field] || (options[0]?.strategy) || '__none__';
-  const optHtml = options.map((o) => {
-    const sample = truncate(o.sample || '', 48);
-    const optLabel = `${o.label} — ${sample || '(empty)'} · ${o.count} link${o.count === 1 ? '' : 's'}`;
+  // Group options into two buckets so the dropdown stays scannable when many
+  // strategy keys exist across mixed categories of links:
+  //   - Universal: option covers every item in the source ("all N"). Picking
+  //     it works for every link without leaving any card blank.
+  //   - Partial: option covers only a subset of items (one category). Useful
+  //     when the source actually contains a single category of href, or when
+  //     the user wants the fine-grained descriptor for a specific category.
+  // Inside each group, umbrella (`:any`) keys are first, then by coverage.
+  const total = (options[0]?.totalItems) || 0;
+  const fmtOption = (o) => {
+    const totalN = o.totalItems || 0;
+    const allMatch = totalN > 0 && o.count === totalN;
+    const coverageTag = allMatch ? `all ${totalN}` : `${o.count} of ${totalN}`;
+    const preview = o.varies ? 'varies per link' : (truncate(o.sample || '', 48) || '(empty)');
+    const optLabel = `${o.label} — ${preview} · ${coverageTag}`;
     return `<option value="${escapeAttr(o.strategy)}" ${o.strategy === current ? 'selected' : ''}>${escapeText(optLabel)}</option>`;
-  }).join('');
+  };
+  const universal = options.filter((o) => total > 0 && o.count === total);
+  const partial = options.filter((o) => !(total > 0 && o.count === total));
+  const universalHtml = universal.length
+    ? `<optgroup label="Works for every link">${universal.map(fmtOption).join('')}</optgroup>`
+    : '';
+  const partialHtml = partial.length
+    ? `<optgroup label="Works for a subset (some links will be empty)">${partial.map(fmtOption).join('')}</optgroup>`
+    : '';
+  const optHtml = universalHtml + partialHtml;
   const noneHtml = allowNone
     ? `<option value="__none__" ${current === '__none__' ? 'selected' : ''}>${optional ? 'No video preview' : `No ${field}`}</option>`
     : '';

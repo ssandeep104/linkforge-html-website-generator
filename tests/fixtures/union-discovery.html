@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head><base href="https://union-test.example.com/"></head>
+<body>
+<!-- href A: only data-src lazy-load, no srcset, no picture -->
+<article>
+  <a href="https://union-test.example.com/article-a">
+    <img data-src="https://cdn.example.com/a-lazy.jpg" alt="A lazy">
+    <h2>Article A</h2>
+  </a>
+</article>
+
+<!-- href B: only srcset, no data-*, no picture -->
+<article>
+  <a href="https://union-test.example.com/article-b">
+    <img srcset="https://cdn.example.com/b-800.jpg 800w, https://cdn.example.com/b-1600.jpg 1600w" alt="B srcset">
+    <h2>Article B</h2>
+  </a>
+</article>
+
+<!-- href C: only picture+source AVIF/WebP, no img.src visible to user -->
+<article>
+  <a href="https://union-test.example.com/article-c">
+    <picture>
+      <source type="image/avif" srcset="https://cdn.example.com/c.avif">
+      <source type="image/webp" srcset="https://cdn.example.com/c.webp">
+      <img src="https://cdn.example.com/c-fallback.jpg" alt="C picture">
+    </picture>
+    <h2>Article C</h2>
+  </a>
+</article>
+
+<!-- href D: only background-image inline style -->
+<article>
+  <a href="https://union-test.example.com/article-d" style="background-image: url('https://cdn.example.com/d-bg.jpg')">
+    <h2>Article D</h2>
+  </a>
+</article>
+
+<!-- href E: only adjacent sibling img (no img inside the anchor) -->
+<article>
+  <a href="https://union-test.example.com/article-e"><h2>Article E</h2></a>
+  <img src="https://cdn.example.com/e-sibling.jpg" alt="E sibling">
+</article>
+</body>
+</html>
