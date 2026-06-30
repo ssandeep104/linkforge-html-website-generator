@@ -143,6 +143,22 @@ function vimeoId(url) {
   return null;
 }
 
+
+function getPatternSignature(anchor) {
+  if (!anchor) return 'Other';
+  const container = anchor.closest('article, li, figure, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i]');
+  if (container) {
+    let cls = (container.getAttribute('class') || '').trim();
+    if (cls) {
+      // Keep only first two classes to avoid overly specific patterns
+      cls = cls.split(/\s+/).slice(0, 2).join(' ');
+      return `<${container.tagName.toLowerCase()} class="${cls}">`;
+    }
+    return `<${container.tagName.toLowerCase()}>`;
+  }
+  return 'Default Link';
+}
+
 function classify(item) {
   // Item already has href, possibly thumbnail, possibly video.
   if (item.video || isVideoHref(item.href)) return 'video';
@@ -1638,6 +1654,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       jsonLd: jsonLdEntry || null,
       domain: domainOf(href),
       pageSection: sectionFor.get(bucket.firstAnchor) || 'Other',
+      pattern: getPatternSignature(bucket.firstAnchor),
     };
     item.category = classify(item);
     items.push(item);
@@ -1698,6 +1715,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       domain: domainOf(src),
       category: 'gallery',
       pageSection: sectionFor.get(img) || 'Images',
+      pattern: '<img>',
     });
   }
 
@@ -1730,6 +1748,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       domain: domainOf(src),
       category: 'video',
       pageSection: sectionFor.get(v) || 'Videos',
+      pattern: v.tagName === 'IFRAME' ? '<iframe>' : '<video>',
     });
   }
 
@@ -1790,6 +1809,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       domain: domainOf(entry.url),
       pageSection: 'JSON-LD',
       enabled: true,
+      pattern: 'JSON-LD',
     };
     item.category = classify(item);
     items.push(item);
@@ -1937,6 +1957,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
       videoCandidates: videoInfo?.url ? [{ value: videoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: videoInfo }] : [],
       descriptionCandidates: [],
       domain: domainOf(href),
+      pattern: '<article>',
     };
     item.category = videoInfo ? 'video' : (thumb ? 'article' : 'link');
     outItems.push(item);
@@ -1964,6 +1985,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
         videoCandidates: iframeVideoInfo?.url ? [{ value: iframeVideoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: iframeVideoInfo }] : [],
         descriptionCandidates: [],
         domain: domainOf(iframeHref),
+        pattern: '<iframe>',
       };
       item.category = iframeVideoInfo ? 'video' : (thumb ? 'article' : 'link');
       outItems.push(item);
@@ -1994,6 +2016,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
         videoCandidates: [],
         descriptionCandidates: [],
         domain: domainOf(fallbackHref),
+        pattern: '<article>',
       };
       item.category = thumb ? 'article' : 'link';
       outItems.push(item);
@@ -2344,8 +2367,9 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
 // chosen extractor name. Applying it walks the source's items and updates
 // item.title/thumbnail/video from the saved candidate lists. No re-parse needed.
 function applySourceStrategy(src) {
-  const strat = src.strategy || {};
+  src.strategyByPattern = src.strategyByPattern || {};
   for (const it of src.items || []) {
+    const strat = src.strategyByPattern[it.pattern] || {};
     if (strat.title && it.titleCandidates?.length) {
       const pick = it.titleCandidates.find((c) => c.strategy === strat.title);
       if (pick) it.title = pick.value;
@@ -2368,13 +2392,13 @@ function applySourceStrategy(src) {
 // how many distinct items it matched, plus whether values vary across items
 // (so the dropdown label can show "varies" instead of one specific URL,
 // which would otherwise make the option look tied to a single href).
-function buildPickerOptionsForSource(src, field) {
+function buildPickerOptionsForGroup(items, field) {
   const candKey = field === 'title' ? 'titleCandidates'
     : field === 'thumb' ? 'thumbCandidates'
     : 'videoCandidates';
-  const totalItems = (src.items || []).length;
+  const totalItems = (items || []).length;
   const byStrategy = new Map();
-  for (const it of src.items || []) {
+  for (const it of items || []) {
     const seenForItem = new Set();
     for (const c of it[candKey] || []) {
       if (!byStrategy.has(c.strategy)) {
@@ -2421,21 +2445,27 @@ function buildPickerOptionsForSource(src, field) {
 // This makes the dropdown show the right value on first render.
 function seedDefaultStrategies(src) {
   if (!src) return;
-  src.strategy = src.strategy || {};
+  src.strategyByPattern = src.strategyByPattern || {};
   for (const it of src.items || []) {
-    if (!src.strategy.title && it.titleCandidates?.length) {
+    if (!it.pattern) continue;
+    if (!src.strategyByPattern[it.pattern]) {
+      src.strategyByPattern[it.pattern] = {};
+    }
+    const strat = src.strategyByPattern[it.pattern];
+
+    if (!strat.title && it.titleCandidates?.length) {
       // pick the strategy whose value equals the current it.title, else first
       const match = it.titleCandidates.find((c) => c.value === it.title);
-      src.strategy.title = (match || it.titleCandidates[0]).strategy;
+      strat.title = (match || it.titleCandidates[0]).strategy;
     }
-    if (!src.strategy.thumb && it.thumbCandidates?.length) {
+    if (!strat.thumb && it.thumbCandidates?.length) {
       const match = it.thumbCandidates.find((c) => c.value === it.thumbnail);
-      src.strategy.thumb = (match || it.thumbCandidates[0]).strategy;
+      strat.thumb = (match || it.thumbCandidates[0]).strategy;
     }
-    if (src.strategy.title && src.strategy.thumb) break;
+    if (!strat.video) {
+      strat.video = '__none__';
+    }
   }
-  // video defaults to none (opt-in)
-  if (!src.strategy.video) src.strategy.video = '__none__';
 }
 
 function renderSourceStrategyPicker() {
@@ -2448,14 +2478,25 @@ function renderSourceStrategyPicker() {
   const rows = [];
   for (const src of state.sources) {
     seedDefaultStrategies(src);
-    const titleOpts = buildPickerOptionsForSource(src, 'title');
-    const thumbOpts = buildPickerOptionsForSource(src, 'thumb');
-    const videoOpts = buildPickerOptionsForSource(src, 'video');
-    const showTitle = titleOpts.length >= 1;
-    const showThumb = thumbOpts.length >= 1;
-    const showVideo = videoOpts.length >= 1;
-    if (!showTitle && !showThumb && !showVideo) continue;
-    rows.push({ src, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo });
+    const groups = new Map();
+    for (const it of src.items || []) {
+      const pattern = it.pattern || 'Other';
+      if (!groups.has(pattern)) groups.set(pattern, []);
+      groups.get(pattern).push(it);
+    }
+
+    for (const [pattern, items] of groups.entries()) {
+      const titleOpts = buildPickerOptionsForGroup(items, 'title');
+      const thumbOpts = buildPickerOptionsForGroup(items, 'thumb');
+      const videoOpts = buildPickerOptionsForGroup(items, 'video');
+      const showTitle = titleOpts.length >= 1;
+      const showThumb = thumbOpts.length >= 1;
+      const showVideo = videoOpts.length >= 1;
+      if (!showTitle && !showThumb && !showVideo) continue;
+
+      const currentStrategy = src.strategyByPattern[pattern] || {};
+      rows.push({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy });
+    }
   }
   if (rows.length === 0) { root.hidden = true; root.innerHTML = ''; return; }
   root.hidden = false;
@@ -2465,16 +2506,16 @@ function renderSourceStrategyPicker() {
       <p class="muted">When a source offers more than one way to grab the title or image, pick the one that fits best. Your choice applies to every link from that source.</p>
     </div>
     <div class="strategy-picker__list">
-      ${rows.map(({ src, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo }) => `
+      ${rows.map(({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy }) => `
         <div class="strategy-row" data-src-id="${escapeAttr(src.id)}">
           <div class="strategy-row__source">
             <span class="strategy-row__name">${escapeText(src.name || 'Untitled source')}</span>
-            <span class="strategy-row__count muted">${(src.items || []).length} link${(src.items || []).length === 1 ? '' : 's'}</span>
+            <span class="strategy-row__count muted">${items.length} link${items.length === 1 ? '' : 's'} matching ${escapeText(pattern)}</span>
           </div>
           <div class="strategy-row__fields">
-            ${showTitle ? renderStrategySelect('title', src, titleOpts) : ''}
-            ${showThumb ? renderStrategySelect('thumb', src, thumbOpts, { allowNone: true }) : ''}
-            ${showVideo ? renderStrategySelect('video', src, videoOpts, { allowNone: true, optional: true }) : ''}
+            ${showTitle ? renderStrategySelect('title', src, titleOpts, currentStrategy.title, pattern) : ''}
+            ${showThumb ? renderStrategySelect('thumb', src, thumbOpts, currentStrategy.thumb, pattern, { allowNone: true }) : ''}
+            ${showVideo ? renderStrategySelect('video', src, videoOpts, currentStrategy.video, pattern, { allowNone: true, optional: true }) : ''}
           </div>
         </div>
       `).join('')}
@@ -2486,10 +2527,10 @@ function renderSourceStrategyPicker() {
   });
 }
 
-function renderStrategySelect(field, src, options, opts = {}) {
+function renderStrategySelect(field, src, options, currentStrategyVal, pattern, opts = {}) {
   const { allowNone = false, optional = false } = opts;
   const labelText = field === 'title' ? 'Title' : field === 'thumb' ? 'Image' : 'Video preview';
-  const current = src.strategy?.[field] || (options[0]?.strategy) || '__none__';
+  const current = currentStrategyVal || (options[0]?.strategy) || '__none__';
   // Group options into two buckets so the dropdown stays scannable when many
   // strategy keys exist across mixed categories of links:
   //   - Universal: option covers every item in the source ("all N"). Picking
@@ -2522,7 +2563,7 @@ function renderStrategySelect(field, src, options, opts = {}) {
   return `
     <label class="strategy-field">
       <span class="strategy-field__label">${labelText}</span>
-      <select data-strategy-field="${field}" data-src-id="${escapeAttr(src.id)}">
+      <select data-strategy-field="${field}" data-src-id="${escapeAttr(src.id)}" data-pattern="${escapeAttr(pattern)}">
         ${optHtml}
         ${noneHtml}
       </select>
@@ -2534,11 +2575,13 @@ function onStrategyChange(e) {
   const sel = e.currentTarget;
   const srcId = sel.dataset.srcId;
   const field = sel.dataset.strategyField;
+  const pattern = sel.dataset.pattern;
   const value = sel.value;
   const src = state.sources.find((s) => s.id === srcId);
   if (!src) return;
-  src.strategy = src.strategy || {};
-  src.strategy[field] = value;
+  src.strategyByPattern = src.strategyByPattern || {};
+  if (!src.strategyByPattern[pattern]) src.strategyByPattern[pattern] = {};
+  src.strategyByPattern[pattern][field] = value;
   // Re-flatten so the new title/thumb/video shows up in state.items, then
   // re-render the categories panel. Preserve user's enabled toggles.
   flattenSourcesIntoItems({ resetEnabled: false });
