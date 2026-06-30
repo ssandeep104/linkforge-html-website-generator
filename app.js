@@ -2384,6 +2384,8 @@ function applySourceStrategy(src) {
       if (pick) it.video = pick.info || { url: pick.value };
       else if (strat.video === '__none__') it.video = null;
     }
+    // Re-classify item because selecting/deselecting a video might change its category
+    it.category = classify(it);
   }
 }
 
