@@ -760,6 +760,7 @@ function looksLikeBadTitle(t) {
   if (!s) return true;
   if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return true; // duration
   if (/^\d+(\.\d+)?[KMB]?(\s*(views|likes|comments))?$/i.test(s)) return true; // play count
+  if (/^\d+(\.\d+)?[KMB]?$/.test(s)) return true; // play count bare
   // Source-attribution chip: optional "Video/Watch/Play/Listen" verb, a duration,
   // then an attribution string that can include slashes, ampersands, @handles,
   // and 1-6 words. Matches: "Video 0:39 CNN", "Video 1:13 CNN/Reuters",
@@ -806,7 +807,10 @@ function visibleText(el) {
   for (const bad of clone.querySelectorAll('script, style, noscript, template')) {
     bad.remove();
   }
-  return clone.textContent.replace(/\s+/g, ' ').trim();
+  let text = clone.textContent.replace(/\s+/g, ' ').trim();
+  // Strip leading duration patterns like "2:34 " or "12:34:56 "
+  text = text.replace(/^\d{1,2}:\d{2}(?::\d{2})?\s+/, '');
+  return text.trim();
 }
 
 function getAnchorTitle(a) {
@@ -840,6 +844,16 @@ function collectTitleCandidates(a) {
     if (out.some((c) => c.value === v)) return;
     out.push({ value: v.slice(0, 280), strategy, label });
   };
+  // Prioritize container heading if it exists, to fix BBC / Reuters / Medium
+  // where the image anchor comes first and steals the default title with its alt text.
+  const container = a.closest('article, li, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i], figure');
+  if (container && container !== a) {
+    const ch = container.querySelector('h1, h2, h3, h4');
+    if (ch && !a.contains(ch)) push(visibleText(ch), 'container-heading', `container <${ch.tagName.toLowerCase()}>`);
+    const cTitle = container.querySelector('[class*="title" i], [class*="headline" i]');
+    if (cTitle && !a.contains(cTitle) && cTitle !== ch) push(visibleText(cTitle), 'container-title-class', 'container class=title');
+  }
+
   const aria = a.getAttribute('aria-label');
   push(aria, 'anchor-aria-label', 'aria-label');
   const ttl = a.getAttribute('title');
@@ -852,17 +866,17 @@ function collectTitleCandidates(a) {
   const img = a.querySelector('img[alt]');
   if (img?.getAttribute('alt')?.trim()) push(img.getAttribute('alt'), 'anchor-img-alt', 'image alt');
   // Container-level fallbacks — nearest article/li/figure that ISN'T the anchor.
-  const container = a.closest('article, li, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i], figure');
   if (container && container !== a) {
-    const ch = container.querySelector('h1, h2, h3, h4');
-    if (ch && !a.contains(ch)) push(visibleText(ch), 'container-heading', `container <${ch.tagName.toLowerCase()}>`);
-    const cTitle = container.querySelector('[class*="title" i], [class*="headline" i]');
-    if (cTitle && !a.contains(cTitle) && cTitle !== ch) push(visibleText(cTitle), 'container-title-class', 'container class=title');
     const cAria = container.getAttribute('aria-label');
     if (cAria && container !== a) push(cAria, 'container-aria-label', 'container aria-label');
     const cap = container.querySelector('figcaption, [class*="caption" i]');
     if (cap) push(visibleText(cap), 'container-caption', 'caption');
   }
+
+  // TikTok fallback: sibling .css-13cdu78-PVideoLabel
+  const pTitle = a.parentElement && a.parentElement.parentElement ? a.parentElement.parentElement.querySelector('p[class*="PVideoLabel"]') : null;
+  if (pTitle) push(visibleText(pTitle), 'sibling-p-title', 'sibling <p> title');
+
   return out;
 }
 
@@ -1305,7 +1319,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   const claimedImgs = new WeakSet(); // images claimed by article-level synthesis
   const claimedVideos = new WeakSet(); // <video>/<iframe> claimed by anchor-bucket items (#5/Reddit)
   const buckets = new Map(); // href -> { anchors: [a, ...], firstAnchor: a }
-  const rawAnchors = Array.from(doc.querySelectorAll('a[href]'));
+  const rawAnchors = Array.from(doc.querySelectorAll('a[href], button[data-href], button[data-url], button[data-video-url], button[data-link], [role="link"][data-href]'));
 
   // Pre-pass: card-level grouping (the "byline-anchor" / uploader fix).
   //
@@ -1413,7 +1427,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     }
   }
   for (const a of rawAnchors) {
-    const rawHref = a.getAttribute('href');
+    const rawHref = a.getAttribute('href') || a.getAttribute('data-href') || a.getAttribute('data-url') || a.getAttribute('data-video-url') || a.getAttribute('data-link');
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue;
     const href = safeURL(rawHref, baseURL);
     if (!href) {
@@ -1429,6 +1443,15 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     try {
       const host = new URL(href).hostname.toLowerCase().replace(/^www\./, '');
       if (SHORT_LINK_HOSTS.has(host)) continue;
+
+      // Filter out twitter/x status anchors whose title looks like a date
+      if (host === 'twitter.com' || host === 'x.com') {
+        const text = visibleText(a).trim();
+        // matches typical dates like "June 10, 2026" or "10 Jun 2026"
+        if (/^[a-z]{3,9}\s+\d{1,2},?\s+\d{4}$/i.test(text) || /^\d{1,2}\s+[a-z]{3,9}\s+\d{4}$/i.test(text)) {
+          continue;
+        }
+      }
     } catch {}
 
     if (!buckets.has(href)) buckets.set(href, { anchors: [], firstAnchor: a });
@@ -1629,12 +1652,15 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   const articles = Array.from(doc.querySelectorAll('article'));
   for (const art of articles) {
     if (art.querySelector('a[href]')) continue; // already covered by anchor walk
-    const synth = synthesizeFromArticle(art, baseURL, sourceName);
-    if (!synth) continue;
-    if (seen.has(synth.href)) continue;
-    seen.add(synth.href);
-    synth.pageSection = sectionFor.get(art) || 'Videos';
-    items.push(synth);
+    const synths = synthesizeFromArticle(art, baseURL, sourceName);
+    if (!synths || synths.length === 0) continue;
+
+    for (const synth of synths) {
+      if (seen.has(synth.href)) continue;
+      seen.add(synth.href);
+      synth.pageSection = sectionFor.get(art) || 'Videos';
+      items.push(synth);
+    }
     // Mark all images & videos inside this article so standalone walks skip them.
     art.querySelectorAll('img, video, iframe, source').forEach((el) => synthesizedFromArticles.add(el));
   }
@@ -1895,46 +1921,86 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
       }
     }
   }
-  if (!href) {
-    const iframe = art.querySelector('iframe[src]');
-    if (iframe) {
-      const src = iframe.getAttribute('src');
-      const resolved = src ? (safeURL(src, baseURL) || src) : null;
-      if (resolved && /^https?:/i.test(resolved)) {
-        href = resolved;
-        if (/youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(resolved)) {
-          videoInfo = { src: resolved };
-        }
+  const outItems = [];
+  const iframes = Array.from(art.querySelectorAll('iframe[src]'));
+
+  if (href) {
+    const item = {
+      id: uid(),
+      sourceName,
+      href,
+      title,
+      thumbnail: thumb || null,
+      video: videoInfo,
+      titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+      thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+      videoCandidates: videoInfo?.url ? [{ value: videoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: videoInfo }] : [],
+      descriptionCandidates: [],
+      domain: domainOf(href),
+    };
+    item.category = videoInfo ? 'video' : (thumb ? 'article' : 'link');
+    outItems.push(item);
+  }
+
+  for (const iframe of iframes) {
+    const src = iframe.getAttribute('src');
+    const resolved = src ? (safeURL(src, baseURL) || src) : null;
+    if (resolved && /^https?:/i.test(resolved)) {
+      let iframeHref = resolved;
+      let iframeVideoInfo = null;
+      if (/youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(resolved)) {
+        iframeVideoInfo = { src: resolved };
       }
+
+      const item = {
+        id: uid(),
+        sourceName,
+        href: iframeHref,
+        title,
+        thumbnail: thumb || null,
+        video: iframeVideoInfo,
+        titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+        thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+        videoCandidates: iframeVideoInfo?.url ? [{ value: iframeVideoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: iframeVideoInfo }] : [],
+        descriptionCandidates: [],
+        domain: domainOf(iframeHref),
+      };
+      item.category = iframeVideoInfo ? 'video' : (thumb ? 'article' : 'link');
+      outItems.push(item);
     }
   }
+
   // If no playable media URL exists, fall back to linking the article container's
   // data-href / data-url, or the thumbnail itself.
-  if (!href) {
+  if (outItems.length === 0) {
+    let fallbackHref = null;
     const dataLink = art.getAttribute('data-href') || art.getAttribute('data-url') || art.getAttribute('data-link');
     if (dataLink) {
       const resolved = safeURL(dataLink, baseURL) || dataLink;
-      if (/^https?:/i.test(resolved)) href = resolved;
+      if (/^https?:/i.test(resolved)) fallbackHref = resolved;
+    }
+    if (!fallbackHref && thumb) fallbackHref = thumb;
+
+    if (fallbackHref) {
+      const item = {
+        id: uid(),
+        sourceName,
+        href: fallbackHref,
+        title,
+        thumbnail: thumb || null,
+        video: null,
+        titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+        thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
+        videoCandidates: [],
+        descriptionCandidates: [],
+        domain: domainOf(fallbackHref),
+      };
+      item.category = thumb ? 'article' : 'link';
+      outItems.push(item);
     }
   }
-  if (!href && thumb) href = thumb;
-  if (!href) return null;
 
-  const item = {
-    id: uid(),
-    sourceName,
-    href,
-    title,
-    thumbnail: thumb || null,
-    video: videoInfo,
-    titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
-    thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
-    videoCandidates: videoInfo?.url ? [{ value: videoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: videoInfo }] : [],
-    descriptionCandidates: [],
-    domain: domainOf(href),
-  };
-  item.category = videoInfo ? 'video' : (thumb ? 'article' : 'link');
-  return item;
+  return outItems.length > 0 ? outItems : null;
 }
 
 // ===================================================
