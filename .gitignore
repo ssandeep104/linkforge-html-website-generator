@@ -14,3 +14,4 @@ Thumbs.db
 .idea/
 .vercel
 .env*.local
+node_modules/
