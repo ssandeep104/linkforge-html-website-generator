@@ -1747,6 +1747,9 @@ a:hover {
   color: var(--color-text-muted);
 }
 .strategy-field select {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;
   font-family: var(--font-mono);
   font-size: 12px;
   padding: 6px 8px;
@@ -2413,6 +2416,9 @@ a:hover {
   color: var(--color-primary);
 }
 .strategy-field select {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 8px 10px;
