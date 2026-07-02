@@ -1,57 +1,54 @@
 /* =====================================================
-   LINKFORGE — Drafting Board
-   Blueprint / draftsman's desk aesthetic.
-   Light = vellum (warm paper) + ink + dimension-red.
-   Dark  = blueprint (deep navy) + cyan grid + amber.
+   LINKFORGE — Modern Client
+   Modern aesthetic.
+   Light = Crisp white/gray with vibrant indigo.
+   Dark  = Sleek slate/gray with bright indigo.
    ===================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root,
 [data-theme='light'] {
-  /* --- vellum palette --- */
-  --color-bg: #f1e9d7;             /* warm paper */
-  --color-surface: #f7f1e1;        /* lighter vellum */
-  --color-surface-2: #fbf6ea;
-  --color-surface-offset: #e6dcc4;
-  --color-surface-offset-2: #d9ceb0;
-  --color-divider: #c9bd9d;
-  --color-border: #8e8264;         /* pencil line */
+  /* --- modern palette --- */
+  --color-bg: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f3f5;
+  --color-surface-offset: #e9ecef;
+  --color-surface-offset-2: #dee2e6;
+  --color-divider: #e9ecef;
+  --color-border: #ced4da;
 
-  --color-text: #1a140c;           /* graphite ink */
-  --color-text-muted: #6b5e44;
-  --color-text-faint: #a89a7d;
-  --color-text-inverse: #f7f1e1;
+  --color-text: #212529;
+  --color-text-muted: #495057;
+  --color-text-faint: #adb5bd;
+  --color-text-inverse: #ffffff;
 
-  --color-primary: #b23a2c;        /* dimension red */
-  --color-primary-hover: #8e2a1e;
-  --color-primary-active: #6b1f15;
-  --color-primary-highlight: #f2d6cf;
+  --color-primary: #4338ca;
+  --color-primary-hover: #3730a3;
+  --color-primary-active: #312e81;
+  --color-primary-highlight: #e0e7ff;
 
-  --color-accent: #2c4566;         /* draftsman blue */
-  --color-accent-soft: #d3dbe6;
+  --color-accent: #0ea5e9;
+  --color-accent-soft: #e0f2fe;
 
-  --color-success: #4a6b2a;
-  --color-warning: #b9700e;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
 
-  /* grid colors */
-  --grid-line: rgba(180, 150, 90, 0.18);
-  --grid-line-major: rgba(178, 58, 44, 0.22);
 
   /* drafting accent strokes */
   --stroke-hairline: rgba(26, 20, 12, 0.45);
   --stroke-dim: var(--color-primary);
 
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 
-  --shadow-sm: 0 1px 0 rgba(26, 20, 12, 0.08);
-  --shadow-md: 0 2px 0 rgba(26, 20, 12, 0.06), 0 12px 28px rgba(26, 20, 12, 0.08);
-  --shadow-lg: 0 4px 0 rgba(26, 20, 12, 0.08), 0 28px 70px rgba(26, 20, 12, 0.16);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
-  --transition: 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -74,52 +71,49 @@
   --text-2xl: clamp(2.2rem, 1.5rem + 2.5vw, 3.6rem);
   --text-hero: clamp(2.8rem, 1.4rem + 5.5vw, 5.8rem);
 
-  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, ui-monospace, monospace;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
   --content-narrow: 720px;
   --content-default: 1080px;
   --content-wide: 1320px;
 
-  --grid-size: 24px;
 }
 
 [data-theme='dark'] {
-  /* --- blueprint palette --- */
-  --color-bg: #0d1b30;             /* deep blueprint navy */
-  --color-surface: #102341;
-  --color-surface-2: #142a4e;
-  --color-surface-offset: #1a3358;
-  --color-surface-offset-2: #214068;
-  --color-divider: #2a4a73;
-  --color-border: #4a7ab8;         /* cyan line */
+  /* --- modern dark palette --- */
+  --color-bg: #111827;
+  --color-surface: #1f2937;
+  --color-surface-2: #374151;
+  --color-surface-offset: #1f2937;
+  --color-surface-offset-2: #374151;
+  --color-divider: #374151;
+  --color-border: #4b5563;
 
-  --color-text: #eaf1fb;
-  --color-text-muted: #9ab1d1;
-  --color-text-faint: #5a7aa6;
-  --color-text-inverse: #0d1b30;
+  --color-text: #f9fafb;
+  --color-text-muted: #d1d5db;
+  --color-text-faint: #9ca3af;
+  --color-text-inverse: #111827;
 
-  --color-primary: #f0b340;        /* dimension amber (red dies on blue) */
-  --color-primary-hover: #f7c460;
-  --color-primary-active: #ffd680;
-  --color-primary-highlight: #2d3f5c;
+  --color-primary: #818cf8;
+  --color-primary-hover: #a5b4fc;
+  --color-primary-active: #c7d2fe;
+  --color-primary-highlight: rgba(129, 140, 248, 0.15);
 
-  --color-accent: #7fb3ff;
-  --color-accent-soft: #1d3559;
+  --color-accent: #38bdf8;
+  --color-accent-soft: rgba(56, 189, 248, 0.15);
 
-  --color-success: #88c264;
-  --color-warning: #f0b340;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
 
-  --grid-line: rgba(127, 179, 255, 0.13);
-  --grid-line-major: rgba(240, 179, 64, 0.22);
 
   --stroke-hairline: rgba(234, 241, 251, 0.4);
   --stroke-dim: var(--color-primary);
 
-  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 2px 0 rgba(0, 0, 0, 0.4), 0 12px 28px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 4px 0 rgba(0, 0, 0, 0.5), 0 28px 70px rgba(0, 0, 0, 0.65);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -141,8 +135,6 @@
     --color-primary-highlight: #2d3f5c;
     --color-accent: #7fb3ff;
     --color-accent-soft: #1d3559;
-    --grid-line: rgba(127, 179, 255, 0.13);
-    --grid-line-major: rgba(240, 179, 64, 0.22);
     --stroke-hairline: rgba(234, 241, 251, 0.4);
   }
 }
@@ -168,14 +160,6 @@ body {
   font-size: var(--text-base);
   line-height: 1.55;
   color: var(--color-text);
-  /* Grid paper / blueprint grid: 24px minor lines, 144px major (every 6) */
-  background-color: var(--color-bg);
-  background-image:
-    linear-gradient(to right, var(--grid-line-major) 0, var(--grid-line-major) 1px, transparent 1px, transparent 144px),
-    linear-gradient(to bottom, var(--grid-line-major) 0, var(--grid-line-major) 1px, transparent 1px, transparent 144px),
-    linear-gradient(to right, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent var(--grid-size)),
-    linear-gradient(to bottom, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent var(--grid-size));
-  background-position: 0 0;
   min-height: 100dvh;
 }
 
@@ -229,7 +213,7 @@ a:hover {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 1px solid var(--color-primary);
   outline-offset: 3px;
   border-radius: var(--radius-sm);
 }
@@ -814,7 +798,7 @@ a:hover {
   flex-direction: column;
   text-align: left;
   background: var(--color-surface-2);
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 0;
   overflow: hidden;
@@ -1337,7 +1321,7 @@ a:hover {
 .group-checkbox__box {
   width: 18px;
   height: 18px;
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-surface);
   transition: var(--transition);
@@ -1378,7 +1362,7 @@ a:hover {
 }
 
 .group-checkbox input:focus-visible + .group-checkbox__box {
-  outline: 2px solid var(--color-primary);
+  outline: 1px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -1412,7 +1396,7 @@ a:hover {
 .item-row__box {
   width: 18px;
   height: 18px;
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-surface);
   transition: var(--transition);
@@ -1437,7 +1421,7 @@ a:hover {
 }
 
 .item-row__check:focus-visible + .item-row__box {
-  outline: 2px solid var(--color-primary);
+  outline: 1px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -1757,7 +1741,7 @@ a:hover {
   cursor: pointer;
 }
 .strategy-field select:focus {
-  outline: 2px solid var(--color-accent, var(--color-text));
+  outline: 1px solid var(--color-accent, var(--color-text));
   outline-offset: 1px;
 }
 @media (max-width: 720px) {
@@ -1961,7 +1945,7 @@ a:hover {
   position: absolute;
   width: 12px;
   height: 12px;
-  border: 2px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
   pointer-events: none;
 }
 .composer::before,
@@ -2073,18 +2057,18 @@ a:hover {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
-  box-shadow: 3px 3px 0 var(--color-text);
+  box-shadow: var(--shadow-sm);
 }
 .btn--primary:hover:not(:disabled) {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
   color: #fff;
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--color-text);
+  box-shadow: var(--shadow-md);
 }
 .btn--primary:active:not(:disabled) {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--color-text);
+  box-shadow: var(--shadow-sm);
 }
 .btn--primary:disabled {
   opacity: 0.35;
@@ -2142,7 +2126,7 @@ a:hover {
   gap: var(--space-8);
 }
 .how__item {
-  border-top: 2px solid var(--color-text);
+  border-top: 1px solid var(--color-text);
   padding-top: var(--space-4);
   position: relative;
 }
@@ -2175,7 +2159,7 @@ a:hover {
 
 /* ---------- Footer: titleblock ---------- */
 .footer {
-  border-top: 2px solid var(--color-text);
+  border-top: 1px solid var(--color-text);
   padding-top: var(--space-4);
   margin-top: var(--space-16);
   font-family: var(--font-mono);
@@ -2198,7 +2182,7 @@ a:hover {
 
 /* ---------- Review screen ---------- */
 .review-head {
-  border-bottom: 2px solid var(--color-text);
+  border-bottom: 1px solid var(--color-text);
   padding-bottom: var(--space-6);
   position: relative;
 }
@@ -2263,7 +2247,7 @@ a:hover {
 }
 
 .template-card {
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-radius: 0;
   background: var(--color-surface-2);
   transition: var(--transition);
@@ -2271,11 +2255,11 @@ a:hover {
 .template-card:hover {
   border-color: var(--color-text);
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--color-text);
+  box-shadow: var(--shadow-sm);
 }
 .template-card--active {
   border-color: var(--color-primary);
-  box-shadow: 3px 3px 0 var(--color-primary);
+  box-shadow: var(--shadow-sm);
   transform: translate(-1px, -1px);
 }
 .template-card__suggested {
@@ -2306,7 +2290,7 @@ a:hover {
   position: absolute;
   width: 12px;
   height: 12px;
-  border: 2px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
   pointer-events: none;
 }
 .preview-frame-wrap::before {
@@ -2331,7 +2315,7 @@ a:hover {
   font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  box-shadow: 3px 3px 0 var(--color-text);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ---------- Selection ---------- */
@@ -2342,7 +2326,7 @@ a:hover {
 
 /* ---------- Focus visible ---------- */
 *:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 1px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -2366,7 +2350,7 @@ a:hover {
 /* ---------- Review foot: pinned drafting toolbar ---------- */
 .review-foot {
   background: var(--color-surface);
-  border-top: 2px solid var(--color-text);
+  border-top: 1px solid var(--color-text);
   box-shadow: 0 -2px 0 var(--color-text), 0 -12px 24px color-mix(in oklab, var(--color-bg) 80%, transparent);
   padding: var(--space-4) var(--space-5);
   z-index: 50;
@@ -2395,7 +2379,7 @@ a:hover {
   position: absolute;
   width: 10px;
   height: 10px;
-  border: 2px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
   pointer-events: none;
 }
 .strategy-picker::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
@@ -2421,12 +2405,6 @@ a:hover {
   background: var(--color-bg);
 }
 
-/* ---------- Stronger grid in light mode ---------- */
-[data-theme='light'] body,
-:root:not([data-theme]) body {
-  --grid-line: rgba(178, 58, 44, 0.07);
-  --grid-line-major: rgba(178, 58, 44, 0.18);
-}
 
 /* ---------- Category groups / item rows ---------- */
 .category {
