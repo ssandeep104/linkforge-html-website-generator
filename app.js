@@ -2665,7 +2665,11 @@ function renderGroupPanel(key, items, openByDefault) {
 
   // Fix indeterminate after attaching
   const groupChk = panel.querySelector('[data-group-toggle]');
-  if (someOn) groupChk.indeterminate = true;
+  if (someOn) {
+    requestAnimationFrame(() => {
+      groupChk.indeterminate = true;
+    });
+  }
 
   // Group checkbox: select / deselect all in this group
   groupChk.addEventListener('change', (e) => {
