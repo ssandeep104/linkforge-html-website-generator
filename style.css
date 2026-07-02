@@ -1731,6 +1731,7 @@ a:hover {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+  min-width: 0;
 }
 .strategy-field {
   display: flex;
@@ -1747,6 +1748,7 @@ a:hover {
   color: var(--color-text-muted);
 }
 .strategy-field select {
+  width: 100%;
   max-width: 100%;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -1764,7 +1766,7 @@ a:hover {
   outline-offset: 1px;
 }
 @media (max-width: 720px) {
-  .strategy-row { grid-template-columns: 1fr; gap: var(--space-2); }
+  .strategy-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
   .strategy-field { min-width: 0; flex: 1 1 100%; }
 }
 
@@ -2416,6 +2418,7 @@ a:hover {
   color: var(--color-primary);
 }
 .strategy-field select {
+  width: 100%;
   max-width: 100%;
   text-overflow: ellipsis;
   overflow: hidden;
