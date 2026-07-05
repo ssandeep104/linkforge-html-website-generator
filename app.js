@@ -308,6 +308,21 @@ function parseDescriptorWidth(desc) {
   return m[2] && m[2].toLowerCase() === 'x' ? n : n;
 }
 
+function bestSrcsetEntry(srcset) {
+  const entries = parseSrcset(srcset);
+  if (!entries.length) return null;
+  let best = null;
+  let bestWidth = -1;
+  for (const entry of entries) {
+    const width = parseDescriptorWidth(entry.descriptor);
+    if (!best || width >= bestWidth) {
+      best = entry;
+      bestWidth = width;
+    }
+  }
+  return best;
+}
+
 // Expand every URL hiding inside an <img> element (and its containing
 // <picture>, if any) into picker candidates. The user gets to choose; we
 // don't try to outsmart them by picking the "largest" or "freshest".
@@ -498,9 +513,8 @@ function extractImageFromAnchor(a) {
   if (source) {
     const ss = source.getAttribute('srcset');
     if (ss) {
-      const entries = ss.split(',').map((s) => s.trim()).filter(Boolean);
-      const last = entries[entries.length - 1]?.split(' ')[0];
-      if (last) return last;
+      const best = bestSrcsetEntry(ss);
+      if (best?.url) return best.url;
     }
   }
   // background-image inline style
@@ -570,6 +584,31 @@ function isChromeAnchor(a, resolvedHref) {
   return false;
 }
 
+function isLikelyContentMediaElement(el) {
+  if (!el) return false;
+  if (el.closest(CHROME_CONTAINER_SELECTOR)) return false;
+
+  const hintText = [
+    el.getAttribute?.('class') || '',
+    el.getAttribute?.('id') || '',
+    el.getAttribute?.('alt') || '',
+    el.getAttribute?.('aria-label') || '',
+    el.getAttribute?.('data-testid') || '',
+  ].join(' ').toLowerCase();
+
+  if (/(^|\s)(avatar|logo|icon|badge|sprite|emoji|favicon)(\s|$)/.test(hintText)) {
+    return false;
+  }
+
+  const width = Number(el.getAttribute?.('width') || 0);
+  const height = Number(el.getAttribute?.('height') || 0);
+  if (width > 0 && height > 0 && Math.max(width, height) < 48) {
+    return false;
+  }
+
+  return true;
+}
+
 // ---------- figure-sibling thumbnail fallback (issue #5 / #10) ----------
 // On many modern news templates (Time.com, Vox, Gutenberg block-editor sites),
 // the article image is in a <figure> sibling of the headline anchor, with NO
@@ -593,10 +632,9 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
     if (cand.tagName === 'SOURCE') {
       const ss = cand.getAttribute('srcset');
       if (!ss) continue;
-      const entries = ss.split(',').map((s) => s.trim()).filter(Boolean);
-      const last = entries[entries.length - 1]?.split(' ')[0];
-      if (last) {
-        const resolved = safeURL(last, baseURL) || last;
+      const best = bestSrcsetEntry(ss);
+      if (best?.url) {
+        const resolved = safeURL(best.url, baseURL) || best.url;
         return { thumb: resolved, claimedEl: cand.closest('picture') || cand };
       }
       continue;
@@ -1685,7 +1723,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // 2) Standalone images on the page (often used in galleries)
   // Only add ones not already attached to anchors above or synthesized from <article>
   const standaloneImgs = Array.from(doc.querySelectorAll('img')).filter(
-    (img) => !img.closest('a[href]') && !synthesizedFromArticles.has(img) && !claimedImgs.has(img)
+    (img) => !img.closest('a[href]') && !synthesizedFromArticles.has(img) && !claimedImgs.has(img) && isLikelyContentMediaElement(img)
   );
   for (const img of standaloneImgs) {
     // Use pickImgSrc so we honor lazy-load conventions AND its last-ditch
@@ -1721,7 +1759,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
 
   // 3) Pure video tags / iframes without anchors
   const standaloneVideos = Array.from(doc.querySelectorAll('iframe[src], video')).filter(
-    (v) => !v.closest('a[href]') && !synthesizedFromArticles.has(v) && !claimedVideos.has(v)
+    (v) => !v.closest('a[href]') && !synthesizedFromArticles.has(v) && !claimedVideos.has(v) && isLikelyContentMediaElement(v)
   );
   for (const v of standaloneVideos) {
     let src = v.getAttribute('src') || v.querySelector?.('source')?.getAttribute('src');
@@ -1899,10 +1937,8 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   if (!thumb) {
     const pic = art.querySelector('picture source[srcset]');
     if (pic) {
-      // grab the largest entry from the srcset
-      const ss = pic.getAttribute('srcset') || '';
-      const last = ss.split(',').pop()?.trim().split(/\s+/)[0];
-      if (last) thumb = last;
+      const best = bestSrcsetEntry(pic.getAttribute('srcset') || '');
+      if (best?.url) thumb = best.url;
     }
   }
   if (!thumb) {
@@ -1954,7 +1990,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
       video: videoInfo,
       titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
       thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
-      videoCandidates: videoInfo?.url ? [{ value: videoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: videoInfo }] : [],
+      videoCandidates: videoInfo?.src ? [{ value: videoInfo.src, strategy: 'synthesized', label: 'synthesized from article', info: videoInfo }] : [],
       descriptionCandidates: [],
       domain: domainOf(href),
       pattern: '<article>',
@@ -1982,7 +2018,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
         video: iframeVideoInfo,
         titleCandidates: title ? [{ value: title, strategy: 'synthesized', label: 'synthesized from article' }] : [],
         thumbCandidates: thumb ? [{ value: thumb, strategy: 'synthesized', label: 'synthesized from article' }] : [],
-        videoCandidates: iframeVideoInfo?.url ? [{ value: iframeVideoInfo.url, strategy: 'synthesized', label: 'synthesized from article', info: iframeVideoInfo }] : [],
+        videoCandidates: iframeVideoInfo?.src ? [{ value: iframeVideoInfo.src, strategy: 'synthesized', label: 'synthesized from article', info: iframeVideoInfo }] : [],
         descriptionCandidates: [],
         domain: domainOf(iframeHref),
         pattern: '<iframe>',
