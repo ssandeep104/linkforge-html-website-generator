@@ -2379,6 +2379,7 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
   const byHref = new Map(); // href -> { item, srcIdx, itemIdx }
   state.sources.forEach((src, srcIdx) => {
     (src.items || []).forEach((it, itemIdx) => {
+      if (it._excludedByPattern) return;
       const existing = byHref.get(it.href);
       if (!existing || richness(it) > richness(existing.item)) {
         byHref.set(it.href, { item: it, srcIdx, itemIdx });
@@ -2389,6 +2390,7 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
   const all = [];
   for (const src of state.sources) {
     for (const it of src.items || []) {
+      if (it._excludedByPattern) continue;
       const winner = byHref.get(it.href);
       if (!winner || winner.item !== it) continue;
       const enabled = resetEnabled ? true : (prevEnabled.has(it.href) ? prevEnabled.get(it.href) : true);
@@ -2406,6 +2408,8 @@ function applySourceStrategy(src) {
   src.strategyByPattern = src.strategyByPattern || {};
   for (const it of src.items || []) {
     const strat = src.strategyByPattern[it.pattern] || {};
+    it._excludedByPattern = !!strat.exclude;
+    if (it._excludedByPattern) continue;
     if (strat.title && it.titleCandidates?.length) {
       const pick = it.titleCandidates.find((c) => c.strategy === strat.title);
       if (pick) it.title = pick.value;
@@ -2489,6 +2493,10 @@ function seedDefaultStrategies(src) {
     }
     const strat = src.strategyByPattern[it.pattern];
 
+    if (typeof strat.exclude !== 'boolean') {
+      strat.exclude = false;
+    }
+
     if (!strat.title && it.titleCandidates?.length) {
       // pick the strategy whose value equals the current it.title, else first
       const match = it.titleCandidates.find((c) => c.value === it.title);
@@ -2543,12 +2551,16 @@ function renderSourceStrategyPicker() {
     </div>
     <div class="strategy-picker__list">
       ${rows.map(({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy }) => `
-        <div class="strategy-row" data-src-id="${escapeAttr(src.id)}">
+        <div class="strategy-row ${currentStrategy.exclude ? 'strategy-row--excluded' : ''}" data-src-id="${escapeAttr(src.id)}">
           <div class="strategy-row__source">
             <span class="strategy-row__name">${escapeText(src.name || 'Untitled source')}</span>
             <span class="strategy-row__count muted">${items.length} link${items.length === 1 ? '' : 's'} matching ${escapeText(pattern)}</span>
+            <label class="strategy-row__toggle">
+              <input type="checkbox" data-strategy-include data-src-id="${escapeAttr(src.id)}" data-pattern="${escapeAttr(pattern)}" ${currentStrategy.exclude ? '' : 'checked'} />
+              <span>Include this tag group in the final list</span>
+            </label>
           </div>
-          <div class="strategy-row__fields">
+          <div class="strategy-row__fields" ${currentStrategy.exclude ? 'aria-disabled="true"' : ''}>
             ${showTitle ? renderStrategySelect('title', src, titleOpts, currentStrategy.title, pattern) : ''}
             ${showThumb ? renderStrategySelect('thumb', src, thumbOpts, currentStrategy.thumb, pattern, { allowNone: true }) : ''}
             ${showVideo ? renderStrategySelect('video', src, videoOpts, currentStrategy.video, pattern, { allowNone: true, optional: true }) : ''}
@@ -2560,6 +2572,9 @@ function renderSourceStrategyPicker() {
   // bind change handlers
   root.querySelectorAll('select[data-strategy-field]').forEach((sel) => {
     sel.addEventListener('change', onStrategyChange);
+  });
+  root.querySelectorAll('input[data-strategy-include]').forEach((checkbox) => {
+    checkbox.addEventListener('change', onStrategyIncludeToggle);
   });
 }
 
@@ -2620,6 +2635,19 @@ function onStrategyChange(e) {
   src.strategyByPattern[pattern][field] = value;
   // Re-flatten so the new title/thumb/video shows up in state.items, then
   // re-render the categories panel. Preserve user's enabled toggles.
+  flattenSourcesIntoItems({ resetEnabled: false });
+  renderReview();
+}
+
+function onStrategyIncludeToggle(e) {
+  const checkbox = e.currentTarget;
+  const srcId = checkbox.dataset.srcId;
+  const pattern = checkbox.dataset.pattern;
+  const src = state.sources.find((s) => s.id === srcId);
+  if (!src) return;
+  src.strategyByPattern = src.strategyByPattern || {};
+  if (!src.strategyByPattern[pattern]) src.strategyByPattern[pattern] = {};
+  src.strategyByPattern[pattern].exclude = !checkbox.checked;
   flattenSourcesIntoItems({ resetEnabled: false });
   renderReview();
 }

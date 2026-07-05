@@ -1727,10 +1727,30 @@ a:hover {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.strategy-row__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.strategy-row__toggle input {
+  accent-color: var(--color-primary);
+}
 .strategy-row__fields {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+}
+.strategy-row--excluded {
+  opacity: 0.68;
+}
+.strategy-row--excluded .strategy-row__fields {
+  pointer-events: none;
+}
+.strategy-row--excluded .strategy-field {
+  opacity: 0.5;
 }
 .strategy-field {
   display: flex;
