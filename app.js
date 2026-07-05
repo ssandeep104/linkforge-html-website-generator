@@ -2067,19 +2067,76 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
 // ===================================================
 
 function addSource(prefill = {}) {
+  const initialFragments = Array.isArray(prefill.fragments) && prefill.fragments.length
+    ? prefill.fragments.map((frag) => ({
+        id: frag.id || uid(),
+        name: frag.name || 'HTML fragment',
+        html: frag.html || '',
+        kind: frag.kind || 'file',
+      }))
+    : [{ id: uid(), name: 'Pasted HTML', html: prefill.html || '', kind: 'manual' }];
   const source = {
     id: uid(),
     name: prefill.name || '',          // empty = auto-named by position
     customName: !!prefill.name,        // true once user types something
-    html: prefill.html || '',
+    html: '',
+    fragments: initialFragments,
     items: [],
     overrideBase: null,                // set when user manually provides a domain
     unresolvedCount: 0,                // # of relative anchors that need a domain
     domainValidationState: 'idle',     // 'idle' | 'checking' | 'ok' | 'failed'
   };
+  syncSourceHtml(source);
   state.sources.push(source);
   renderSources();
   return source;
+}
+
+function ensureSourceFragments(src) {
+  if (Array.isArray(src.fragments) && src.fragments.length) return src.fragments;
+  src.fragments = [{ id: uid(), name: 'Pasted HTML', html: src.html || '', kind: 'manual' }];
+  return src.fragments;
+}
+
+function primaryFragment(src) {
+  const fragments = ensureSourceFragments(src);
+  return fragments.find((frag) => frag.kind === 'manual') || fragments[0];
+}
+
+function syncSourceHtml(src) {
+  const fragments = ensureSourceFragments(src);
+  src.html = fragments
+    .map((frag) => (frag.html || '').trim())
+    .filter(Boolean)
+    .join('\n\n<!-- LINKFORGE SOURCE SPLIT -->\n\n');
+}
+
+async function appendFilesToSource(src, files) {
+  if (!src || !files?.length) return;
+  ensureSourceFragments(src);
+  for (const file of files) {
+    const html = await file.text();
+    src.fragments.push({
+      id: uid(),
+      name: file.name,
+      html,
+      kind: 'file',
+    });
+  }
+  syncSourceHtml(src);
+}
+
+function removeSourceFragment(src, fragmentId) {
+  if (!src) return;
+  const fragments = ensureSourceFragments(src);
+  const frag = fragments.find((item) => item.id === fragmentId);
+  if (!frag) return;
+  if (frag.kind === 'manual') {
+    frag.html = '';
+  } else {
+    src.fragments = fragments.filter((item) => item.id !== fragmentId);
+  }
+  syncSourceHtml(src);
 }
 
 function displayName(src, idx) {
@@ -2096,6 +2153,10 @@ function renderSources() {
   const root = $('#sources');
   root.innerHTML = '';
   state.sources.forEach((src, idx) => {
+    ensureSourceFragments(src);
+    const primary = primaryFragment(src);
+    const fileFragments = src.fragments.filter((frag) => frag.kind === 'file');
+    const inputId = `source-file-${src.id}`;
     const card = document.createElement('div');
     card.className = 'source-card';
     card.dataset.id = src.id;
@@ -2107,7 +2168,28 @@ function renderSources() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <textarea spellcheck="false" placeholder="Paste raw HTML here — &lt;html&gt;, a fragment, or anything that contains anchors, images, videos…">${escapeText(src.html)}</textarea>
+      <textarea spellcheck="false" placeholder="Paste raw HTML here — &lt;html&gt;, a fragment, or anything that contains anchors, images, videos…">${escapeText(primary.html || '')}</textarea>
+      <div class="source-card__files">
+        <div class="source-card__files-head">
+          <span class="source-card__files-label">Additional HTML files</span>
+          <label class="source-card__files-btn" for="${escapeAttr(inputId)}">
+            + Add files to this source
+            <input id="${escapeAttr(inputId)}" type="file" accept=".html,.htm,text/html" multiple hidden data-source-file-input />
+          </label>
+        </div>
+        ${fileFragments.length ? `
+          <div class="source-card__file-list">
+            ${fileFragments.map((frag) => `
+              <div class="source-card__file-chip">
+                <span class="source-card__file-name">${escapeText(frag.name)}</span>
+                <button type="button" class="source-card__file-remove" data-fragment-id="${escapeAttr(frag.id)}" aria-label="Remove ${escapeAttr(frag.name)}" title="Remove ${escapeAttr(frag.name)}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        ` : `<p class="source-card__files-empty">No extra files attached. Add multiple HTML files here when they belong to the same source.</p>`}
+      </div>
       <div class="source-card__banner" data-banner hidden></div>
       <div class="source-card__foot">
         <div class="source-card__stats">
@@ -2123,6 +2205,7 @@ function renderSources() {
     const nameInput = card.querySelector('.source-card__name');
     const textarea = card.querySelector('textarea');
     const removeBtn = card.querySelector('.source-card__remove');
+    const fileInput = card.querySelector('[data-source-file-input]');
 
     nameInput.addEventListener('input', () => {
       src.name = nameInput.value;
@@ -2136,10 +2219,23 @@ function renderSources() {
       updateCounts();
     });
     textarea.addEventListener('input', () => {
-      src.html = textarea.value;
+      primary.html = textarea.value;
+      syncSourceHtml(src);
       runParse(src, card);
     });
     removeBtn.addEventListener('click', () => removeSource(src.id));
+    fileInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      await appendFilesToSource(src, files);
+      renderSources();
+      e.target.value = '';
+    });
+    card.querySelectorAll('[data-fragment-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        removeSourceFragment(src, btn.dataset.fragmentId);
+        renderSources();
+      });
+    });
 
     // initial stats if prefilled
     if (src.html) runParse(src, card);
@@ -3461,7 +3557,8 @@ $('#file-input').addEventListener('change', async (e) => {
     if (firstEmpty) {
       firstEmpty.name = name;
       firstEmpty.customName = true;
-      firstEmpty.html = html;
+      firstEmpty.fragments = [{ id: uid(), name: file.name, html, kind: 'manual' }];
+      syncSourceHtml(firstEmpty);
       // items + banner state get populated by renderSources → runParse below
     } else {
       addSource({ name, html });
@@ -3478,16 +3575,12 @@ document.addEventListener('dragover', (e) => {
 document.addEventListener('drop', async (e) => {
   const card = e.target.closest('.source-card');
   if (!card) return;
-  const file = e.dataTransfer?.files?.[0];
-  if (!file) return;
+  const files = Array.from(e.dataTransfer?.files || []);
+  if (!files.length) return;
   e.preventDefault();
-  const html = await file.text();
   const src = state.sources.find((s) => s.id === card.dataset.id);
   if (src) {
-    const name = file.name.replace(/\.html?$/i, '');
-    src.html = html;
-    src.name = name;
-    src.customName = true;
+    await appendFilesToSource(src, files);
     // items + banner state get populated by renderSources → runParse below
     renderSources();
   }
