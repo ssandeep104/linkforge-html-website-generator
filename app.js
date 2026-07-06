@@ -2449,7 +2449,7 @@ function ensureActiveReviewSource() {
 
 function getActiveReviewSource() {
   const id = ensureActiveReviewSource();
-  if (!id) return null;
+  if (!id) return getReviewableSources()[0] || null;
   return state.sources.find((src) => src.id === id) || null;
 }
 
@@ -2511,17 +2511,32 @@ function renderReviewSourceStepper() {
     return;
   }
 
-  const active = getActiveReviewSource();
-  const idx = reviewable.findIndex((src) => src.id === active?.id);
+  const active = getActiveReviewSource() || reviewable[0] || null;
+  if (!active) {
+    root.hidden = true;
+    root.innerHTML = '';
+    return;
+  }
+  const activeId = active?.id ?? null;
+  const idx = reviewable.findIndex((src) => src.id === activeId);
   const activeIdx = idx < 0 ? 0 : idx;
-  const selectedCount = state.items.filter((it) => it.sourceId === active?.id && it.enabled).length;
-  const totalCount = state.items.filter((it) => it.sourceId === active?.id).length;
+  const selectedCount = activeId == null
+    ? 0
+    : state.items.filter((it) => it.sourceId === activeId && it.enabled).length;
+  const totalCount = activeId == null
+    ? 0
+    : state.items.filter((it) => it.sourceId === activeId).length;
+  const activeSourceIdx = activeId == null ? -1 : state.sources.findIndex((s) => s.id === activeId);
+  const displayIdx = activeSourceIdx >= 0 ? activeSourceIdx : activeIdx;
+  const activeName = active && typeof active === 'object'
+    ? displayName(active, displayIdx)
+    : `Source ${activeIdx + 1}`;
 
   root.hidden = false;
   root.innerHTML = `
     <div class="source-stepper__meta">
       <span class="source-stepper__kicker">Reviewing source ${activeIdx + 1} of ${reviewable.length}</span>
-      <strong class="source-stepper__name">${escapeText(displayName(active, state.sources.findIndex((s) => s.id === active.id)))}</strong>
+      <strong class="source-stepper__name">${escapeText(activeName)}</strong>
       <span class="source-stepper__count">${selectedCount} / ${totalCount} links selected</span>
     </div>
     <div class="source-stepper__actions">
@@ -3171,14 +3186,14 @@ function buildGeneratedSite() {
   //   withImage  -> rendered as image-card grid (articles section)
   //   withVideo  -> rendered as video card grid (videos section)
   //   plain      -> rendered as text-only link list (links section)
-  // We also keep `gallery` (standalone images) as a separate bucket so the
-  // Gallery template can still receive image-only items if needed.
+  // We also keep `gallery` (standalone images) as a separate bucket so
+  // thumbnail-first templates can treat image-only links as preview cards.
   const enabled = state.items.filter((i) => i.enabled);
   const withImage = enabled.filter((i) => bucketOf(i) === 'with-image');
   const videos = enabled.filter((i) => bucketOf(i) === 'with-video');
   const links = enabled.filter((i) => bucketOf(i) === 'plain');
 
-  // For backward compat with existing templates, split withImage into
+  // For template compatibility, split withImage into
   //   articles (have an outbound href, i.e. not pure standalone images)
   //   gallery  (standalone images where href === thumbnail)
   const articles = withImage.filter((i) => i.category !== 'gallery');

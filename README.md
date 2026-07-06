@@ -2,7 +2,7 @@
 
 Turn any pile of HTML into a site of your own.
 
-Paste raw HTML from news, research, photography, video, or your own bookmarks. Linkforge pulls out every link, thumbnail, and preview, then lets you pick what goes in and generates a finished site in one of six editorial templates.
+Paste raw HTML from news, research, photography, video, or your own bookmarks. Linkforge pulls out every link, thumbnail, and preview, then lets you pick what goes in and generates a finished site in one of three templates.
 
 **Live editor:** [linkforge-omega.vercel.app](https://linkforge-omega.vercel.app)
 
@@ -10,7 +10,7 @@ Paste raw HTML from news, research, photography, video, or your own bookmarks. L
 
 1. **Sources** — paste HTML or upload `.html` files (drag-and-drop supported). Add as many sources as you want.
 2. **Review** — Linkforge parses every anchor, image, and video into three buckets: links with image, links with video preview, and plain links. Pick what makes the cut with dropdowns + checkboxes.
-3. **Output** — generates a styled standalone HTML page. Six templates: Editorial, Stream, Reel, Console, Wall, Timeline. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
+3. **Output** — generates a styled standalone HTML page. Three templates: Editorial, Tube Grid (YouTube-style), Cinema Rail (Netflix-style). Streaming templates focus on thumbnail-led cards and do not force a plain-text link tail. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
 
 Parser is fully client-side. There are no network calls — your HTML never leaves the browser.
 

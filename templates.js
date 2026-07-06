@@ -197,67 +197,30 @@ function previewSvg(layout) {
 const TEMPLATES = {
   editorial: {
     name: 'Editorial',
-    desc: 'Magazine grid for items with images, plain link list at the bottom for the rest.',
+    desc: 'Classic editorial grid grouped by source.',
     preview: () => previewSvg('editorial'),
     build: (ctx) => buildEditorial(normalize(ctx)),
   },
-  stream: {
-    name: 'Stream',
-    desc: 'Three-column card feed grouped by source. Items without images go to a list below.',
+  youtube: {
+    name: 'Tube Grid',
+    desc: 'Smaller 16:9 thumbnails with clear titles and metadata, grouped by source.',
     preview: () => previewSvg('stream'),
-    build: (ctx) => buildStream(normalize(ctx)),
+    build: (ctx) => buildYoutube(normalize(ctx)),
   },
-  reel: {
-    name: 'Reel',
-    desc: 'Horizontal rails of preview cards per source. Clean caption under each card, no text-on-image.',
+  cinema: {
+    name: 'Cinema Rail',
+    desc: 'Large thumbnail-first rails, inspired by streaming catalog layouts.',
     preview: () => previewSvg('reel'),
-    build: (ctx) => buildReel(normalize(ctx)),
-  },
-  console: {
-    name: 'Console',
-    desc: 'Terminal/IDE aesthetic. Preview cards on top, link list at the bottom.',
-    preview: () => previewSvg('console'),
-    build: (ctx) => buildConsole(normalize(ctx)),
-  },
-  wall: {
-    name: 'Wall',
-    desc: 'Uniform image grid for previewable links. Plain link list at the bottom.',
-    preview: () => previewSvg('wall'),
-    build: (ctx) => buildWall(normalize(ctx)),
-  },
-  timeline: {
-    name: 'Timeline',
-    desc: 'Vertical spine grouped by source. Compact rows for previews, link list at the bottom.',
-    preview: () => previewSvg('timeline'),
-    build: (ctx) => buildTimeline(normalize(ctx)),
-  },
-  bento: {
-    name: 'Bento',
-    desc: 'Mixed-size modular cards with a featured lead tile per source and smaller supporting blocks around it.',
-    preview: () => previewSvg('bento'),
-    build: (ctx) => buildBento(normalize(ctx)),
-  },
-  broadsheet: {
-    name: 'Broadsheet',
-    desc: 'A modern newspaper front page with a lead story, supporting stack, and restrained serif presentation.',
-    preview: () => previewSvg('broadsheet'),
-    build: (ctx) => buildBroadsheet(normalize(ctx)),
-  },
-  signal: {
-    name: 'Signal',
-    desc: 'High-contrast intelligence dashboard with sharp metadata rails and stacked source-led story cards.',
-    preview: () => previewSvg('signal'),
-    build: (ctx) => buildSignal(normalize(ctx)),
+    build: (ctx) => buildCinema(normalize(ctx)),
   },
 };
 
 function suggestTemplate(counts) {
   const t = counts.total || 1;
-  if (counts.video / t >= 0.5) return 'reel';
-  if (counts.gallery / t >= 0.5) return 'wall';
-  if (counts.link / t >= 0.6) return 'timeline';
+  if (counts.video / t >= 0.55) return 'cinema';
+  if (counts.video / t >= 0.3 || counts.gallery / t >= 0.35) return 'youtube';
   if (counts.article / t >= 0.5) return 'editorial';
-  return 'stream';
+  return 'youtube';
 }
 
 // =====================================================
@@ -326,7 +289,7 @@ ${body}
 // 1) EDITORIAL — magazine grid for images, plain list for the rest
 // =====================================================
 function buildEditorial(ctx) {
-  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups);
+  const { previewGroups } = partitionGroups(ctx.sourceGroups);
 
   const css = `
   body { background: #fafaf7; color: #1a1a1a; font-family: "Iowan Old Style", Iowan, Georgia, serif; line-height: 1.5; }
@@ -343,9 +306,6 @@ function buildEditorial(ctx) {
   .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
   .card h3 { font-size: 19px; line-height: 1.25; letter-spacing: -0.005em; font-weight: 700; margin: 0; }
   .card:hover h3 { color: #6b3f1f; }
-  ${MORE_LINKS_CSS_LIGHT}
-  .more-links__heading { font-family: system-ui, sans-serif; }
-  .more-links__src { font-family: system-ui, sans-serif; }
   @media (max-width: 768px) {
     .wrap { padding: 28px 18px 60px; }
     .site h1 { font-size: 30px; }
@@ -372,41 +332,43 @@ function buildEditorial(ctx) {
       ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
     </header>
     ${sections}
-    ${moreLinksSection(linkGroups)}
   </div>`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
 }
 
 // =====================================================
-// 2) STREAM — 3-col card feed for items with images, list below
+// 2) TUBE GRID — compact 16:9 cards with clear metadata
 // =====================================================
-function buildStream(ctx) {
-  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups);
+function buildYoutube(ctx) {
+  const { previewGroups } = partitionGroups(ctx.sourceGroups);
 
   const css = `
   body { background: #fff; color: #0f0f0f; font-family: "Inter", system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.5; }
-  .wrap { max-width: 1280px; margin: 0 auto; padding: 32px 24px 80px; }
-  header.site { margin-bottom: 32px; }
+  .wrap { max-width: 1380px; margin: 0 auto; padding: 28px 20px 72px; }
+  header.site { margin-bottom: 22px; }
   .site h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
-  .site .tagline { color: #71717a; font-size: 14px; margin-top: 4px; }
+  .site .tagline { color: #71717a; font-size: 14px; margin-top: 6px; }
 
-  .source-block { margin-top: 40px; }
-  .source-hdr { display: flex; align-items: baseline; gap: 12px; padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid #e5e5e5; }
-  .src-pill { background: #18181b; color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 9px; border-radius: 4px; }
-  .src-count { color: #a1a1aa; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .source-block { margin-top: 28px; }
+  .source-hdr { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid #ececf0; }
+  .src-pill { background: #111827; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; padding: 4px 8px; border-radius: 5px; text-transform: uppercase; }
+  .src-count { color: #8d91a0; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
 
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-  .card { display: block; }
-  .card .thumb-box { aspect-ratio: 16/9; overflow: hidden; background: #f4f4f5; border-radius: 8px; margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 14px; }
+  .card { display: block; min-width: 0; }
+  .card .thumb-box { aspect-ratio: 16/9; overflow: hidden; background: #f4f4f5; border-radius: 10px; margin-bottom: 10px; }
   .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-  .card h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.005em; line-height: 1.35; margin: 0; color: #0f0f0f; }
-  .card:hover h3 { color: #2563eb; }
-  ${MORE_LINKS_CSS_LIGHT}
+  .card h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; margin: 0; color: #0f0f0f; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .meta { margin-top: 6px; color: #6b7280; font-size: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .card:hover h3 { color: #1d4ed8; }
 
-  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
-  @media (max-width: 560px) {
-    .wrap { padding: 20px 16px 60px; }
+  .empty { margin-top: 34px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; color: #6b7280; font-size: 14px; }
+
+  @media (max-width: 1220px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) {
+    .wrap { padding: 18px 14px 54px; }
     .grid { grid-template-columns: 1fr; gap: 14px; }
   }`;
 
@@ -414,11 +376,12 @@ function buildStream(ctx) {
     const cards = g.items.map((i) => `<a class="card" href="${attr(i.href)}" target="_blank" rel="noopener">
       <div class="thumb-box">${thumbImg(i)}</div>
       <h3>${esc(i.title)}</h3>
+      <div class="meta"><span>${esc(srcLabel(g))}</span><span>${esc(i.domain || '')}</span></div>
     </a>`).join('');
     return `<section class="source-block">
       <div class="source-hdr">
-        <span class="src-pill">${esc(srcLabel(g)).toUpperCase()}</span>
-        <span class="src-count">${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}</span>
+        <span class="src-pill">${esc(srcLabel(g))}</span>
+        <span class="src-count">${g.items.length} ${g.items.length === 1 ? 'video' : 'videos'}</span>
       </div>
       <div class="grid">${cards}</div>
     </section>`;
@@ -429,48 +392,46 @@ function buildStream(ctx) {
       <h1>${esc(ctx.title)}</h1>
       ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
     </header>
-    ${sections}
-    ${moreLinksSection(linkGroups)}
+    ${sections || '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>'}
   </div>`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
 }
 
 // =====================================================
-// 3) REEL — horizontal rails per source, clean captions (no overlay text)
+// 3) CINEMA RAIL — larger thumbnail-first streaming rails
 // =====================================================
-function buildReel(ctx) {
-  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups);
+function buildCinema(ctx) {
+  const { previewGroups } = partitionGroups(ctx.sourceGroups);
 
   const css = `
-  body { background: #0a0a0a; color: #f5f5f7; font-family: "Inter", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
-  .wrap { padding: 32px 0 80px; max-width: 1400px; margin: 0 auto; }
-  header.site { padding: 0 48px 32px; }
-  .site h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.015em; margin: 0; color: #fff; }
-  .site .tagline { font-size: 14px; color: #a1a1a6; margin-top: 4px; }
+  body { background: #09090b; color: #f5f5f7; font-family: "Inter", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { padding: 28px 0 72px; max-width: 1480px; margin: 0 auto; }
+  header.site { padding: 0 42px 24px; }
+  .site h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: #fff; }
+  .site .tagline { font-size: 14px; color: #a1a1aa; margin-top: 6px; }
 
-  .rail { margin-bottom: 40px; }
-  .rail-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 48px 14px; }
-  .rail-title { font-size: 16px; font-weight: 600; letter-spacing: -0.005em; color: #fff; }
-  .rail-count { color: #71717a; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
-  .rail-track { display: flex; gap: 16px; overflow-x: auto; padding: 0 48px 8px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .rail { margin-bottom: 34px; }
+  .rail-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 42px 12px; }
+  .rail-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
+  .rail-count { color: #7b7f8d; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .rail-track { display: flex; gap: 16px; overflow-x: auto; padding: 0 42px 8px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .rail-track::-webkit-scrollbar { display: none; }
 
-  .tile { flex-shrink: 0; scroll-snap-align: start; width: 300px; }
-  .tile .thumb-box { aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; background: #1a1a1f; }
+  .tile { flex-shrink: 0; scroll-snap-align: start; width: min(42vw, 420px); max-width: 420px; }
+  .tile .thumb-box { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #16161b; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); }
   .thumb-box img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
-  .tile:hover .thumb-box img { transform: scale(1.03); }
-  .tile h4 { font-size: 14px; font-weight: 500; margin: 10px 2px 0; padding: 0; color: #f5f5f7; letter-spacing: -0.005em; line-height: 1.35; }
+  .tile:hover .thumb-box img { transform: scale(1.025); }
+  .tile h4 { font-size: 13px; font-weight: 500; margin: 10px 2px 0; color: #d4d4d8; letter-spacing: -0.004em; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-  ${MORE_LINKS_CSS_DARK}
-  .more-links { margin: 56px 48px 0; }
+  .empty { margin: 0 42px; border: 1px solid #27272a; border-radius: 12px; padding: 16px; color: #a1a1aa; font-size: 14px; }
 
-  @media (max-width: 768px) {
-    header.site { padding: 0 16px 24px; }
+  @media (max-width: 900px) {
+    header.site { padding: 0 16px 18px; }
     .rail-head { padding: 0 16px 10px; }
     .rail-track { padding: 0 16px 8px; gap: 12px; }
-    .tile { width: 240px; }
-    .more-links { margin: 40px 16px 0; }
+    .tile { width: min(82vw, 360px); }
+    .empty { margin: 0 16px; }
   }`;
 
   const rails = previewGroups.map((g) => {
@@ -481,7 +442,7 @@ function buildReel(ctx) {
     return `<div class="rail">
       <div class="rail-head">
         <div class="rail-title">${esc(srcLabel(g))}</div>
-        <span class="rail-count">${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}</span>
+        <span class="rail-count">${g.items.length} ${g.items.length === 1 ? 'title' : 'titles'}</span>
       </div>
       <div class="rail-track">${tiles}</div>
     </div>`;
@@ -492,8 +453,7 @@ function buildReel(ctx) {
       <h1>${esc(ctx.title)}</h1>
       ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
     </header>
-    ${rails}
-    ${moreLinksSection(linkGroups)}
+    ${rails || '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>'}
   </div>`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
