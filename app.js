@@ -2420,11 +2420,118 @@ const CATEGORY_META = {
 
 const CATEGORY_ORDER = ['with-image', 'with-video', 'plain'];
 
+const reviewState = {
+  activeSourceId: null,
+};
+
 // Map the internal item.category to the user-facing bucket above.
 function bucketOf(item) {
   if (item.category === 'video') return 'with-video';
   if (item.thumbnail) return 'with-image'; // includes article + gallery
   return 'plain';
+}
+
+function getReviewableSources() {
+  return state.sources.filter((src) => (src.items || []).length > 0);
+}
+
+function ensureActiveReviewSource() {
+  const reviewable = getReviewableSources();
+  if (!reviewable.length) {
+    reviewState.activeSourceId = null;
+    return null;
+  }
+  if (!reviewState.activeSourceId || !reviewable.some((src) => src.id === reviewState.activeSourceId)) {
+    reviewState.activeSourceId = reviewable[0].id;
+  }
+  return reviewState.activeSourceId;
+}
+
+function getActiveReviewSource() {
+  const id = ensureActiveReviewSource();
+  if (!id) return null;
+  return state.sources.find((src) => src.id === id) || null;
+}
+
+function getActiveReviewItems() {
+  const active = getActiveReviewSource();
+  if (!active) return [];
+  return state.items.filter((it) => it.sourceId === active.id);
+}
+
+function getActiveReviewIndex() {
+  const reviewable = getReviewableSources();
+  const idx = reviewable.findIndex((src) => src.id === reviewState.activeSourceId);
+  return { reviewable, idx: idx < 0 ? 0 : idx };
+}
+
+function canAdvanceToNextSource() {
+  const { reviewable, idx } = getActiveReviewIndex();
+  return reviewable.length > 1 && idx < reviewable.length - 1;
+}
+
+function updateReviewPrimaryAction() {
+  const btn = $('#btn-generate');
+  const label = $('#review-primary-label');
+  if (!btn || !label) return;
+  if (canAdvanceToNextSource()) {
+    label.textContent = 'Next source';
+    btn.setAttribute('aria-label', 'Go to next source');
+  } else {
+    label.textContent = 'Generate site';
+    btn.setAttribute('aria-label', 'Generate site');
+  }
+}
+
+function handleReviewPrimaryAction() {
+  if (canAdvanceToNextSource()) {
+    changeActiveReviewSource(1);
+    return;
+  }
+  gotoOutput();
+}
+
+function changeActiveReviewSource(delta) {
+  const reviewable = getReviewableSources();
+  if (!reviewable.length) return;
+  const idx = reviewable.findIndex((src) => src.id === reviewState.activeSourceId);
+  const safeIdx = idx < 0 ? 0 : idx;
+  const nextIdx = Math.min(reviewable.length - 1, Math.max(0, safeIdx + delta));
+  reviewState.activeSourceId = reviewable[nextIdx].id;
+  renderReview();
+}
+
+function renderReviewSourceStepper() {
+  const root = $('#review-source-stepper');
+  if (!root) return;
+  const reviewable = getReviewableSources();
+  if (reviewable.length <= 1) {
+    root.hidden = true;
+    root.innerHTML = '';
+    return;
+  }
+
+  const active = getActiveReviewSource();
+  const idx = reviewable.findIndex((src) => src.id === active?.id);
+  const activeIdx = idx < 0 ? 0 : idx;
+  const selectedCount = state.items.filter((it) => it.sourceId === active?.id && it.enabled).length;
+  const totalCount = state.items.filter((it) => it.sourceId === active?.id).length;
+
+  root.hidden = false;
+  root.innerHTML = `
+    <div class="source-stepper__meta">
+      <span class="source-stepper__kicker">Reviewing source ${activeIdx + 1} of ${reviewable.length}</span>
+      <strong class="source-stepper__name">${escapeText(displayName(active, state.sources.findIndex((s) => s.id === active.id)))}</strong>
+      <span class="source-stepper__count">${selectedCount} / ${totalCount} links selected</span>
+    </div>
+    <div class="source-stepper__actions">
+      <button type="button" class="btn btn--ghost btn--sm" data-stepper="prev" ${activeIdx === 0 ? 'disabled' : ''}>Previous source</button>
+      <button type="button" class="btn btn--ghost btn--sm" data-stepper="next" ${activeIdx >= reviewable.length - 1 ? 'disabled' : ''}>Next source</button>
+    </div>
+  `;
+
+  root.querySelector('[data-stepper="prev"]')?.addEventListener('click', () => changeActiveReviewSource(-1));
+  root.querySelector('[data-stepper="next"]')?.addEventListener('click', () => changeActiveReviewSource(1));
 }
 
 function gotoReview() {
@@ -2446,6 +2553,7 @@ function gotoReview() {
     return;
   }
   flattenSourcesIntoItems({ resetEnabled: true });
+  ensureActiveReviewSource();
   renderReview();
   showScreen('step-review');
 }
@@ -2611,39 +2719,44 @@ function seedDefaultStrategies(src) {
 function renderSourceStrategyPicker() {
   const root = $('#source-strategy');
   if (!root) return;
+  const src = getActiveReviewSource();
+  if (!src) {
+    root.hidden = true;
+    root.innerHTML = '';
+    return;
+  }
   // Always show the picker for every source that has any items — user wants
   // to pick title and image for everything, even when there's no ambiguity.
   // The defaults are the parser's best guess; the dropdown lets the user
   // confirm or override.
   const rows = [];
-  for (const src of state.sources) {
-    seedDefaultStrategies(src);
-    const groups = new Map();
-    for (const it of src.items || []) {
-      const pattern = it.pattern || 'Other';
-      if (!groups.has(pattern)) groups.set(pattern, []);
-      groups.get(pattern).push(it);
-    }
+  seedDefaultStrategies(src);
+  const groups = new Map();
+  for (const it of src.items || []) {
+    const pattern = it.pattern || 'Other';
+    if (!groups.has(pattern)) groups.set(pattern, []);
+    groups.get(pattern).push(it);
+  }
 
-    for (const [pattern, items] of groups.entries()) {
-      const titleOpts = buildPickerOptionsForGroup(items, 'title');
-      const thumbOpts = buildPickerOptionsForGroup(items, 'thumb');
-      const videoOpts = buildPickerOptionsForGroup(items, 'video');
-      const showTitle = titleOpts.length >= 1;
-      const showThumb = thumbOpts.length >= 1;
-      const showVideo = videoOpts.length >= 1;
-      if (!showTitle && !showThumb && !showVideo) continue;
+  for (const [pattern, items] of groups.entries()) {
+    const titleOpts = buildPickerOptionsForGroup(items, 'title');
+    const thumbOpts = buildPickerOptionsForGroup(items, 'thumb');
+    const videoOpts = buildPickerOptionsForGroup(items, 'video');
+    const showTitle = titleOpts.length >= 1;
+    const showThumb = thumbOpts.length >= 1;
+    const showVideo = videoOpts.length >= 1;
+    if (!showTitle && !showThumb && !showVideo) continue;
 
-      const currentStrategy = src.strategyByPattern[pattern] || {};
-      rows.push({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy });
-    }
+    const currentStrategy = src.strategyByPattern[pattern] || {};
+    rows.push({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy });
   }
   if (rows.length === 0) { root.hidden = true; root.innerHTML = ''; return; }
+  const srcIdx = state.sources.findIndex((s) => s.id === src.id);
   root.hidden = false;
   root.innerHTML = `
     <div class="strategy-picker__head">
-      <h3>How should links from each source look?</h3>
-      <p class="muted">When a source offers more than one way to grab the title or image, pick the one that fits best. Your choice applies to every link from that source.</p>
+      <h3>Tune extraction for this source</h3>
+      <p class="muted">You are editing ${escapeText(displayName(src, srcIdx))}. Choose how title, image, and video fields are finalized before moving to the next source.</p>
     </div>
     <div class="strategy-picker__list">
       ${rows.map(({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy }) => `
@@ -2755,13 +2868,10 @@ function truncate(s, n) {
 }
 
 function renderReview() {
-  const meta = $('[data-review-meta]');
-  const sources = new Set(state.items.map((i) => i.sourceName));
-  const enabledCount = state.items.filter((i) => i.enabled).length;
-  meta.innerHTML = `
-    <span><strong>${enabledCount}</strong> / ${state.items.length} selected</span>
-    <span>${sources.size} source${sources.size === 1 ? '' : 's'}</span>
-  `;
+  ensureActiveReviewSource();
+  updateReviewMeta();
+  renderReviewSourceStepper();
+  updateReviewPrimaryAction();
 
   renderSourceStrategyPicker();
   renderTemplatePicker();
@@ -2769,7 +2879,10 @@ function renderReview() {
   const root = $('#categories');
   root.innerHTML = '';
 
-  if (state.items.length === 0) {
+  const activeSource = getActiveReviewSource();
+  const activeItems = getActiveReviewItems();
+
+  if (!activeSource || activeItems.length === 0) {
     root.innerHTML = `
       <div class="empty">
         <h3>No items found.</h3>
@@ -2781,11 +2894,19 @@ function renderReview() {
 
   // Group by content-type bucket: with-image, with-video, plain.
   const grouped = new Map();
-  for (const it of state.items) {
+  for (const it of activeItems) {
     const k = bucketOf(it);
     if (!grouped.has(k)) grouped.set(k, []);
     grouped.get(k).push(it);
   }
+
+  const header = document.createElement('section');
+  header.className = 'source-finalized';
+  header.innerHTML = `
+    <h3 class="source-finalized__title">Finalized links for ${escapeText(displayName(activeSource, state.sources.findIndex((s) => s.id === activeSource.id)))}</h3>
+    <p class="source-finalized__desc">Review only this source below. Your picks are saved automatically when you move to the next source.</p>
+  `;
+  root.appendChild(header);
 
   CATEGORY_ORDER.forEach((key, idx) => {
     const items = grouped.get(key);
@@ -2906,11 +3027,14 @@ function updateGroupHeader(row) {
 function updateReviewMeta() {
   const meta = $('[data-review-meta]');
   if (!meta) return;
-  const sources = new Set(state.items.map((i) => i.sourceName));
   const enabledCount = state.items.filter((i) => i.enabled).length;
+  const reviewable = getReviewableSources();
+  const active = getActiveReviewSource();
+  const activeIdx = active ? reviewable.findIndex((s) => s.id === active.id) : -1;
   meta.innerHTML = `
     <span><strong>${enabledCount}</strong> / ${state.items.length} selected</span>
-    <span>${sources.size} source${sources.size === 1 ? '' : 's'}</span>
+    <span>${reviewable.length} source${reviewable.length === 1 ? '' : 's'} to review</span>
+    ${activeIdx >= 0 ? `<span>On source ${activeIdx + 1}</span>` : ''}
   `;
 }
 
@@ -2979,7 +3103,9 @@ document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-bulk]');
   if (!btn) return;
   const mode = btn.dataset.bulk;
-  for (const it of state.items) {
+  const active = getActiveReviewSource();
+  const targetItems = active ? state.items.filter((it) => it.sourceId === active.id) : state.items;
+  for (const it of targetItems) {
     if (mode === 'all') it.enabled = true;
     else if (mode === 'none') it.enabled = false;
     else if (mode === 'with-image') it.enabled = !!it.thumbnail;
@@ -3536,7 +3662,7 @@ document.addEventListener('click', (e) => {
 });
 
 $('#btn-parse').addEventListener('click', gotoReview);
-$('#btn-generate').addEventListener('click', gotoOutput);
+$('#btn-generate').addEventListener('click', handleReviewPrimaryAction);
 $('#btn-download').addEventListener('click', downloadHtml);
 
 // Publish-to-Vercel was removed: hosting user-generated pages on a shared
