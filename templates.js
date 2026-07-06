@@ -208,8 +208,8 @@ const TEMPLATES = {
     build: (ctx) => buildYoutube(normalize(ctx)),
   },
   cinema: {
-    name: 'Cinema Rail',
-    desc: 'Large thumbnail-first rails, inspired by streaming catalog layouts.',
+    name: 'Stream Catalog',
+    desc: 'Dark theme with per-source tabs and a large thumbnail grid. No side-scroll — built for TV and D-pad navigation.',
     preview: () => previewSvg('reel'),
     build: (ctx) => buildCinema(normalize(ctx)),
   },
@@ -338,50 +338,76 @@ function buildEditorial(ctx) {
 }
 
 // =====================================================
-// 2) TUBE GRID — compact 16:9 cards with clear metadata
+// 2) TUBE GRID — compact 16:9 cards with channel-style source headers
 // =====================================================
 function buildYoutube(ctx) {
   const { previewGroups } = partitionGroups(ctx.sourceGroups);
 
+  // Deterministic accent color per source based on name hash
+  const ACCENT_COLORS = ['#1c62b9','#c2410c','#15803d','#7c3aed','#b91c1c','#0e7490','#92400e','#3730a3','#be185d','#0f766e'];
+  function srcAccent(label) {
+    let h = 0;
+    for (let i = 0; i < label.length; i++) h = Math.imul(h * 31 + label.charCodeAt(i), 1) | 0;
+    return ACCENT_COLORS[Math.abs(h) % ACCENT_COLORS.length];
+  }
+  function srcInitials(label) {
+    return (label || 'S').split(/[\s._/-]+/).slice(0, 2).map((w) => w[0] || '').join('').toUpperCase() || '?';
+  }
+
   const css = `
-  body { background: #fff; color: #0f0f0f; font-family: "Inter", system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.5; }
-  .wrap { max-width: 1380px; margin: 0 auto; padding: 28px 20px 72px; }
-  header.site { margin-bottom: 22px; }
-  .site h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
-  .site .tagline { color: #71717a; font-size: 14px; margin-top: 6px; }
+  body { background: #f9f9f9; color: #0f0f0f; font-family: "Inter", system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.5; }
+  .wrap { max-width: 1380px; margin: 0 auto; padding: 32px 24px 80px; }
+  header.site { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #e5e5e5; }
+  .site h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+  .site .tagline { color: #6b7280; font-size: 14px; margin-top: 6px; }
 
-  .source-block { margin-top: 28px; }
-  .source-hdr { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid #ececf0; }
-  .src-pill { background: #111827; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; padding: 4px 8px; border-radius: 5px; text-transform: uppercase; }
-  .src-count { color: #8d91a0; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .source-block { margin-top: 36px; }
+  .source-hdr { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #e8e8ea; }
+  .src-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0; letter-spacing: 0.02em; }
+  .src-info { min-width: 0; }
+  .src-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: #111; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .src-count { font-size: 12px; color: #8d91a0; margin-top: 2px; font-variant-numeric: tabular-nums; }
 
-  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 14px; }
-  .card { display: block; min-width: 0; }
-  .card .thumb-box { aspect-ratio: 16/9; overflow: hidden; background: #f4f4f5; border-radius: 10px; margin-bottom: 10px; }
-  .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-  .card h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.35; margin: 0; color: #0f0f0f; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card .meta { margin-top: 6px; color: #6b7280; font-size: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 16px; }
+  .card { display: block; min-width: 0; border-radius: 12px; transition: transform .15s ease, box-shadow .15s ease; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,.10); }
+  .card .thumb-box { aspect-ratio: 16/9; overflow: hidden; background: #e9e9ec; border-radius: 10px; margin-bottom: 10px; position: relative; }
+  .thumb-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb-badge { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,.72); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px; pointer-events: none; }
+  .card h3 { font-size: 14px; font-weight: 600; letter-spacing: -0.008em; line-height: 1.35; margin: 0; color: #111; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .card-meta { margin-top: 5px; color: #8d91a0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card:hover h3 { color: #1d4ed8; }
+  .card:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
 
   .empty { margin-top: 34px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; color: #6b7280; font-size: 14px; }
 
   @media (max-width: 1220px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 600px) {
-    .wrap { padding: 18px 14px 54px; }
-    .grid { grid-template-columns: 1fr; gap: 14px; }
+  @media (max-width: 900px)  { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px)  {
+    .wrap { padding: 20px 14px 54px; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+    .card h3 { font-size: 13px; }
   }`;
 
   const sections = previewGroups.map((g) => {
-    const cards = g.items.map((i) => `<a class="card" href="${attr(i.href)}" target="_blank" rel="noopener">
-      <div class="thumb-box">${thumbImg(i)}</div>
-      <h3>${esc(i.title)}</h3>
-      <div class="meta"><span>${esc(srcLabel(g))}</span><span>${esc(i.domain || '')}</span></div>
-    </a>`).join('');
+    const label = srcLabel(g);
+    const color = srcAccent(label);
+    const initials = srcInitials(label);
+    const cards = g.items.map((i) => {
+      const badge = itemKind(i) === 'video' ? 'Video' : itemKind(i) === 'gallery' ? 'Image' : '';
+      return `<a class="card" href="${attr(i.href)}" target="_blank" rel="noopener">
+        <div class="thumb-box">${thumbImg(i)}${badge ? `<span class="thumb-badge">${badge}</span>` : ''}</div>
+        <h3>${esc(i.title)}</h3>
+        ${i.domain ? `<div class="card-meta">${esc(i.domain)}</div>` : ''}
+      </a>`;
+    }).join('');
     return `<section class="source-block">
       <div class="source-hdr">
-        <span class="src-pill">${esc(srcLabel(g))}</span>
-        <span class="src-count">${g.items.length} ${g.items.length === 1 ? 'video' : 'videos'}</span>
+        <div class="src-avatar" style="background:${color}">${initials}</div>
+        <div class="src-info">
+          <div class="src-name">${esc(label)}</div>
+          <div class="src-count">${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}</div>
+        </div>
       </div>
       <div class="grid">${cards}</div>
     </section>`;
@@ -399,62 +425,93 @@ function buildYoutube(ctx) {
 }
 
 // =====================================================
-// 3) CINEMA RAIL — larger thumbnail-first streaming rails
+// 3) STREAM CATALOG — per-source tabs, large grid, built for TV/D-pad
 // =====================================================
 function buildCinema(ctx) {
   const { previewGroups } = partitionGroups(ctx.sourceGroups);
 
   const css = `
-  body { background: #09090b; color: #f5f5f7; font-family: "Inter", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
-  .wrap { padding: 28px 0 72px; max-width: 1480px; margin: 0 auto; }
-  header.site { padding: 0 42px 24px; }
-  .site h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin: 0; color: #fff; }
-  .site .tagline { font-size: 14px; color: #a1a1aa; margin-top: 6px; }
+  body { background: #0a0a10; color: #e8e8f0; font-family: "Inter", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1520px; margin: 0 auto; padding: 32px 40px 80px; }
+  header.site { margin-bottom: 28px; }
+  .site h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.025em; margin: 0; color: #fff; }
+  .site .tagline { font-size: 14px; color: #9191a4; margin-top: 8px; }
 
-  .rail { margin-bottom: 34px; }
-  .rail-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 42px 12px; }
-  .rail-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
-  .rail-count { color: #7b7f8d; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
-  .rail-track { display: flex; gap: 16px; overflow-x: auto; padding: 0 42px 8px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .rail-track::-webkit-scrollbar { display: none; }
+  /* Tab navigation */
+  .tab-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
+  .tab-btn { background: #1a1a26; color: #9191a4; border: 2px solid #2a2a3a; border-radius: 10px; padding: 10px 22px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; line-height: 1.3; transition: background .12s, color .12s, border-color .12s; }
+  .tab-btn:hover, .tab-btn:focus-visible { background: #22223a; color: #d4d4e8; border-color: #4444aa; outline: none; }
+  .tab-btn.active { background: #2a2aff; color: #fff; border-color: #4848ff; }
+  .tab-count { font-size: 12px; font-weight: 400; opacity: 0.7; margin-left: 8px; font-variant-numeric: tabular-nums; }
 
-  .tile { flex-shrink: 0; scroll-snap-align: start; width: min(42vw, 420px); max-width: 420px; }
-  .tile .thumb-box { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #16161b; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); }
-  .thumb-box img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
-  .tile:hover .thumb-box img { transform: scale(1.025); }
-  .tile h4 { font-size: 13px; font-weight: 500; margin: 10px 2px 0; color: #d4d4d8; letter-spacing: -0.004em; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
 
-  .empty { margin: 0 42px; border: 1px solid #27272a; border-radius: 12px; padding: 16px; color: #a1a1aa; font-size: 14px; }
+  /* Grid inside each panel */
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 24px; }
+  .tile { display: block; border-radius: 12px; }
+  .tile .thumb-box { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #1a1a24; margin-bottom: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
+  .thumb-box img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s ease; }
+  .tile:hover .thumb-box img { transform: scale(1.03); }
+  .tile h4 { font-size: 16px; font-weight: 600; margin: 0; color: #d4d4e8; line-height: 1.35; letter-spacing: -0.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile .tile-meta { margin-top: 6px; font-size: 12px; color: #64648a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile:hover h4 { color: #9090ff; }
+  .tile:focus-visible { outline: 3px solid #6060ff; outline-offset: 5px; border-radius: 12px; }
 
-  @media (max-width: 900px) {
-    header.site { padding: 0 16px 18px; }
-    .rail-head { padding: 0 16px 10px; }
-    .rail-track { padding: 0 16px 8px; gap: 12px; }
-    .tile { width: min(82vw, 360px); }
-    .empty { margin: 0 16px; }
+  .empty { border: 1px solid #1f1f2e; border-radius: 12px; padding: 20px; color: #9191a4; font-size: 14px; }
+
+  @media (max-width: 1200px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 700px) {
+    .wrap { padding: 20px 16px 56px; }
+    .grid { grid-template-columns: 1fr; gap: 20px; }
+    .tab-btn { padding: 8px 16px; font-size: 14px; }
+    .tile h4 { font-size: 15px; }
   }`;
 
-  const rails = previewGroups.map((g) => {
-    const tiles = g.items.map((i) => `<a class="tile" href="${attr(i.href)}" target="_blank" rel="noopener">
-      <div class="thumb-box">${thumbImg(i)}</div>
-      <h4>${esc(i.title)}</h4>
+  const multiSource = previewGroups.length > 1;
+
+  const tabsHtml = multiSource
+    ? `<nav class="tab-nav" role="tablist">${previewGroups.map((g, i) =>
+        `<button class="tab-btn${i === 0 ? ' active' : ''}" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}" aria-controls="panel-${i}" data-tab="${i}">${esc(srcLabel(g))}<span class="tab-count">${g.items.length}</span></button>`
+      ).join('')}</nav>`
+    : '';
+
+  const panelsHtml = previewGroups.map((g, i) => {
+    const tiles = g.items.map((item) => `<a class="tile" href="${attr(item.href)}" target="_blank" rel="noopener">
+      <div class="thumb-box">${thumbImg(item)}</div>
+      <h4>${esc(item.title)}</h4>
+      ${item.domain ? `<div class="tile-meta">${esc(item.domain)}</div>` : ''}
     </a>`).join('');
-    return `<div class="rail">
-      <div class="rail-head">
-        <div class="rail-title">${esc(srcLabel(g))}</div>
-        <span class="rail-count">${g.items.length} ${g.items.length === 1 ? 'title' : 'titles'}</span>
-      </div>
-      <div class="rail-track">${tiles}</div>
+    return `<div class="tab-panel${i === 0 ? ' active' : ''}" id="panel-${i}" role="tabpanel">
+      <div class="grid">${tiles}</div>
     </div>`;
   }).join('');
+
+  // Minimal inline JS for tab switching — keyboard/D-pad navigable via <button> focus
+  const tabScript = multiSource ? `
+<script>
+(function(){
+  var btns=document.querySelectorAll('.tab-btn'),panels=document.querySelectorAll('.tab-panel');
+  btns.forEach(function(btn){
+    btn.addEventListener('click',function(){
+      btns.forEach(function(b){b.classList.remove('active');b.setAttribute('aria-selected','false');});
+      panels.forEach(function(p){p.classList.remove('active');});
+      btn.classList.add('active');btn.setAttribute('aria-selected','true');
+      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+})();
+</script>` : '';
 
   const body = `<div class="wrap">
     <header class="site">
       <h1>${esc(ctx.title)}</h1>
       ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
     </header>
-    ${rails || '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>'}
-  </div>`;
+    ${tabsHtml}
+    ${panelsHtml || '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>'}
+  </div>${tabScript}`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
 }
