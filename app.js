@@ -3150,20 +3150,50 @@ function renderTemplatePicker() {
   const counts = countByCategory(enabled);
   const suggested = window.LINKFORGE_SUGGEST(counts);
 
-  // pick default if not already set
-  if (!state.site.template || !window.LINKFORGE_TEMPLATES[state.site.template]) {
+  // Build a minimal ctx for template-level validation (just what validators need).
+  const validationCtx = { sourceGroups: [{ name: 'all', items: enabled }] };
+
+  // pick default if not already set (and don't default to a template that would reject)
+  const templates = Object.entries(window.LINKFORGE_TEMPLATES);
+  const isRejected = (tpl) => {
+    if (!tpl.validate) return false;
+    const v = tpl.validate(validationCtx);
+    return v && v.ok === false;
+  };
+  if (!state.site.template || !window.LINKFORGE_TEMPLATES[state.site.template] || isRejected(window.LINKFORGE_TEMPLATES[state.site.template])) {
     state.site.template = suggested;
   }
 
-  for (const [key, tpl] of Object.entries(window.LINKFORGE_TEMPLATES)) {
+  // Featured templates first, then the rest in declaration order.
+  const ordered = templates.slice().sort((a, b) => {
+    const af = a[1].featured ? 0 : 1;
+    const bf = b[1].featured ? 0 : 1;
+    return af - bf;
+  });
+
+  for (const [key, tpl] of ordered) {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'template-card';
+    if (tpl.featured) card.classList.add('template-card--featured');
     if (state.site.template === key) card.classList.add('template-card--active');
     card.dataset.template = key;
     card.setAttribute('aria-pressed', state.site.template === key ? 'true' : 'false');
+
+    let disabledReason = null;
+    if (tpl.validate) {
+      const v = tpl.validate(validationCtx);
+      if (v && v.ok === false) disabledReason = v.reason;
+    }
+    if (disabledReason) {
+      card.classList.add('template-card--disabled');
+      card.setAttribute('aria-disabled', 'true');
+      card.title = disabledReason;
+    }
+
     card.innerHTML = `
       <div class="template-card__meta">
+        ${tpl.featured ? `<span class="template-card__badge">${escapeText(tpl.featuredLabel || 'Featured')}</span>` : ''}
         ${tpl.focus ? `<span class="template-card__focus">${escapeText(tpl.focus)}</span>` : ''}
         ${key === suggested ? '<span class="template-card__suggested">Suggested</span>' : ''}
       </div>
@@ -3172,9 +3202,11 @@ function renderTemplatePicker() {
         <div class="template-card__name">${escapeText(tpl.name)}</div>
         <div class="template-card__desc">${escapeText(tpl.desc)}</div>
         ${tpl.fit ? `<div class="template-card__fit">${escapeText(tpl.fit)}</div>` : ''}
+        ${disabledReason ? `<div class="template-card__reason">${escapeText(disabledReason)}</div>` : ''}
       </div>
     `;
     card.addEventListener('click', () => {
+      if (disabledReason) { showToast(disabledReason); return; }
       state.site.template = key;
       $$('.template-card').forEach((c) => {
         const active = c.dataset.template === key;
@@ -3262,6 +3294,14 @@ function buildGeneratedSite() {
   };
 
   const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || window.LINKFORGE_TEMPLATES.youtube || window.LINKFORGE_TEMPLATES.editorial;
+  if (tpl.validate) {
+    const check = tpl.validate(ctx);
+    if (check && check.ok === false) {
+      const err = new Error(check.reason || 'This template cannot render the current selection.');
+      err.friendly = true;
+      throw err;
+    }
+  }
   return tpl.build(ctx);
 }
 
@@ -3641,7 +3681,18 @@ function generatedStyles(layout) {
 }
 
 function gotoOutput() {
-  const html = buildGeneratedSite();
+  let html;
+  try {
+    html = buildGeneratedSite();
+  } catch (err) {
+    if (err && err.friendly) {
+      showToast(err.message);
+      return;
+    }
+    console.error(err);
+    showToast('Something went wrong generating the site.');
+    return;
+  }
   const iframe = $('#preview-frame');
   iframe.srcdoc = html;
   iframe._html = html;

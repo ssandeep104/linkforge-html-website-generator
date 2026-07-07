@@ -1057,6 +1057,59 @@ a:hover {
   line-height: 1.4;
 }
 
+.template-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f97066, #fb923c);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px -4px rgba(249, 112, 102, 0.6);
+}
+.template-card__badge::before {
+  content: "★";
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.template-card--featured {
+  position: relative;
+  border-color: color-mix(in oklab, #f97066 40%, var(--color-border));
+  background:
+    radial-gradient(circle at top right, color-mix(in oklab, #fb923c 12%, transparent), transparent 55%),
+    color-mix(in oklab, var(--color-surface-2) 92%, transparent);
+}
+.template-card--featured:hover {
+  border-color: color-mix(in oklab, #f97066 60%, var(--color-border));
+  box-shadow: 0 20px 40px -20px rgba(249, 112, 102, 0.35), var(--shadow-md);
+}
+
+.template-card--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+.template-card--disabled:hover {
+  transform: none;
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-border);
+}
+
+.template-card__reason {
+  margin-top: var(--space-2);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--color-warning, #f59e0b) 12%, transparent);
+  color: var(--color-text-faint);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 /* ---------- categories ---------- */
 .categories {
   display: flex;

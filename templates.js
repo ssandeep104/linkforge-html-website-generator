@@ -347,12 +347,25 @@ function previewSvg(layout) {
     bento: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#f6efe4"/><rect x="8" y="8" width="90" height="50" rx="6" fill="#121212"/><rect x="104" y="8" width="48" height="24" rx="6" fill="#f97316"/><rect x="104" y="36" width="48" height="22" rx="6" fill="#14b8a6"/><rect x="8" y="64" width="34" height="24" rx="6" fill="#facc15"/><rect x="46" y="64" width="52" height="24" rx="6" fill="#ffffff" stroke="#d6d3d1"/><rect x="104" y="64" width="48" height="24" rx="6" fill="#ffffff" stroke="#d6d3d1"/></svg>`,
     broadsheet: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#fbfaf5"/><rect x="8" y="8" width="144" height="6" rx="1" fill="#111827"/><rect x="8" y="20" width="68" height="44" rx="2" fill="#d6d3d1"/><rect x="82" y="20" width="70" height="5" rx="1" fill="#111827"/><rect x="82" y="30" width="70" height="3" rx="1" fill="#6b7280"/><rect x="82" y="38" width="70" height="3" rx="1" fill="#9ca3af"/><rect x="82" y="46" width="70" height="3" rx="1" fill="#9ca3af"/><line x1="8" y1="72" x2="152" y2="72" stroke="#111827" stroke-width="1"/><rect x="8" y="78" width="40" height="3" rx="1" fill="#111827"/><rect x="56" y="78" width="40" height="3" rx="1" fill="#111827"/><rect x="104" y="78" width="40" height="3" rx="1" fill="#111827"/></svg>`,
     signal: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#09111f"/><rect x="8" y="8" width="34" height="84" rx="6" fill="#0f1c34"/><rect x="50" y="8" width="102" height="20" rx="6" fill="#16233d"/><rect x="56" y="14" width="34" height="4" rx="1" fill="#f1f5f9"/><rect x="50" y="34" width="102" height="24" rx="6" fill="#16233d"/><rect x="50" y="64" width="102" height="24" rx="6" fill="#16233d"/><circle cx="64" cy="46" r="4" fill="#38bdf8"/><circle cx="64" cy="76" r="4" fill="#f97316"/><rect x="74" y="43" width="52" height="3" rx="1" fill="#f1f5f9"/><rect x="74" y="73" width="52" height="3" rx="1" fill="#f1f5f9"/></svg>`,
+    marquee: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="mqg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f97066"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs><rect width="160" height="100" fill="#08080b"/><circle cx="150" cy="10" r="42" fill="url(#mqg)" opacity="0.55"/><rect x="10" y="10" width="60" height="4" rx="1" fill="#f4f4f5"/><rect x="10" y="20" width="80" height="34" rx="4" fill="#18181b" stroke="#3f3f46"/><polygon points="46,32 46,42 56,37" fill="#f97066"/><rect x="94" y="20" width="56" height="34" rx="4" fill="#18181b" stroke="#3f3f46"/><rect x="104" y="30" width="36" height="4" rx="1" fill="#f4f4f5"/><rect x="104" y="40" width="24" height="3" rx="1" fill="#71717a"/><rect x="10" y="60" width="66" height="30" rx="4" fill="#18181b" stroke="#3f3f46"/><rect x="80" y="60" width="70" height="30" rx="4" fill="#18181b" stroke="#3f3f46"/><rect x="16" y="66" width="30" height="4" rx="1" fill="#f4f4f5"/><rect x="16" y="74" width="20" height="3" rx="1" fill="#f97066"/><rect x="86" y="66" width="30" height="4" rx="1" fill="#f4f4f5"/><rect x="86" y="74" width="20" height="3" rx="1" fill="#38bdf8"/></svg>`,
   };
   return layouts[layout] || layouts.stream;
 }
 
 // ---------- registry ----------
 const TEMPLATES = {
+  marquee: {
+    name: 'Marquee',
+    desc: 'A high-performance, streaming-style showcase: big autoplaying source tiles that loop MP4 previews or thumbnail slideshows as you scroll.',
+    focus: 'Streaming',
+    fit: 'Best when most of your picks are videos or rich thumbnails',
+    featured: true,
+    featuredLabel: 'Featured · Streaming',
+    requires: 'multimedia',
+    preview: () => previewSvg('marquee'),
+    validate: (ctx) => marqueeValidate(ctx),
+    build: (ctx) => buildMarquee(normalize(ctx)),
+  },
   youtube: {
     name: 'Creator Grid',
     desc: 'Tabbed source channels with fast-scanning cards for clips, reels, and drops.',
@@ -1419,12 +1432,562 @@ function buildSignal(ctx) {
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'signal-theme' });
 }
 
+// =====================================================
+// 10) MARQUEE — Featured streaming-style template
+// Home = big source tiles with autoplaying previews.
+// Click a source -> its own page with static thumbnail grid.
+// Items with no thumbnail and no video are discarded.
+// =====================================================
+function slugify(s) {
+  return String(s || 'source')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'source';
+}
+
+function extractVideoSrc(item) {
+  if (!item) return null;
+  if (item.video && typeof item.video === 'object') {
+    const src = item.video.src || item.video.url || null;
+    if (src && /\.(mp4|webm)(\?|$)/i.test(src)) return src;
+  }
+  if (item.href && /\.(mp4|webm)(\?|$)/i.test(item.href)) return item.href;
+  return null;
+}
+
+// Count how many items across all sources have a thumbnail or a playable video.
+// Used to (a) disable the Marquee card in the picker when there's nothing to
+// show, and (b) hard-reject at build time with an actionable message.
+function marqueeMediaCounts(ctx) {
+  const groups = (ctx && ctx.sourceGroups) || [];
+  let items = 0, videos = 0, images = 0, sources = 0;
+  for (const g of groups) {
+    let groupHas = false;
+    for (const it of g.items || []) {
+      const hasVid = !!extractVideoSrc(it);
+      const hasImg = !!(it && (it.thumbnail || (it.video && it.video.poster)));
+      if (hasVid) videos += 1;
+      if (hasImg) images += 1;
+      if (hasVid || hasImg) { items += 1; groupHas = true; }
+    }
+    if (groupHas) sources += 1;
+  }
+  return { items, videos, images, sources };
+}
+
+function marqueeValidate(ctx) {
+  const c = marqueeMediaCounts(normalize(ctx));
+  if (c.items === 0) {
+    return {
+      ok: false,
+      reason: "Marquee needs autoplaying video previews or thumbnails to work. None of the selected sources have any multimedia content — pick a different template, or add sources with images or MP4 previews.",
+      counts: c,
+    };
+  }
+  if (c.items < 3) {
+    return {
+      ok: true,
+      warning: `Marquee shines with lots of media. You only have ${c.items} item${c.items === 1 ? '' : 's'} with a preview — the streaming layout may feel sparse.`,
+      counts: c,
+    };
+  }
+  return { ok: true, counts: c };
+}
+
+function buildMarquee(ctx) {
+  const check = marqueeValidate(ctx);
+  if (!check.ok) throw new Error(check.reason);
+  // Build per-source manifests. Discard items with neither thumbnail nor video.
+  const sources = [];
+  const seenSlugs = new Set();
+  for (const group of ctx.sourceGroups || []) {
+    const items = [];
+    const videos = [];
+    const images = [];
+    const seenHref = new Set();
+    for (const it of group.items || []) {
+      if (!it || !it.href) continue;
+      if (seenHref.has(it.href)) continue;
+      const vsrc = extractVideoSrc(it);
+      const thumb = it.thumbnail || (it.video && it.video.poster) || null;
+      if (!vsrc && !thumb) continue;
+      seenHref.add(it.href);
+      const clean = {
+        href: it.href,
+        title: it.title || it.href,
+        thumb: thumb || null,
+        video: vsrc || null,
+        domain: it.domain || '',
+        kind: itemKind(it),
+      };
+      items.push(clean);
+      if (vsrc) videos.push({ src: vsrc, poster: thumb || null });
+      if (thumb) images.push(thumb);
+    }
+    if (!items.length) continue;
+    let base = slugify(group.name || group.key || 'source');
+    let slug = base;
+    let n = 2;
+    while (seenSlugs.has(slug)) { slug = `${base}-${n++}`; }
+    seenSlugs.add(slug);
+    // Cover thumbnail for the source card: first video's poster, else first image.
+    const cover = (videos.find((v) => v.poster) || {}).poster || images[0] || null;
+    sources.push({
+      slug,
+      name: group.name || 'Source',
+      count: items.length,
+      cover,
+      videos,      // sequence of mp4/webm to chain
+      images,      // slideshow fallback
+      items,
+    });
+  }
+
+  const manifest = { title: ctx.title, tagline: ctx.tagline, today: ctx.today, sources };
+
+  const css = `
+  :root {
+    --mq-bg: #08080b;
+    --mq-bg-2: #101014;
+    --mq-surface: rgba(255,255,255,0.045);
+    --mq-surface-hi: rgba(255,255,255,0.09);
+    --mq-border: rgba(255,255,255,0.08);
+    --mq-border-hi: rgba(255,255,255,0.22);
+    --mq-text: #f4f4f5;
+    --mq-muted: #a1a1aa;
+    --mq-faint: #71717a;
+    --mq-accent: #f97066;
+    --mq-accent-2: #fb923c;
+    --mq-serif: "Fraunces", "Playfair Display", Georgia, "Times New Roman", serif;
+    --mq-sans: "Inter", -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    --mq-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  html, body { background: var(--mq-bg); color: var(--mq-text); font-family: var(--mq-sans); }
+  body { min-height: 100vh; position: relative; overflow-x: hidden; }
+  body::before {
+    content: "";
+    position: fixed; inset: -40vmax -40vmax auto auto;
+    width: 80vmax; height: 80vmax; border-radius: 50%;
+    background: conic-gradient(from 210deg, rgba(249,112,102,0.22), rgba(251,146,60,0.08) 40%, rgba(56,189,248,0.16) 70%, rgba(249,112,102,0.22));
+    filter: blur(120px);
+    z-index: 0; pointer-events: none;
+    animation: mq-spin 46s linear infinite;
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 3px 3px;
+    opacity: 0.35; mix-blend-mode: overlay;
+    z-index: 0; pointer-events: none;
+  }
+  @keyframes mq-spin { to { transform: rotate(360deg); } }
+
+  .mq-app { position: relative; z-index: 1; }
+  .mq-nav {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    padding: 18px clamp(20px, 4vw, 56px);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    background: linear-gradient(180deg, rgba(8,8,11,0.72) 0%, rgba(8,8,11,0.36) 100%);
+    border-bottom: 1px solid var(--mq-border);
+  }
+  .mq-nav__brand { display: flex; align-items: baseline; gap: 12px; }
+  .mq-nav__logo {
+    font-family: var(--mq-serif); font-size: 22px; font-weight: 700;
+    letter-spacing: -0.02em; color: var(--mq-text);
+  }
+  .mq-nav__logo em { font-style: italic; color: var(--mq-accent); }
+  .mq-nav__tag { font-family: var(--mq-mono); font-size: 10.5px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--mq-faint); }
+  .mq-nav__crumbs { display: flex; align-items: center; gap: 10px; font-family: var(--mq-mono); font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mq-muted); }
+  .mq-nav__crumbs a { color: var(--mq-muted); }
+  .mq-nav__crumbs a:hover { color: var(--mq-text); }
+  .mq-nav__crumbs .sep { color: var(--mq-faint); }
+  .mq-nav__meta { font-family: var(--mq-mono); font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--mq-faint); }
+
+  .mq-view { padding: clamp(32px, 6vw, 72px) clamp(20px, 4vw, 56px) 120px; max-width: 1600px; margin: 0 auto; }
+
+  /* HERO */
+  .mq-hero { display: grid; gap: 18px; margin-bottom: clamp(40px, 6vw, 72px); }
+  .mq-hero__kicker { font-family: var(--mq-mono); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mq-accent); }
+  .mq-hero__title {
+    margin: 0; font-family: var(--mq-serif); font-weight: 500;
+    font-size: clamp(44px, 8vw, 108px);
+    letter-spacing: -0.045em; line-height: 0.95;
+    background: linear-gradient(160deg, #ffffff 0%, #e4e4e7 45%, #a1a1aa 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .mq-hero__title em { font-style: italic; color: var(--mq-accent); background: none; -webkit-text-fill-color: var(--mq-accent); }
+  .mq-hero__tag { margin: 0; max-width: 720px; color: var(--mq-muted); font-size: clamp(15px, 1.4vw, 18px); line-height: 1.55; }
+  .mq-hero__stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 8px; font-family: var(--mq-mono); font-size: 11.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mq-faint); }
+  .mq-hero__stats strong { color: var(--mq-text); font-weight: 600; margin-right: 6px; font-family: var(--mq-serif); font-size: 20px; letter-spacing: -0.02em; }
+
+  /* SOURCE GRID (home) */
+  .mq-grid {
+    display: grid; gap: clamp(20px, 2.5vw, 32px);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  }
+  .mq-card {
+    display: flex; flex-direction: column; gap: 16px;
+    padding: 14px; border-radius: 22px;
+    background: var(--mq-surface); border: 1px solid var(--mq-border);
+    color: inherit; text-decoration: none;
+    transition: transform .4s cubic-bezier(.2,.7,.2,1), border-color .4s ease, background .4s ease, box-shadow .4s ease;
+    will-change: transform;
+  }
+  .mq-card:hover, .mq-card:focus-visible {
+    transform: translateY(-6px);
+    background: var(--mq-surface-hi);
+    border-color: var(--mq-border-hi);
+    box-shadow: 0 30px 60px -20px rgba(249,112,102,0.28), 0 20px 40px -20px rgba(0,0,0,0.6);
+    outline: none;
+  }
+  .mq-tile {
+    position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden;
+    background: #0d0d10; isolation: isolate;
+  }
+  .mq-tile__poster,
+  .mq-tile__slides img,
+  .mq-tile__video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .mq-tile__poster { z-index: 1; opacity: 1; transition: opacity .5s ease; }
+  .mq-tile__slides { position: absolute; inset: 0; z-index: 2; }
+  .mq-tile__slides img { opacity: 0; transition: opacity .5s ease; transform: scale(1.02); }
+  .mq-tile__slides img.is-visible { opacity: 1; }
+  .mq-tile__video { z-index: 3; opacity: 0; transition: opacity .35s ease; background: #000; }
+  .mq-tile.is-playing .mq-tile__video { opacity: 1; }
+  .mq-tile.is-playing .mq-tile__poster { opacity: 0; }
+  .mq-tile__scrim {
+    position: absolute; inset: 0; z-index: 4; pointer-events: none;
+    background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.55) 100%);
+  }
+  .mq-tile__badge {
+    position: absolute; top: 12px; left: 12px; z-index: 5;
+    padding: 5px 10px; border-radius: 999px;
+    background: rgba(8,8,11,0.72); backdrop-filter: blur(10px);
+    color: var(--mq-text); font-family: var(--mq-mono);
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    border: 1px solid var(--mq-border);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .mq-tile__badge .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--mq-accent); box-shadow: 0 0 8px var(--mq-accent); }
+  .mq-tile__count {
+    position: absolute; top: 12px; right: 12px; z-index: 5;
+    padding: 5px 10px; border-radius: 999px;
+    background: rgba(8,8,11,0.72); backdrop-filter: blur(10px);
+    color: var(--mq-muted); font-family: var(--mq-mono);
+    font-size: 10.5px; letter-spacing: 0.14em;
+    border: 1px solid var(--mq-border);
+  }
+  .mq-tile__foot {
+    position: absolute; bottom: 14px; left: 16px; right: 16px; z-index: 5;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+  }
+  .mq-card__meta { display: flex; flex-direction: column; gap: 6px; padding: 4px 6px 10px; }
+  .mq-card__title { font-family: var(--mq-serif); font-size: clamp(24px, 2.2vw, 30px); letter-spacing: -0.03em; line-height: 1.08; }
+  .mq-card__sub { display: flex; align-items: center; gap: 12px; font-family: var(--mq-mono); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mq-faint); }
+  .mq-card__sub .type { color: var(--mq-accent); }
+
+  /* SOURCE DETAIL PAGE */
+  .mq-detail__head { display: grid; gap: 14px; margin-bottom: clamp(32px, 5vw, 56px); }
+  .mq-detail__kicker { font-family: var(--mq-mono); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mq-accent); }
+  .mq-detail__title { margin: 0; font-family: var(--mq-serif); font-weight: 500; font-size: clamp(36px, 6vw, 80px); letter-spacing: -0.04em; line-height: 0.98; color: var(--mq-text); }
+  .mq-detail__meta { display: flex; flex-wrap: wrap; gap: 22px; font-family: var(--mq-mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--mq-faint); }
+  .mq-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    align-self: start; padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--mq-border); background: var(--mq-surface);
+    font-family: var(--mq-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mq-muted);
+    text-decoration: none; transition: background .3s, border-color .3s, color .3s;
+  }
+  .mq-back:hover { color: var(--mq-text); background: var(--mq-surface-hi); border-color: var(--mq-border-hi); }
+  .mq-back svg { width: 14px; height: 14px; }
+
+  .mq-items {
+    display: grid; gap: clamp(18px, 2vw, 28px);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  }
+  .mq-item {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 12px; border-radius: 18px;
+    background: var(--mq-surface); border: 1px solid var(--mq-border);
+    text-decoration: none; color: inherit;
+    transition: transform .3s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease;
+  }
+  .mq-item:hover {
+    transform: translateY(-4px);
+    background: var(--mq-surface-hi);
+    border-color: var(--mq-border-hi);
+    box-shadow: 0 20px 40px -20px rgba(0,0,0,0.6);
+  }
+  .mq-item__thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #0d0d10; }
+  .mq-item__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+  .mq-item:hover .mq-item__thumb img { transform: scale(1.04); }
+  .mq-item__thumb::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.5) 100%);
+  }
+  .mq-item__play {
+    position: absolute; right: 10px; bottom: 10px; z-index: 2;
+    width: 34px; height: 34px; border-radius: 999px;
+    display: grid; place-items: center;
+    background: var(--mq-accent); color: #fff;
+  }
+  .mq-item__play svg { width: 14px; height: 14px; margin-left: 2px; }
+  .mq-item__title { padding: 0 4px 8px; font-family: var(--mq-serif); font-size: 17px; line-height: 1.28; letter-spacing: -0.015em; color: var(--mq-text); }
+  .mq-item__domain { padding: 0 4px 4px; font-family: var(--mq-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mq-faint); }
+
+  .mq-empty { padding: 40px; text-align: center; color: var(--mq-muted); border: 1px dashed var(--mq-border); border-radius: 20px; }
+
+  @media (max-width: 640px) {
+    .mq-nav { padding: 14px 18px; }
+    .mq-view { padding: 24px 18px 90px; }
+    .mq-hero__stats { gap: 14px; }
+    .mq-card { padding: 10px; border-radius: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body::before { animation: none; }
+    .mq-tile__slides img, .mq-tile__video, .mq-tile__poster { transition: none; }
+    * { animation: none !important; }
+  }
+  `;
+
+  const dataScript = `<script id="mq-data" type="application/json">${JSON.stringify(manifest).replace(/</g, '\\u003c')}</script>`;
+
+  const runtime = `<script>
+(function(){
+  var data;
+  try { data = JSON.parse(document.getElementById('mq-data').textContent); }
+  catch (e) { console.error('Marquee: failed to parse data', e); return; }
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var TOTAL_VIDEO_MS = 60000;
+  var MIN_CLIP_MS = 2000;
+  var SLIDESHOW_STEP_MS = 2000;
+  var MAX_SLIDES = 15;
+
+  var app = document.getElementById('mq-app');
+  var crumbsEl = document.getElementById('mq-crumbs');
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function attr(s){ return esc(s); }
+  function findSource(slug){ for (var i=0;i<data.sources.length;i++) if (data.sources[i].slug===slug) return data.sources[i]; return null; }
+
+  // ---- Tile controller: mp4 sequence OR image slideshow ----
+  function activateTile(tile) {
+    if (tile.__started) return;
+    tile.__started = true;
+    var videos = JSON.parse(tile.dataset.videos || '[]');
+    var images = JSON.parse(tile.dataset.images || '[]').slice(0, MAX_SLIDES);
+    if (reduceMotion) return;
+
+    if (videos.length) {
+      var perClip = Math.max(MIN_CLIP_MS, Math.floor(TOTAL_VIDEO_MS / videos.length));
+      var video = tile.querySelector('.mq-tile__video');
+      if (!video) return;
+      var idx = 0;
+      var timer = null;
+      var errorsInRow = 0;
+      function playAt(i) {
+        var v = videos[i % videos.length];
+        video.src = v.src;
+        if (v.poster) video.poster = v.poster;
+        var promise = video.play();
+        if (promise && promise.catch) promise.catch(function(){});
+        if (timer) { clearTimeout(timer); timer = null; }
+        timer = setTimeout(function(){ next(); }, perClip);
+      }
+      function next() {
+        idx = (idx + 1) % videos.length;
+        playAt(idx);
+      }
+      function onError() {
+        errorsInRow += 1;
+        if (errorsInRow >= videos.length) {
+          // Every clip failed — stop trying, fall back to poster.
+          if (timer) { clearTimeout(timer); timer = null; }
+          tile.classList.remove('is-playing');
+          try { video.pause(); video.removeAttribute('src'); video.load(); } catch(e){}
+          return;
+        }
+        setTimeout(next, 250);
+      }
+      function onOk() { errorsInRow = 0; }
+      video.addEventListener('ended', function(){ onOk(); next(); });
+      video.addEventListener('playing', onOk);
+      video.addEventListener('error', onError);
+      video.addEventListener('loadedmetadata', function(){
+        var natural = (video.duration || 0) * 1000;
+        if (natural && natural < perClip) {
+          if (timer) { clearTimeout(timer); timer = null; }
+          timer = setTimeout(next, natural);
+        }
+      });
+      tile.classList.add('is-playing');
+      playAt(0);
+      tile.__cleanup = function(){ if (timer) clearTimeout(timer); try { video.pause(); } catch(e){} };
+    } else if (images.length > 1) {
+      var slides = tile.querySelectorAll('.mq-tile__slides img');
+      if (slides.length < 2) return;
+      // Preload
+      images.forEach(function(src){ var i = new Image(); i.src = src; });
+      var slot = 0;
+      var i = 0;
+      slides[0].src = images[0]; slides[0].classList.add('is-visible');
+      var interval = setInterval(function(){
+        i = (i + 1) % images.length;
+        slot = 1 - slot;
+        var incoming = slides[slot];
+        var outgoing = slides[1 - slot];
+        incoming.src = images[i];
+        incoming.classList.add('is-visible');
+        outgoing.classList.remove('is-visible');
+      }, SLIDESHOW_STEP_MS);
+      tile.__cleanup = function(){ clearInterval(interval); };
+    }
+  }
+
+  function deactivateTile(tile) {
+    if (tile.__cleanup) { try { tile.__cleanup(); } catch(e){} tile.__cleanup = null; }
+    tile.__started = false;
+    tile.classList.remove('is-playing');
+    var v = tile.querySelector('.mq-tile__video');
+    if (v) { try { v.pause(); v.removeAttribute('src'); v.load(); } catch(e){} }
+    var slides = tile.querySelectorAll('.mq-tile__slides img');
+    for (var i=0;i<slides.length;i++) { slides[i].classList.remove('is-visible'); slides[i].removeAttribute('src'); }
+  }
+
+  var observer = null;
+  function setupObserver(root) {
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) activateTile(entry.target);
+        else deactivateTile(entry.target);
+      });
+    }, { rootMargin: '10% 0px', threshold: 0.35 });
+    root.querySelectorAll('.mq-tile[data-videos]').forEach(function(t){ observer.observe(t); });
+  }
+
+  // ---- Views ----
+  function renderHome() {
+    if (crumbsEl) crumbsEl.innerHTML = '<span>Home</span>';
+    var stats =
+      '<div class="mq-hero__stats">' +
+        '<span><strong>' + data.sources.length + '</strong>Sources</span>' +
+        '<span><strong>' + data.sources.reduce(function(a,s){return a+s.count;},0) + '</strong>Items</span>' +
+        (data.today ? '<span>' + esc(data.today) + '</span>' : '') +
+      '</div>';
+    var hero =
+      '<header class="mq-hero">' +
+        '<span class="mq-hero__kicker">Now Playing</span>' +
+        '<h1 class="mq-hero__title">' + esc(data.title) + '</h1>' +
+        (data.tagline ? '<p class="mq-hero__tag">' + esc(data.tagline) + '</p>' : '') +
+        stats +
+      '</header>';
+
+    var cards = data.sources.map(function(s){
+      var videos = s.videos || [];
+      var images = s.images || [];
+      var badgeLabel = videos.length ? 'Live Preview' : (images.length ? 'Slideshow' : 'Cover');
+      var tile =
+        '<div class="mq-tile" data-videos="' + attr(JSON.stringify(videos)) + '" data-images="' + attr(JSON.stringify(images)) + '">' +
+          (s.cover ? '<img class="mq-tile__poster" src="' + attr(s.cover) + '" alt="" loading="lazy"/>' : '') +
+          '<div class="mq-tile__slides"><img alt="" loading="lazy"/><img alt="" loading="lazy"/></div>' +
+          (videos.length ? '<video class="mq-tile__video" muted playsinline preload="metadata" ' + (s.cover ? 'poster="' + attr(s.cover) + '"' : '') + '></video>' : '') +
+          '<div class="mq-tile__scrim"></div>' +
+          '<span class="mq-tile__badge"><span class="dot"></span>' + esc(badgeLabel) + '</span>' +
+          '<span class="mq-tile__count">' + s.count + ' items</span>' +
+        '</div>';
+      return '<a class="mq-card" href="#/s/' + attr(s.slug) + '">' +
+        tile +
+        '<div class="mq-card__meta">' +
+          '<div class="mq-card__title">' + esc(s.name) + '</div>' +
+          '<div class="mq-card__sub"><span class="type">' + esc(videos.length ? 'Video' : 'Gallery') + '</span><span>' + s.count + ' picks</span></div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+    var grid = data.sources.length
+      ? '<section class="mq-grid">' + cards + '</section>'
+      : '<div class="mq-empty">No sources with previews to show.</div>';
+    app.innerHTML = '<div class="mq-view">' + hero + grid + '</div>';
+    window.scrollTo(0, 0);
+    setupObserver(app);
+  }
+
+  function renderSource(slug) {
+    var s = findSource(slug);
+    if (!s) { location.hash = '#/'; return; }
+    if (crumbsEl) crumbsEl.innerHTML = '<a href="#/">Home</a><span class="sep">/</span><span>' + esc(s.name) + '</span>';
+    var items = (s.items || []).map(function(it){
+      if (!it.thumb) return '';
+      var isVideo = !!it.video;
+      return '<a class="mq-item" href="' + attr(it.href) + '" target="_blank" rel="noopener">' +
+        '<div class="mq-item__thumb">' +
+          '<img src="' + attr(it.thumb) + '" alt="" loading="lazy"/>' +
+          (isVideo ? '<span class="mq-item__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : '') +
+        '</div>' +
+        '<div class="mq-item__title">' + esc(it.title) + '</div>' +
+        (it.domain ? '<div class="mq-item__domain">' + esc(it.domain) + '</div>' : '') +
+      '</a>';
+    }).join('');
+    var body =
+      '<div class="mq-view">' +
+        '<a class="mq-back" href="#/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>All sources</a>' +
+        '<header class="mq-detail__head">' +
+          '<span class="mq-detail__kicker">Source</span>' +
+          '<h1 class="mq-detail__title">' + esc(s.name) + '</h1>' +
+          '<div class="mq-detail__meta">' +
+            '<span>' + s.count + ' items</span>' +
+            (s.videos.length ? '<span>' + s.videos.length + ' videos</span>' : '') +
+            (s.images.length ? '<span>' + s.images.length + ' images</span>' : '') +
+          '</div>' +
+        '</header>' +
+        (items ? '<section class="mq-items">' + items + '</section>' : '<div class="mq-empty">No items in this source.</div>') +
+      '</div>';
+    app.innerHTML = body;
+    window.scrollTo(0, 0);
+  }
+
+  function route() {
+    var h = location.hash || '#/';
+    var m = h.match(/^#\\/s\\/(.+)$/);
+    if (m) renderSource(decodeURIComponent(m[1]));
+    else renderHome();
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>`;
+
+  const body = `<div class="mq-app">
+    <nav class="mq-nav">
+      <div class="mq-nav__brand">
+        <span class="mq-nav__logo">${esc(ctx.title)}</span>
+        <span class="mq-nav__tag">Marquee Edition</span>
+      </div>
+      <div class="mq-nav__crumbs" id="mq-crumbs"><span>Home</span></div>
+      <div class="mq-nav__meta">${esc(ctx.today || '')}</div>
+    </nav>
+    <main id="mq-app"></main>
+  </div>
+  ${dataScript}
+  ${runtime}`;
+
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'marquee-theme' });
+}
+
 // ---------- expose ----------
 if (typeof window !== 'undefined') {
   window.LINKFORGE_TEMPLATES = TEMPLATES;
   window.LINKFORGE_SUGGEST = suggestTemplate;
   window.LINKFORGE_SUGGEST_TEMPLATE = suggestTemplate;
+  window.LINKFORGE_MARQUEE_VALIDATE = marqueeValidate;
 }
 if (typeof module !== 'undefined') {
-  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups };
+  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups, marqueeValidate };
 }
