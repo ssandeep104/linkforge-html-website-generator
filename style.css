@@ -954,8 +954,8 @@ a:hover {
 
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
 }
 
 .template-card {
@@ -983,19 +983,38 @@ a:hover {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 18%, transparent);
 }
 
-.template-card__suggested {
+.template-card__meta {
   position: absolute;
   top: var(--space-2);
+  left: var(--space-2);
   right: var(--space-2);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  z-index: 2;
+}
+
+.template-card__focus,
+.template-card__suggested {
+  display: inline-flex;
+  align-items: center;
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 2px var(--space-2);
   border-radius: 999px;
+  font-weight: 600;
+}
+
+.template-card__focus {
+  background: color-mix(in oklab, var(--color-accent) 10%, var(--color-surface-2));
+  color: var(--color-accent);
+}
+
+.template-card__suggested {
+  margin-left: auto;
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  font-weight: 500;
-  z-index: 2;
 }
 
 .template-card__preview {
@@ -1013,6 +1032,8 @@ a:hover {
 }
 
 .template-card__body {
+  display: grid;
+  gap: var(--space-2);
   padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
@@ -1028,6 +1049,12 @@ a:hover {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   line-height: 1.45;
+}
+
+.template-card__fit {
+  font-size: 0.75rem;
+  color: var(--color-text-faint);
+  line-height: 1.4;
 }
 
 /* ---------- categories ---------- */
@@ -2758,11 +2785,30 @@ body::after {
   text-transform: uppercase;
 }
 
+.template-card__focus {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-accent) 12%, var(--color-surface-2));
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .template-card__preview {
   border-bottom: 1px solid var(--color-divider);
   background:
     radial-gradient(circle at top right, color-mix(in oklab, var(--color-accent) 10%, transparent), transparent 40%),
     linear-gradient(180deg, color-mix(in oklab, var(--color-surface) 90%, transparent), color-mix(in oklab, var(--color-primary) 5%, var(--color-surface-offset)));
+}
+
+.template-card__body {
+  gap: 10px;
+}
+
+.template-card__fit {
+  color: var(--color-text-faint);
 }
 
 .preview-frame-wrap {

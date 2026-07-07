@@ -78,9 +78,68 @@ function smartLinksSection(linkGroups, { heading = 'More links' } = {}) {
   </section>`;
 }
 
+function tabLinksSection(group, heading = 'More from this source') {
+  if (!group.linkItems || !group.linkItems.length) return '';
+  return smartLinksSection([{ name: 'Saved links', items: group.linkItems }], { heading });
+}
+
 function srcLabel(group) {
   return group.name || (group.items[0]?.domain) || 'Source';
 }
+
+const SOURCE_TABS_CSS = `
+  .tab-shell { display: grid; gap: 24px; }
+  .tab-nav { display: flex; flex-wrap: wrap; gap: 12px; }
+  .tab-btn {
+    min-width: 180px;
+    display: grid;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--tab-border, rgba(24,24,27,0.12));
+    background: var(--tab-bg, rgba(255,255,255,0.72));
+    color: var(--tab-text, inherit);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    cursor: pointer;
+    text-align: left;
+    transition: transform .24s ease, border-color .24s ease, background .24s ease, box-shadow .24s ease, color .24s ease;
+  }
+  .tab-btn:hover { transform: translateY(-2px); border-color: var(--tab-border-hover, var(--tab-border, rgba(24,24,27,0.18))); box-shadow: 0 18px 34px rgba(15, 23, 42, 0.10); }
+  .tab-btn.active {
+    transform: translateY(-2px);
+    border-color: var(--tab-active-border, var(--tab-border, rgba(24,24,27,0.22)));
+    background: var(--tab-active-bg, var(--tab-bg, rgba(255,255,255,0.88)));
+    color: var(--tab-active-text, var(--tab-text, inherit));
+    box-shadow: 0 24px 46px rgba(15, 23, 42, 0.14);
+  }
+  .tab-btn:focus-visible { outline: 2px solid var(--tab-active-border, currentColor); outline-offset: 4px; }
+  .tab-btn__title { font-size: 15px; line-height: 1.2; font-weight: 780; letter-spacing: -0.02em; }
+  .tab-btn__meta { font-size: 11px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.14em; color: var(--tab-meta, inherit); opacity: 0.8; }
+  .tab-panels { position: relative; }
+  .tab-panel {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    max-height: 0;
+    overflow: hidden;
+    transform: translateY(18px) scale(0.985);
+    transform-origin: top center;
+    transition: opacity .34s ease, transform .34s ease, max-height .44s ease, visibility 0s linear .34s;
+  }
+  .tab-panel.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    max-height: 12000px;
+    overflow: visible;
+    transform: none;
+    transition: opacity .34s ease, transform .34s ease, max-height .50s ease;
+  }
+  @media (max-width: 700px) {
+    .tab-nav { display: grid; grid-template-columns: 1fr; }
+    .tab-btn { width: 100%; }
+  }
+`;
 
 // Items with a usable thumbnail get card treatment; items without get sent
 // to the "More links" tail. We treat empty/falsy thumbnails as no-preview.
@@ -125,7 +184,9 @@ function partitionGroups(sourceGroups) {
   const linkGroups = [];
   const seenPreview = new Set();
   const seenLink = new Set();
+  let sourceIndex = 0;
   for (const g of sourceGroups || []) {
+    const key = g.key || `src-${sourceIndex}`;
     const withPreview = [];
     const linkOnly = [];
     for (const it of g.items || []) {
@@ -142,10 +203,107 @@ function partitionGroups(sourceGroups) {
         linkOnly.push(it);
       }
     }
-    if (withPreview.length) previewGroups.push({ name: g.name, items: withPreview });
-    if (linkOnly.length) linkGroups.push({ name: g.name, items: linkOnly });
+    if (withPreview.length) previewGroups.push({ key, sourceIndex, name: g.name, items: withPreview });
+    if (linkOnly.length) linkGroups.push({ key, sourceIndex, name: g.name, items: linkOnly });
+    sourceIndex += 1;
   }
   return { previewGroups, linkGroups };
+}
+
+function buildSourceTabs(sourceGroups) {
+  const { previewGroups, linkGroups } = partitionGroups(sourceGroups);
+  const tabs = [];
+  const byKey = new Map();
+
+  function ensure(group) {
+    if (!byKey.has(group.key)) {
+      const entry = {
+        key: group.key,
+        sourceIndex: group.sourceIndex,
+        name: group.name,
+        previewItems: [],
+        linkItems: [],
+      };
+      byKey.set(group.key, entry);
+      tabs.push(entry);
+    }
+    return byKey.get(group.key);
+  }
+
+  for (const group of previewGroups) ensure(group).previewItems = group.items;
+  for (const group of linkGroups) ensure(group).linkItems = group.items;
+
+  return tabs.filter((group) => group.previewItems.length || group.linkItems.length);
+}
+
+function renderSourceTabs(groups, renderPanel, { prefix = 'source-tabs', emptyHtml = '' } = {}) {
+  if (!groups.length) return emptyHtml;
+
+  const tabs = `<nav class="tab-nav" role="tablist" aria-label="Source tabs">${groups.map((group, index) => `
+    <button
+      class="tab-btn${index === 0 ? ' active' : ''}"
+      type="button"
+      role="tab"
+      id="${prefix}-tab-${index}"
+      aria-selected="${index === 0 ? 'true' : 'false'}"
+      aria-controls="${prefix}-panel-${index}"
+      data-tab-target="${prefix}-panel-${index}"
+    >
+      <span class="tab-btn__title">${esc(srcLabel(group))}</span>
+      <span class="tab-btn__meta">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview' : 'previews'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</span>
+    </button>
+  `).join('')}</nav>`;
+
+  const panels = `<div class="tab-panels">${groups.map((group, index) => `
+    <section
+      class="tab-panel${index === 0 ? ' active' : ''}"
+      id="${prefix}-panel-${index}"
+      role="tabpanel"
+      aria-labelledby="${prefix}-tab-${index}"
+      aria-hidden="${index === 0 ? 'false' : 'true'}"
+    >
+      ${renderPanel(group, index)}
+    </section>
+  `).join('')}</div>`;
+
+  const script = `<script>
+  (function() {
+    var shell = document.querySelector('[data-tab-shell="${prefix}"]');
+    if (!shell) return;
+    var btns = Array.prototype.slice.call(shell.querySelectorAll('.tab-btn'));
+    var panels = Array.prototype.slice.call(shell.querySelectorAll('.tab-panel'));
+    function activate(btn) {
+      var target = btn.getAttribute('data-tab-target');
+      btns.forEach(function(node) {
+        var active = node === btn;
+        node.classList.toggle('active', active);
+        node.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      panels.forEach(function(panel) {
+        var active = panel.id === target;
+        panel.classList.toggle('active', active);
+        panel.setAttribute('aria-hidden', active ? 'false' : 'true');
+      });
+    }
+
+    btns.forEach(function(btn, index) {
+      btn.addEventListener('click', function() { activate(btn); });
+      btn.addEventListener('keydown', function(event) {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        var nextIndex = index;
+        if (event.key === 'ArrowRight') nextIndex = (index + 1) % btns.length;
+        if (event.key === 'ArrowLeft') nextIndex = (index - 1 + btns.length) % btns.length;
+        if (event.key === 'Home') nextIndex = 0;
+        if (event.key === 'End') nextIndex = btns.length - 1;
+        btns[nextIndex].focus();
+        activate(btns[nextIndex]);
+      });
+    });
+  })();
+  </script>`;
+
+  return `<div class="tab-shell" data-tab-shell="${prefix}">${tabs}${panels}</div>${script}`;
 }
 
 // Shared "More links" section. Same markup for every template — only the
@@ -180,7 +338,7 @@ function normalize(ctx) {
 // ---------- preview swatch generator ----------
 function previewSvg(layout) {
   const layouts = {
-    editorial: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#fafaf7"/><rect x="10" y="10" width="60" height="40" rx="2" fill="#1a1a1a"/><rect x="75" y="10" width="35" height="18" rx="2" fill="#999"/><rect x="115" y="10" width="35" height="18" rx="2" fill="#999"/><rect x="75" y="32" width="35" height="18" rx="2" fill="#bbb"/><rect x="115" y="32" width="35" height="18" rx="2" fill="#bbb"/><line x1="10" y1="62" x2="150" y2="62" stroke="#1a1a1a" stroke-width="0.5"/><rect x="10" y="68" width="60" height="3" rx="1" fill="#666"/><rect x="10" y="76" width="60" height="3" rx="1" fill="#bbb"/><rect x="80" y="68" width="60" height="3" rx="1" fill="#666"/><rect x="80" y="76" width="60" height="3" rx="1" fill="#bbb"/></svg>`,
+    editorial: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" rx="14" fill="#faf8f2"/><rect x="10" y="10" width="84" height="46" rx="8" fill="#111827"/><rect x="100" y="10" width="50" height="22" rx="8" fill="#f59e0b"/><rect x="100" y="36" width="50" height="20" rx="8" fill="#ddd6fe"/><rect x="10" y="62" width="46" height="28" rx="8" fill="#ffffff" stroke="#d6d3d1"/><rect x="60" y="62" width="46" height="28" rx="8" fill="#ffffff" stroke="#d6d3d1"/><rect x="110" y="62" width="40" height="28" rx="8" fill="#ffffff" stroke="#d6d3d1"/></svg>`,
     stream: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#fff"/><rect x="10" y="8" width="30" height="5" rx="1" fill="#18181b"/><rect x="10" y="20" width="42" height="28" rx="3" fill="#06b6d4"/><rect x="60" y="20" width="42" height="28" rx="3" fill="#a3e635"/><rect x="110" y="20" width="40" height="28" rx="3" fill="#f59e0b"/><rect x="10" y="58" width="30" height="4" rx="1" fill="#18181b"/><rect x="10" y="68" width="60" height="3" rx="1" fill="#999"/><rect x="10" y="75" width="60" height="3" rx="1" fill="#bbb"/><rect x="80" y="68" width="60" height="3" rx="1" fill="#999"/><rect x="80" y="75" width="60" height="3" rx="1" fill="#bbb"/></svg>`,
     reel: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#0a0a0a"/><rect x="8" y="6" width="144" height="32" rx="3" fill="#1f1f23"/><rect x="8" y="40" width="80" height="4" rx="1" fill="#fff" opacity=".85"/><rect x="8" y="48" width="40" height="3" rx="1" fill="#888"/><rect x="8" y="58" width="34" height="20" rx="2" fill="#374151"/><rect x="46" y="58" width="34" height="20" rx="2" fill="#1f2937"/><rect x="84" y="58" width="34" height="20" rx="2" fill="#374151"/><rect x="122" y="58" width="30" height="20" rx="2" fill="#1f2937"/><rect x="8" y="84" width="60" height="3" rx="1" fill="#666"/><rect x="8" y="91" width="60" height="3" rx="1" fill="#444"/></svg>`,
     console: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#0b0d10"/><rect x="8" y="8" width="50" height="4" rx="1" fill="#61dafb"/><rect x="8" y="18" width="80" height="3" rx="1" fill="#5c6370"/><rect x="8" y="28" width="45" height="14" rx="2" fill="#11141a" stroke="#1f2228"/><rect x="57" y="28" width="45" height="14" rx="2" fill="#11141a" stroke="#1f2228"/><rect x="106" y="28" width="45" height="14" rx="2" fill="#11141a" stroke="#1f2228"/><rect x="8" y="50" width="60" height="3" rx="1" fill="#5c6370"/><rect x="8" y="58" width="60" height="3" rx="1" fill="#61dafb"/><rect x="8" y="66" width="60" height="3" rx="1" fill="#5c6370"/><rect x="8" y="74" width="60" height="3" rx="1" fill="#61dafb"/><rect x="8" y="82" width="60" height="3" rx="1" fill="#5c6370"/></svg>`,
@@ -195,32 +353,63 @@ function previewSvg(layout) {
 
 // ---------- registry ----------
 const TEMPLATES = {
-  editorial: {
-    name: 'Editorial',
-    desc: 'Classic editorial grid grouped by source.',
-    preview: () => previewSvg('editorial'),
-    build: (ctx) => buildEditorial(normalize(ctx)),
-  },
   youtube: {
-    name: 'Tube Grid',
-    desc: 'Smaller 16:9 thumbnails with clear titles and metadata, grouped by source.',
+    name: 'Creator Grid',
+    desc: 'Tabbed source channels with fast-scanning cards for clips, reels, and drops.',
+    focus: 'Video',
+    fit: 'Great for YouTube, TikTok, Vimeo, and mixed creator feeds',
     preview: () => previewSvg('stream'),
     build: (ctx) => buildYoutube(normalize(ctx)),
   },
   cinema: {
     name: 'Stream Catalog',
-    desc: 'Dark theme with per-source tabs and a large thumbnail grid. No side-scroll — built for TV and D-pad navigation.',
+    desc: 'Lean-back dark catalog with source tabs, bigger key art, and a watchlist feel.',
+    focus: 'Streaming',
+    fit: 'Best for heavy video selections and living-room style browsing',
     preview: () => previewSvg('reel'),
     build: (ctx) => buildCinema(normalize(ctx)),
+  },
+  wall: {
+    name: 'Photo Wall',
+    desc: 'Tabbed gallery walls that keep each source in its own visual lane.',
+    focus: 'Gallery',
+    fit: 'Best for photography, lookbooks, product shots, and image sets',
+    preview: () => previewSvg('wall'),
+    build: (ctx) => buildWall(normalize(ctx)),
+  },
+  bento: {
+    name: 'Spotlight Bento',
+    desc: 'Source-tabbed featured cards plus supporting tiles for mixed media collections.',
+    focus: 'Mixed media',
+    fit: 'Best for launches, recaps, roundups, and mixed story + visual drops',
+    preview: () => previewSvg('bento'),
+    build: (ctx) => buildBento(normalize(ctx)),
+  },
+  signal: {
+    name: 'Signal Board',
+    desc: 'Dense dark source tabs with stronger metadata for frequent updates.',
+    focus: 'Dashboard',
+    fit: 'Best for recurring drops, research boards, and multi-source monitoring',
+    preview: () => previewSvg('signal'),
+    build: (ctx) => buildSignal(normalize(ctx)),
+  },
+  editorial: {
+    name: 'Story Deck',
+    desc: 'Story-led source tabs for article-heavy picks without the newspaper feel.',
+    focus: 'Stories',
+    fit: 'Best for mixed article links when you still want a calm visual rhythm',
+    preview: () => previewSvg('editorial'),
+    build: (ctx) => buildEditorial(normalize(ctx)),
   },
 };
 
 function suggestTemplate(counts) {
   const t = counts.total || 1;
   if (counts.video / t >= 0.55) return 'cinema';
-  if (counts.video / t >= 0.3 || counts.gallery / t >= 0.35) return 'youtube';
-  if (counts.article / t >= 0.5) return 'editorial';
-  return 'youtube';
+  if (counts.gallery / t >= 0.4) return 'wall';
+  if (counts.video / t >= 0.3) return 'youtube';
+  if (counts.gallery / t >= 0.2 || counts.article / t >= 0.55) return 'bento';
+  return 'signal';
 }
 
 // =====================================================
@@ -286,50 +475,120 @@ ${body}
 }
 
 // =====================================================
-// 1) EDITORIAL — magazine grid for images, plain list for the rest
+// 1) STORY DECK — calm story-led layout for mixed article/image sets
 // =====================================================
 function buildEditorial(ctx) {
-  const { previewGroups } = partitionGroups(ctx.sourceGroups);
+  const tabGroups = buildSourceTabs(ctx.sourceGroups);
 
   const css = `
-  body { background: #fafaf7; color: #1a1a1a; font-family: "Iowan Old Style", Iowan, Georgia, serif; line-height: 1.5; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 32px 80px; }
-  header.site { border-bottom: 2px solid #1a1a1a; padding-bottom: 20px; margin-bottom: 40px; text-align: center; }
-  .site h1 { font-size: 44px; letter-spacing: -0.02em; font-weight: 800; margin: 0; }
-  .site .tagline { font-family: system-ui, sans-serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #6b6b6b; margin-top: 8px; }
-  .source { margin-bottom: 48px; }
-  .source-head { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid #1a1a1a; padding-bottom: 8px; margin-bottom: 24px; }
-  .source-name { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
-  .source-count { font-family: system-ui, sans-serif; font-size: 11px; color: #6b6b6b; letter-spacing: 0.08em; }
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
-  .card .thumb-box { aspect-ratio: 16/10; overflow: hidden; margin-bottom: 12px; background: #eee; border-radius: 2px; }
-  .thumb-box img { width: 100%; height: 100%; object-fit: cover; }
-  .card h3 { font-size: 19px; line-height: 1.25; letter-spacing: -0.005em; font-weight: 700; margin: 0; }
-  .card:hover h3 { color: #6b3f1f; }
-  @media (max-width: 768px) {
-    .wrap { padding: 28px 18px 60px; }
-    .site h1 { font-size: 30px; }
-    .grid { grid-template-columns: 1fr; gap: 22px; }
+  body { background: linear-gradient(180deg, #fcfaf4 0%, #f6f1e8 100%); color: #18181b; font-family: "Inter", system-ui, -apple-system, sans-serif; line-height: 1.55; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 36px 24px 84px; }
+  header.site { margin-bottom: 34px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; background: rgba(217, 119, 6, 0.10); color: #b45309; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+  .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
+  .site-head { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; align-items: end; margin-top: 16px; }
+  .site h1 { margin: 0; font-size: 56px; line-height: 0.92; letter-spacing: -0.055em; font-weight: 820; max-width: 10ch; }
+  .site .tagline { margin-top: 12px; max-width: 60ch; color: #57534e; font-size: 16px; }
+  .site-note { padding: 18px 20px; border-radius: 24px; background: rgba(255,255,255,0.78); border: 1px solid rgba(24,24,27,0.08); box-shadow: 0 18px 42px rgba(41, 37, 36, 0.08); }
+  .site-note strong { display: block; font-size: 32px; line-height: 1; letter-spacing: -0.05em; }
+  .site-note span { display: block; margin-top: 8px; color: #57534e; font-size: 13px; line-height: 1.45; }
+
+  .source { margin-bottom: 44px; }
+  .source-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 18px; }
+  .source-name { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+  .source-count { color: #78716c; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+
+  .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+  .story-card { display: flex; flex-direction: column; min-width: 0; padding: 14px; border-radius: 26px; background: rgba(255,255,255,0.82); border: 1px solid rgba(24,24,27,0.08); box-shadow: 0 14px 34px rgba(41, 37, 36, 0.08); }
+  .story-card:hover .media-frame img { transform: scale(1.03); }
+  .story-card--lead { grid-column: span 7; }
+  .story-card--lead .media-frame { aspect-ratio: 16/10; margin-bottom: 16px; }
+  .story-card--lead h3 { font-size: 32px; line-height: 0.98; letter-spacing: -0.045em; }
+  .story-card--support { grid-column: span 5; }
+  .story-card--support .media-frame { aspect-ratio: 16/10; margin-bottom: 14px; }
+  .story-card--support h3 { font-size: 20px; line-height: 1.08; letter-spacing: -0.03em; }
+  .story-card--mini { grid-column: span 4; }
+  .story-card--mini .media-frame { aspect-ratio: 4/3; margin-bottom: 12px; }
+  .story-card--mini h3 { font-size: 16px; line-height: 1.2; letter-spacing: -0.02em; }
+  .story-card h3 { margin: 0; font-weight: 780; color: #18181b; }
+  .story-card .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .pill { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; background: rgba(24,24,27,0.06); color: #57534e; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .media-frame { position: relative; overflow: hidden; border-radius: 18px; background: #e7dfd2; }
+  .media-frame img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
+  .media-frame__badge { position: absolute; left: 12px; top: 12px; padding: 5px 9px; border-radius: 999px; background: rgba(255,255,255,0.88); color: #18181b; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .media-frame__play { position: absolute; right: 12px; bottom: 12px; width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; background: rgba(24,24,27,0.78); color: #fff; }
+  .media-frame__play svg { width: 18px; height: 18px; margin-left: 2px; }
+  .source-stage { padding: 24px; border-radius: 30px; background: rgba(255,255,255,0.68); border: 1px solid rgba(24,24,27,0.08); box-shadow: 0 24px 60px rgba(41, 37, 36, 0.10); }
+  .source-stage__head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 18px; }
+  .source-stage__eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: #a16207; font-weight: 800; }
+  .empty { padding: 24px; border-radius: 24px; background: rgba(255,255,255,0.72); border: 1px dashed rgba(24,24,27,0.15); color: #57534e; }
+
+  ${SOURCE_TABS_CSS}
+  .tab-shell {
+    --tab-bg: rgba(255,255,255,0.72);
+    --tab-text: #18181b;
+    --tab-border: rgba(24,24,27,0.10);
+    --tab-border-hover: rgba(217, 119, 6, 0.24);
+    --tab-active-bg: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(255,244,214,0.96));
+    --tab-active-border: rgba(217, 119, 6, 0.42);
+    --tab-meta: #78716c;
+  }
+
+  ${MORE_LINKS_CSS_LIGHT}
+  .more-links__heading { color: #57534e; }
+
+  @media (max-width: 980px) {
+    .site-head { grid-template-columns: 1fr; }
+    .site h1 { font-size: 42px; max-width: none; }
+    .story-card--lead, .story-card--support, .story-card--mini { grid-column: span 12; }
+  }
+  @media (max-width: 640px) {
+    .wrap { padding: 24px 16px 64px; }
+    .source-head { flex-direction: column; align-items: flex-start; }
+    .source-stage { padding: 18px; border-radius: 24px; }
+    .source-stage__head { flex-direction: column; align-items: flex-start; }
+    .story-card { border-radius: 22px; }
+    .story-card--lead h3 { font-size: 25px; }
   }`;
 
-  const sections = previewGroups.map((g) => {
-    const cards = g.items.map((i) => `<a class="card" href="${attr(i.href)}" target="_blank" rel="noopener">
-      <div class="thumb-box">${thumbImg(i)}</div>
-      <h3>${esc(i.title)}</h3>
-    </a>`).join('');
-    return `<section class="source">
-      <div class="source-head">
-        <div class="source-name">${esc(srcLabel(g))}</div>
-        <div class="source-count">${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}</div>
+  const sections = renderSourceTabs(tabGroups, (group) => {
+    const cards = group.previewItems.map((i, idx) => {
+      const cls = idx === 0 ? 'story-card story-card--lead' : idx === 1 ? 'story-card story-card--support' : 'story-card story-card--mini';
+      return `<a class="${cls}" href="${attr(i.href)}" target="_blank" rel="noopener">
+        ${mediaFrame(i)}
+        <h3>${esc(i.title)}</h3>
+        <div class="meta"><span class="pill">${esc(itemKindLabel(i))}</span><span class="pill">${esc(i.domain || srcLabel(group))}</span></div>
+      </a>`;
+    }).join('');
+    return `<section class="source-stage">
+      <div class="source-stage__head">
+        <div>
+          <div class="source-stage__eyebrow">Source ${group.sourceIndex + 1}</div>
+          <div class="source-name">${esc(srcLabel(group))}</div>
+        </div>
+        <div class="source-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview' : 'previews'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</div>
       </div>
-      <div class="grid">${cards}</div>
+      ${cards ? `<div class="grid">${cards}</div>` : '<div class="empty">This source has no thumbnail-ready items, but its saved links are still listed below.</div>'}
+      ${tabLinksSection(group, 'More from this source')}
     </section>`;
-  }).join('');
+  }, {
+    prefix: 'story-deck-tabs',
+    emptyHtml: '<div class="empty">No items selected for this export yet.</div>',
+  });
 
   const body = `<div class="wrap">
     <header class="site">
-      <h1>${esc(ctx.title)}</h1>
-      ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+      <div class="eyebrow">Story deck</div>
+      <div class="site-head">
+        <div>
+          <h1>${esc(ctx.title)}</h1>
+          ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+        </div>
+        <aside class="site-note">
+          <strong>${ctx.all.length}</strong>
+          <span>${ctx.sourceGroups.length} ${ctx.sourceGroups.length === 1 ? 'source' : 'sources'} arranged into featured and supporting story cards.</span>
+        </aside>
+      </div>
     </header>
     ${sections}
   </div>`;
@@ -341,7 +600,7 @@ function buildEditorial(ctx) {
 // 2) TUBE GRID — compact 16:9 cards with channel-style source headers
 // =====================================================
 function buildYoutube(ctx) {
-  const { previewGroups } = partitionGroups(ctx.sourceGroups);
+  const tabGroups = buildSourceTabs(ctx.sourceGroups);
 
   // Deterministic accent color per source based on name hash
   const ACCENT_COLORS = ['#1c62b9','#c2410c','#15803d','#7c3aed','#b91c1c','#0e7490','#92400e','#3730a3','#be185d','#0f766e'];
@@ -358,11 +617,15 @@ function buildYoutube(ctx) {
   body { background: #f9f9f9; color: #0f0f0f; font-family: "Inter", system-ui, -apple-system, sans-serif; font-size: 15px; line-height: 1.5; }
   .wrap { max-width: 1380px; margin: 0 auto; padding: 32px 24px 80px; }
   header.site { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #e5e5e5; }
+  .site-head { display: flex; justify-content: space-between; gap: 20px; align-items: end; }
   .site h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
   .site .tagline { color: #6b7280; font-size: 14px; margin-top: 6px; }
-
-  .source-block { margin-top: 36px; }
-  .source-hdr { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #e8e8ea; }
+  .site-stat { flex: 0 0 auto; padding: 14px 16px; border-radius: 16px; background: #fff; border: 1px solid #e5e7eb; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); }
+  .site-stat strong { display: block; font-size: 24px; line-height: 1; letter-spacing: -0.04em; }
+  .site-stat span { display: block; margin-top: 6px; color: #6b7280; font-size: 12px; }
+  .source-block { padding: 22px; border-radius: 28px; background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.84)); border: 1px solid #e5e7eb; box-shadow: 0 22px 52px rgba(15, 23, 42, 0.08); }
+  .source-hdr { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #e8e8ea; }
+  .source-hdr__main { display: flex; align-items: center; gap: 14px; min-width: 0; }
   .src-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; flex-shrink: 0; letter-spacing: 0.02em; }
   .src-info { min-width: 0; }
   .src-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: #111; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -379,21 +642,40 @@ function buildYoutube(ctx) {
   .card:hover h3 { color: #1d4ed8; }
   .card:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
 
-  .empty { margin-top: 34px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; color: #6b7280; font-size: 14px; }
+  .empty { margin-top: 34px; border: 1px solid #e5e7eb; border-radius: 20px; padding: 18px; color: #6b7280; font-size: 14px; }
+
+  ${SOURCE_TABS_CSS}
+  .tab-shell {
+    --tab-bg: rgba(255,255,255,0.82);
+    --tab-text: #111827;
+    --tab-border: rgba(209, 213, 219, 0.92);
+    --tab-border-hover: rgba(59, 130, 246, 0.34);
+    --tab-active-bg: linear-gradient(135deg, #111827, #2563eb);
+    --tab-active-border: rgba(37, 99, 235, 0.55);
+    --tab-active-text: #ffffff;
+    --tab-meta: #6b7280;
+  }
+  .tab-shell .tab-btn.active .tab-btn__meta { color: rgba(255,255,255,0.82); }
+
+  ${MORE_LINKS_CSS_LIGHT}
+  .more-links { margin-top: 44px; }
 
   @media (max-width: 1220px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 900px)  { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 600px)  {
     .wrap { padding: 20px 14px 54px; }
+    .site-head { flex-direction: column; align-items: flex-start; }
+    .source-block { padding: 16px; border-radius: 22px; }
+    .source-hdr { flex-direction: column; align-items: flex-start; }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
     .card h3 { font-size: 13px; }
   }`;
 
-  const sections = previewGroups.map((g) => {
-    const label = srcLabel(g);
+  const sections = renderSourceTabs(tabGroups, (group) => {
+    const label = srcLabel(group);
     const color = srcAccent(label);
     const initials = srcInitials(label);
-    const cards = g.items.map((i) => {
+    const cards = group.previewItems.map((i) => {
       const badge = itemKind(i) === 'video' ? 'Video' : itemKind(i) === 'gallery' ? 'Image' : '';
       return `<a class="card" href="${attr(i.href)}" target="_blank" rel="noopener">
         <div class="thumb-box">${thumbImg(i)}${badge ? `<span class="thumb-badge">${badge}</span>` : ''}</div>
@@ -403,22 +685,37 @@ function buildYoutube(ctx) {
     }).join('');
     return `<section class="source-block">
       <div class="source-hdr">
-        <div class="src-avatar" style="background:${color}">${initials}</div>
-        <div class="src-info">
-          <div class="src-name">${esc(label)}</div>
-          <div class="src-count">${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}</div>
+        <div class="source-hdr__main">
+          <div class="src-avatar" style="background:${color}">${initials}</div>
+          <div class="src-info">
+            <div class="src-name">${esc(label)}</div>
+            <div class="src-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview' : 'previews'} ready to watch</div>
+          </div>
         </div>
+        <div class="src-count">${group.linkItems.length} ${group.linkItems.length === 1 ? 'extra link' : 'extra links'}</div>
       </div>
-      <div class="grid">${cards}</div>
+      ${cards ? `<div class="grid">${cards}</div>` : '<div class="empty">This source only has saved links right now. The extra links list below still keeps them accessible.</div>'}
+      ${tabLinksSection(group, 'Watchlist extras')}
     </section>`;
-  }).join('');
+  }, {
+    prefix: 'creator-grid-tabs',
+    emptyHtml: '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>',
+  });
 
   const body = `<div class="wrap">
     <header class="site">
-      <h1>${esc(ctx.title)}</h1>
-      ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+      <div class="site-head">
+        <div>
+          <h1>${esc(ctx.title)}</h1>
+          ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+        </div>
+        <aside class="site-stat">
+          <strong>${ctx.all.length}</strong>
+          <span>${ctx.sourceGroups.length} ${ctx.sourceGroups.length === 1 ? 'source' : 'sources'} queued in creator-grid mode</span>
+        </aside>
+      </div>
     </header>
-    ${sections || '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>'}
+    ${sections}
   </div>`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
@@ -428,7 +725,7 @@ function buildYoutube(ctx) {
 // 3) STREAM CATALOG — per-source tabs, large grid, built for TV/D-pad
 // =====================================================
 function buildCinema(ctx) {
-  const { previewGroups } = partitionGroups(ctx.sourceGroups);
+  const tabGroups = buildSourceTabs(ctx.sourceGroups);
 
   const css = `
   body { background: #0a0a10; color: #e8e8f0; font-family: "Inter", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
@@ -437,19 +734,25 @@ function buildCinema(ctx) {
   .site h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.025em; margin: 0; color: #fff; }
   .site .tagline { font-size: 14px; color: #9191a4; margin-top: 8px; }
 
-  /* Tab navigation */
-  .tab-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px; }
-  .tab-btn { background: #1a1a26; color: #9191a4; border: 2px solid #2a2a3a; border-radius: 10px; padding: 10px 22px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; line-height: 1.3; transition: background .12s, color .12s, border-color .12s; }
-  .tab-btn:hover, .tab-btn:focus-visible { background: #22223a; color: #d4d4e8; border-color: #4444aa; outline: none; }
-  .tab-btn.active { background: #2a2aff; color: #fff; border-color: #4848ff; }
-  .tab-count { font-size: 12px; font-weight: 400; opacity: 0.7; margin-left: 8px; font-variant-numeric: tabular-nums; }
-
-  /* Panels */
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+  ${SOURCE_TABS_CSS}
+  .tab-shell {
+    --tab-bg: rgba(26,26,38,0.82);
+    --tab-text: #d4d4e8;
+    --tab-border: rgba(68,68,170,0.18);
+    --tab-border-hover: rgba(96,96,255,0.42);
+    --tab-active-bg: linear-gradient(135deg, rgba(42,42,255,0.96), rgba(91,33,182,0.96));
+    --tab-active-border: rgba(129, 140, 248, 0.64);
+    --tab-active-text: #ffffff;
+    --tab-meta: #9191a4;
+  }
+  .tab-shell .tab-btn.active .tab-btn__meta { color: rgba(255,255,255,0.82); }
 
   /* Grid inside each panel */
   .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 24px; }
+  .tab-stage { padding: 24px; border-radius: 28px; background: linear-gradient(180deg, rgba(20,20,32,0.94), rgba(14,14,24,0.9)); border: 1px solid rgba(91, 33, 182, 0.22); box-shadow: 0 24px 64px rgba(0,0,0,.42); }
+  .tab-stage__head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 18px; }
+  .tab-stage__title { font-size: 22px; font-weight: 780; letter-spacing: -0.03em; color: #fff; }
+  .tab-stage__meta { color: #9191a4; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
   .tile { display: block; border-radius: 12px; }
   .tile .thumb-box { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #1a1a24; margin-bottom: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
   .thumb-box img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s ease; }
@@ -461,48 +764,38 @@ function buildCinema(ctx) {
 
   .empty { border: 1px solid #1f1f2e; border-radius: 12px; padding: 20px; color: #9191a4; font-size: 14px; }
 
+  ${MORE_LINKS_CSS_DARK}
+  .more-links { margin-top: 28px; }
+  .more-links__heading { color: #9191a4; }
+  .more-links__domain { color: #727784; }
+
   @media (max-width: 1200px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 700px) {
     .wrap { padding: 20px 16px 56px; }
+    .tab-stage { padding: 18px; border-radius: 22px; }
+    .tab-stage__head { flex-direction: column; align-items: flex-start; }
     .grid { grid-template-columns: 1fr; gap: 20px; }
-    .tab-btn { padding: 8px 16px; font-size: 14px; }
     .tile h4 { font-size: 15px; }
   }`;
 
-  const multiSource = previewGroups.length > 1;
-
-  const tabsHtml = multiSource
-    ? `<nav class="tab-nav" role="tablist">${previewGroups.map((g, i) =>
-        `<button class="tab-btn${i === 0 ? ' active' : ''}" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}" aria-controls="panel-${i}" data-tab="${i}">${esc(srcLabel(g))}<span class="tab-count">${g.items.length}</span></button>`
-      ).join('')}</nav>`
-    : '';
-
-  const panelsHtml = previewGroups.map((g, i) => {
-    const tiles = g.items.map((item) => `<a class="tile" href="${attr(item.href)}" target="_blank" rel="noopener">
+  const tabsHtml = renderSourceTabs(tabGroups, (group) => {
+    const tiles = group.previewItems.map((item) => `<a class="tile" href="${attr(item.href)}" target="_blank" rel="noopener">
       <div class="thumb-box">${thumbImg(item)}</div>
       <h4>${esc(item.title)}</h4>
       ${item.domain ? `<div class="tile-meta">${esc(item.domain)}</div>` : ''}
     </a>`).join('');
-    return `<div class="tab-panel${i === 0 ? ' active' : ''}" id="panel-${i}" role="tabpanel">
-      <div class="grid">${tiles}</div>
-    </div>`;
-  }).join('');
-
-  // Minimal inline JS for tab switching — keyboard/D-pad navigable via <button> focus
-  const tabScript = multiSource ? `
-<script>
-(function(){
-  var btns=document.querySelectorAll('.tab-btn'),panels=document.querySelectorAll('.tab-panel');
-  btns.forEach(function(btn){
-    btn.addEventListener('click',function(){
-      btns.forEach(function(b){b.classList.remove('active');b.setAttribute('aria-selected','false');});
-      panels.forEach(function(p){p.classList.remove('active');});
-      btn.classList.add('active');btn.setAttribute('aria-selected','true');
-      document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-    });
+    return `<section class="tab-stage">
+      <div class="tab-stage__head">
+        <div class="tab-stage__title">${esc(srcLabel(group))}</div>
+        <div class="tab-stage__meta">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview card' : 'preview cards'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'saved link' : 'saved links'}</div>
+      </div>
+      ${tiles ? `<div class="grid">${tiles}</div>` : '<div class="empty">This source has no thumbnail-led entries selected yet.</div>'}
+      ${tabLinksSection(group, 'Queue extras')}
+    </section>`;
+  }, {
+    prefix: 'stream-catalog-tabs',
+    emptyHtml: '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>',
   });
-})();
-</script>` : '';
 
   const body = `<div class="wrap">
     <header class="site">
@@ -510,8 +803,7 @@ function buildCinema(ctx) {
       ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
     </header>
     ${tabsHtml}
-    ${panelsHtml || '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>'}
-  </div>${tabScript}`;
+  </div>`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
 }
@@ -588,7 +880,7 @@ function buildConsole(ctx) {
 // 5) WALL — uniform image grid (only items with previews), list below
 // =====================================================
 function buildWall(ctx) {
-  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups);
+  const tabGroups = buildSourceTabs(ctx.sourceGroups);
 
   const css = `
   body { background: #fafafa; color: #0f0f0f; font-family: "Inter", system-ui, -apple-system, sans-serif; }
@@ -596,9 +888,9 @@ function buildWall(ctx) {
   header.site { margin-bottom: 32px; }
   .site h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
   .site .tagline { color: #71717a; font-size: 14px; margin-top: 4px; }
-
-  .source { margin-bottom: 48px; }
-  .source-hdr { display: flex; align-items: baseline; gap: 12px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #e5e5e5; }
+  .source { padding: 24px; border-radius: 32px; background: rgba(255,255,255,0.74); border: 1px solid rgba(15,23,42,0.08); box-shadow: 0 24px 58px rgba(15,23,42,0.08); }
+  .source-hdr { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #e5e5e5; }
+  .source-hdr__main { display: flex; align-items: baseline; gap: 12px; min-width: 0; flex-wrap: wrap; }
   .src-pill { background: #111; color: #fff; padding: 3px 8px; border-radius: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
   .src-name { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
   .src-count { color: #71717a; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
@@ -609,27 +901,51 @@ function buildWall(ctx) {
   .thumb-box img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
   .tile:hover .thumb-box img { transform: scale(1.04); }
   .tile h3 { padding: 10px 12px 12px; font-size: 13px; font-weight: 500; line-height: 1.35; letter-spacing: -0.005em; margin: 0; }
+  .empty { padding: 18px; border-radius: 22px; border: 1px dashed rgba(148,163,184,0.24); color: #6b7280; background: rgba(255,255,255,0.76); }
+
+  ${SOURCE_TABS_CSS}
+  .tab-shell {
+    --tab-bg: rgba(255,255,255,0.84);
+    --tab-text: #111827;
+    --tab-border: rgba(148,163,184,0.18);
+    --tab-border-hover: rgba(236,72,153,0.24);
+    --tab-active-bg: linear-gradient(135deg, rgba(17,24,39,0.96), rgba(236,72,153,0.96));
+    --tab-active-border: rgba(236,72,153,0.42);
+    --tab-active-text: #ffffff;
+    --tab-meta: #6b7280;
+  }
+  .tab-shell .tab-btn.active .tab-btn__meta { color: rgba(255,255,255,0.82); }
 
   ${MORE_LINKS_CSS_LIGHT}
 
   @media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 700px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+  @media (max-width: 700px) {
+    .source { padding: 18px; border-radius: 24px; }
+    .source-hdr { flex-direction: column; align-items: flex-start; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  }
   @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }`;
 
-  const sections = previewGroups.map((g) => {
-    const tiles = g.items.map((i) => `<a class="tile" href="${attr(i.href)}" target="_blank" rel="noopener">
+  const sections = renderSourceTabs(tabGroups, (group) => {
+    const tiles = group.previewItems.map((i) => `<a class="tile" href="${attr(i.href)}" target="_blank" rel="noopener">
       <div class="thumb-box">${thumbImg(i)}</div>
       <h3>${esc(i.title)}</h3>
     </a>`).join('');
     return `<section class="source">
       <div class="source-hdr">
-        <span class="src-pill">${esc(srcLabel(g)).toUpperCase()}</span>
-        <span class="src-name">${esc(srcLabel(g))}</span>
-        <span class="src-count">${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}</span>
+        <div class="source-hdr__main">
+          <span class="src-pill">${esc(srcLabel(group)).toUpperCase()}</span>
+          <span class="src-name">${esc(srcLabel(group))}</span>
+        </div>
+        <span class="src-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'tile' : 'tiles'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</span>
       </div>
-      <div class="grid">${tiles}</div>
+      ${tiles ? `<div class="grid">${tiles}</div>` : '<div class="empty">This source has no image tiles selected yet.</div>'}
+      ${tabLinksSection(group, 'Gallery extras')}
     </section>`;
-  }).join('');
+  }, {
+    prefix: 'photo-wall-tabs',
+    emptyHtml: '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>',
+  });
 
   const body = `<div class="wrap">
     <header class="site">
@@ -637,7 +953,6 @@ function buildWall(ctx) {
       ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
     </header>
     ${sections}
-    ${moreLinksSection(linkGroups)}
   </div>`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
@@ -715,7 +1030,7 @@ function buildTimeline(ctx) {
 // 7) BENTO — modular cards with a featured lead block per source
 // =====================================================
 function buildBento(ctx) {
-  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups);
+  const tabGroups = buildSourceTabs(ctx.sourceGroups);
 
   const css = `
   body { background: linear-gradient(180deg, #f8f1e7 0%, #f4ede2 100%); color: #161515; font-family: "Inter", system-ui, -apple-system, sans-serif; }
@@ -731,7 +1046,7 @@ function buildBento(ctx) {
   .site-note strong { display: block; margin-top: 10px; font-size: 30px; line-height: 1; letter-spacing: -0.05em; }
   .site-note span { display: block; margin-top: 8px; color: #5f5448; font-size: 13px; line-height: 1.45; }
 
-  .source { margin-bottom: 44px; }
+  .source { padding: 24px; border-radius: 30px; background: rgba(255,255,255,0.68); border: 1px solid rgba(18,18,18,0.08); box-shadow: 0 18px 48px rgba(34, 26, 15, 0.10); }
   .source-head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
   .source-name { font-size: 24px; letter-spacing: -0.03em; font-weight: 800; }
   .source-count { font-size: 12px; color: #7c6e60; font-family: ui-monospace, Menlo, monospace; }
@@ -774,10 +1089,26 @@ function buildBento(ctx) {
   .smart-links__title { flex: 1; min-width: 0; font-size: 15px; line-height: 1.35; }
   .smart-links__meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
   .smart-links__type, .smart-links__domain { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8b7b6a; }
+  .empty { padding: 18px; border-radius: 22px; border: 1px dashed rgba(139, 123, 106, 0.28); color: #7c6e60; background: rgba(255,255,255,0.72); }
+
+  ${SOURCE_TABS_CSS}
+  .tab-shell {
+    --tab-bg: rgba(255,255,255,0.76);
+    --tab-text: #161515;
+    --tab-border: rgba(194, 65, 12, 0.12);
+    --tab-border-hover: rgba(20, 184, 166, 0.26);
+    --tab-active-bg: linear-gradient(135deg, rgba(249,115,22,0.92), rgba(20,184,166,0.92));
+    --tab-active-border: rgba(20, 184, 166, 0.44);
+    --tab-active-text: #ffffff;
+    --tab-meta: #8b7b6a;
+  }
+  .tab-shell .tab-btn.active .tab-btn__meta { color: rgba(255,255,255,0.84); }
 
   @media (max-width: 980px) {
     .site-head { grid-template-columns: 1fr; }
     .site h1 { font-size: 42px; max-width: none; }
+    .source { padding: 18px; border-radius: 24px; }
+    .source-head { flex-direction: column; align-items: flex-start; }
     .tile--lead, .tile--stack, .tile--mini { grid-column: span 12; }
     .smart-links__grid { grid-template-columns: 1fr; }
   }
@@ -789,25 +1120,29 @@ function buildBento(ctx) {
     .smart-links__header, .smart-links__list a { flex-direction: column; align-items: flex-start; }
   }`;
 
-  const sections = previewGroups.map((g) => {
-    const cards = g.items.map((i, idx) => {
+  const sections = renderSourceTabs(tabGroups, (group) => {
+    const cards = group.previewItems.map((i, idx) => {
       const cls = idx === 0 ? 'tile tile--lead' : idx === 1 ? 'tile tile--stack' : 'tile tile--mini';
       return `<a class="${cls}" href="${attr(i.href)}" target="_blank" rel="noopener">
         ${mediaFrame(i)}
         <div class="body">
           <h3>${esc(i.title)}</h3>
-          <div class="meta"><span class="pill">${esc(itemKindLabel(i))}</span><span class="pill">${esc(i.domain || srcLabel(g))}</span></div>
+          <div class="meta"><span class="pill">${esc(itemKindLabel(i))}</span><span class="pill">${esc(i.domain || srcLabel(group))}</span></div>
         </div>
       </a>`;
     }).join('');
     return `<section class="source">
       <div class="source-head">
-        <div class="source-name">${esc(srcLabel(g))}</div>
-        <div class="source-count">${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}</div>
+        <div class="source-name">${esc(srcLabel(group))}</div>
+        <div class="source-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'card' : 'cards'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</div>
       </div>
-      <div class="bento">${cards}</div>
+      ${cards ? `<div class="bento">${cards}</div>` : '<div class="empty">This source only has saved links right now, so the supporting list below is the primary view.</div>'}
+      ${tabLinksSection(group, 'More from this source')}
     </section>`;
-  }).join('');
+  }, {
+    prefix: 'bento-tabs',
+    emptyHtml: '<div class="empty">No thumbnail-ready items selected. Enable links with previews in review to populate this layout.</div>',
+  });
 
   const body = `<div class="wrap">
     <header class="site">
@@ -825,7 +1160,6 @@ function buildBento(ctx) {
       </div>
     </header>
     ${sections}
-    ${smartLinksSection(linkGroups, { heading: 'Plain links' })}
   </div>`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
@@ -961,7 +1295,7 @@ function buildBroadsheet(ctx) {
 // 9) SIGNAL — dark intelligence-style dashboard
 // =====================================================
 function buildSignal(ctx) {
-  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups);
+  const tabGroups = buildSourceTabs(ctx.sourceGroups);
 
   const css = `
   body { background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 26%), linear-gradient(180deg, #09111f 0%, #0c1422 100%); color: #edf4ff; font-family: "Inter", system-ui, -apple-system, sans-serif; }
@@ -1011,6 +1345,20 @@ function buildSignal(ctx) {
   .smart-links__meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
   .smart-links__type, .smart-links__domain { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8ca0bc; }
 
+  ${SOURCE_TABS_CSS}
+  .tab-shell {
+    --tab-bg: rgba(14, 23, 38, 0.82);
+    --tab-text: #edf4ff;
+    --tab-border: rgba(56, 189, 248, 0.14);
+    --tab-border-hover: rgba(249, 115, 22, 0.34);
+    --tab-active-bg: linear-gradient(135deg, rgba(17,94,89,0.96), rgba(14,165,233,0.96));
+    --tab-active-border: rgba(125, 211, 252, 0.52);
+    --tab-active-text: #ffffff;
+    --tab-meta: #8ca0bc;
+  }
+  .tab-shell .tab-btn.active .tab-btn__meta { color: rgba(255,255,255,0.84); }
+  .empty { padding: 18px; border-radius: 22px; border: 1px dashed rgba(148, 163, 184, 0.22); color: #8ca0bc; background: rgba(14, 23, 38, 0.7); }
+
   @media (max-width: 1020px) {
     .frame { grid-template-columns: 1fr; }
     .sidebar { position: static; }
@@ -1025,13 +1373,13 @@ function buildSignal(ctx) {
     .smart-links__header, .smart-links__list a { flex-direction: column; align-items: flex-start; }
   }`;
 
-  const panels = previewGroups.map((g) => {
-    const rows = g.items.map((i) => `<a class="story" href="${attr(i.href)}" target="_blank" rel="noopener">
+  const panels = renderSourceTabs(tabGroups, (group) => {
+    const rows = group.previewItems.map((i) => `<a class="story" href="${attr(i.href)}" target="_blank" rel="noopener">
       ${mediaFrame(i)}
       <div>
         <h3>${esc(i.title)}</h3>
         <div class="meta">
-          <span class="chip chip--source">${esc(srcLabel(g))}</span>
+          <span class="chip chip--source">${esc(srcLabel(group))}</span>
           <span class="chip chip--kind">${esc(itemKindLabel(i))}</span>
           <span class="chip chip--domain">${esc(i.domain || 'source')}</span>
         </div>
@@ -1039,12 +1387,16 @@ function buildSignal(ctx) {
     </a>`).join('');
     return `<section class="panel">
       <div class="panel-head">
-        <div class="panel-title">${esc(srcLabel(g))}</div>
-        <div class="panel-count">${g.items.length} ${g.items.length === 1 ? 'signal' : 'signals'}</div>
+        <div class="panel-title">${esc(srcLabel(group))}</div>
+        <div class="panel-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'signal' : 'signals'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'saved link' : 'saved links'}</div>
       </div>
-      <div class="stack">${rows}</div>
+      ${rows ? `<div class="stack">${rows}</div>` : '<div class="empty">This source has no preview cards selected, but its saved links remain available below.</div>'}
+      ${tabLinksSection(group, 'Supporting links')}
     </section>`;
-  }).join('');
+  }, {
+    prefix: 'signal-tabs',
+    emptyHtml: '<div class="empty">No items selected for this export yet.</div>',
+  });
 
   const body = `<div class="shell">
     <div class="frame">
@@ -1060,7 +1412,6 @@ function buildSignal(ctx) {
       </aside>
       <main class="main">
         ${panels}
-        ${smartLinksSection(linkGroups, { heading: 'Supplemental links' })}
       </main>
     </div>
   </div>`;

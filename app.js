@@ -6,7 +6,7 @@
 const state = window.__lfState = {
   sources: [], // {id, name, html, items[]}
   items: [], // flattened, with .enabled flag
-  site: { title: 'Daily Reader', tagline: 'A curated front page, built from the web.', template: 'editorial' },
+  site: { title: 'Streamstack', tagline: 'A watchlist, gallery, and link hub built from the web.', template: 'youtube' },
 };
 
 // Source names are auto-derived from their position (Source 1, Source 2, …)
@@ -3161,17 +3161,26 @@ function renderTemplatePicker() {
     card.className = 'template-card';
     if (state.site.template === key) card.classList.add('template-card--active');
     card.dataset.template = key;
+    card.setAttribute('aria-pressed', state.site.template === key ? 'true' : 'false');
     card.innerHTML = `
-      ${key === suggested ? '<span class="template-card__suggested">Suggested</span>' : ''}
+      <div class="template-card__meta">
+        ${tpl.focus ? `<span class="template-card__focus">${escapeText(tpl.focus)}</span>` : ''}
+        ${key === suggested ? '<span class="template-card__suggested">Suggested</span>' : ''}
+      </div>
       <div class="template-card__preview">${tpl.preview()}</div>
       <div class="template-card__body">
         <div class="template-card__name">${escapeText(tpl.name)}</div>
         <div class="template-card__desc">${escapeText(tpl.desc)}</div>
+        ${tpl.fit ? `<div class="template-card__fit">${escapeText(tpl.fit)}</div>` : ''}
       </div>
     `;
     card.addEventListener('click', () => {
       state.site.template = key;
-      $$('.template-card').forEach((c) => c.classList.toggle('template-card--active', c.dataset.template === key));
+      $$('.template-card').forEach((c) => {
+        const active = c.dataset.template === key;
+        c.classList.toggle('template-card--active', active);
+        c.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
     });
     grid.appendChild(card);
   }
@@ -3179,8 +3188,8 @@ function renderTemplatePicker() {
 
 // ---------- BUILD GENERATED SITE ----------
 function buildGeneratedSite() {
-  state.site.title = $('#site-title').value.trim() || 'Daily Reader';
-  state.site.tagline = $('#site-tagline').value.trim() || '';
+  state.site.title = $('#site-title').value.trim() || 'Streamstack';
+  state.site.tagline = $('#site-tagline').value.trim() || 'A watchlist, gallery, and link hub built from the web.';
 
   // The final site uses the same three buckets shown on the review page:
   //   withImage  -> rendered as image-card grid (articles section)
@@ -3252,7 +3261,7 @@ function buildGeneratedSite() {
     today,
   };
 
-  const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || window.LINKFORGE_TEMPLATES.editorial;
+  const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || window.LINKFORGE_TEMPLATES.youtube || window.LINKFORGE_TEMPLATES.editorial;
   return tpl.build(ctx);
 }
 

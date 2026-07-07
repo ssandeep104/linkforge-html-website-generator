@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Linkforge — paste HTML, get a site built from links</title>
+    <title>Linkforge — paste HTML, build a watchlist, gallery, or site</title>
     <meta
       name="description"
-      content="Linkforge extracts every link, thumbnail, and video preview from any HTML and renders it into three curated layouts. Client-side, source-grouped, zero backend."
+      content="Linkforge extracts every link, thumbnail, and video preview from any HTML and renders it into six curated layouts for watchlists, galleries, and mixed-media drops. Client-side, source-grouped, zero backend."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -56,10 +56,10 @@
             <p class="eyebrow">Live link extraction studio</p>
             <h1 class="display">
               Paste HTML.
-              <br/>Forge a <em>site from links.</em>
+              <br/>Forge a <em>watchlist or gallery.</em>
             </h1>
             <p class="lede">
-              Drop HTML from any source — news, research, video, photography, your own bookmarks. Linkforge pulls every link, thumbnail, and preview, then renders it into one of three layouts. Client-side, no backend.
+              Drop HTML from creator channels, photo sets, product feeds, research pages, or your own bookmarks. Linkforge pulls every link, thumbnail, and preview, then turns the selection into one of six layouts built for watchlists, galleries, and mixed-media drops. Client-side, no backend.
             </p>
           </div>
 
@@ -68,18 +68,18 @@
               <p class="hero-card__kicker">Workflow</p>
               <h2 class="hero-card__title">From page source to polished microsite in one pass.</h2>
               <p class="hero-card__text">
-                Designed for curators, researchers, media teams, and anyone who wants to turn messy source pages into a clean, downloadable front page.
+                Designed for curators, creators, archivists, and media teams who want to turn messy source pages into a clean, downloadable watchlist, gallery, or microsite.
               </p>
               <div class="hero-card__chips" aria-label="Core features">
-                <span class="hero-chip">Client-side only</span>
-                <span class="hero-chip">Source-grouped</span>
+                <span class="hero-chip">Video-ready</span>
+                <span class="hero-chip">Gallery-first</span>
                 <span class="hero-chip">Single HTML export</span>
               </div>
             </div>
 
             <div class="hero-stats" aria-label="At a glance">
               <div class="hero-stat">
-                <strong>3</strong>
+                <strong>6</strong>
                 <span>Layout modes</span>
               </div>
               <div class="hero-stat">
@@ -95,7 +95,7 @@
             <div class="hero-card">
               <p class="hero-card__kicker">Output</p>
               <p class="hero-card__text">
-                Review the extracted links, choose a template, and ship a portable HTML page that keeps the structure of every source you added.
+                Review the extracted links, choose a layout, and ship a portable HTML page that keeps the structure of every source you added.
               </p>
             </div>
           </aside>
@@ -183,7 +183,7 @@
           <span class="how__num">§02 — REVIEW</span>
           <h3>Pick the layout</h3>
           <p>
-            Untick the duds. Choose one of three templates — editorial, tube grid, cinema rail. Source grouping is preserved.
+            Untick the duds. Choose from six templates — creator grid, stream catalog, photo wall, spotlight bento, signal board, or story deck. Source grouping is preserved.
           </p>
         </div>
         <div class="how__item">
@@ -256,7 +256,7 @@
           <h2 class="page-title">Pick what goes in</h2>
           <p class="muted">
             Sorted by what each link came with. Open a group, untick the ones you
-            don’t want, and only your picks land in the final site.
+            don’t want, and only your picks land in the final export.
           </p>
         </div>
         <div class="review-head__meta" data-review-meta></div>
@@ -269,7 +269,7 @@
             <input
               type="text"
               id="site-title"
-              value="Daily Reader"
+              value="Streamstack"
               maxlength="80"
             />
           </label>
@@ -278,7 +278,7 @@
             <input
               type="text"
               id="site-tagline"
-              value="A curated front page, built from the web."
+              value="A watchlist, gallery, and link hub built from the web."
               maxlength="120"
             />
           </label>
@@ -304,8 +304,8 @@
       <!-- Template picker -->
       <section class="template-picker">
         <div class="template-picker__head">
-          <h3>Pick a template</h3>
-          <p class="muted">We&rsquo;ll suggest one based on your content. Hover to preview, click to choose.</p>
+          <h3>Pick a layout</h3>
+          <p class="muted">We&rsquo;ll suggest one based on your mix. Browse streaming, gallery, dashboard, and story modes, then click to choose.</p>
         </div>
         <div id="template-grid" class="template-grid"></div>
       </section>
