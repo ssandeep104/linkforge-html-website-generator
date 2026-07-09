@@ -5,6 +5,15 @@
   "description": "Client-side HTML aggregator. Drop in HTML from any source, get a styled standalone HTML page.",
   "type": "module",
   "engines": {
-    "node": "20.x"
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node server.js",
+    "build": "echo 'Static app, no build step required'",
+    "start": "node server.js",
+    "lint": "echo 'No linting required'"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
   }
 }

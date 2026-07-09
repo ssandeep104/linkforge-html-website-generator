@@ -15,3 +15,5 @@ Thumbs.db
 .vercel
 .env*.local
 node_modules/
+.playwright-mcp/
+metadata.json

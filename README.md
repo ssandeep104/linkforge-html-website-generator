@@ -10,17 +10,19 @@ Paste raw HTML from creator feeds, research pages, photography sets, video hubs,
 
 1. **Sources** — paste HTML or upload `.html` files (drag-and-drop supported). Add as many sources as you want.
 2. **Review** — Linkforge parses every anchor, image, and video into three buckets: links with image, links with video preview, and plain links. Pick what makes the cut with dropdowns + checkboxes.
-3. **Output** — generates a styled standalone HTML page. Six templates: Creator Grid, Stream Catalog, Photo Wall, Spotlight Bento, Signal Board, and Story Deck. The default experience now leans toward streaming, gallery, and mixed-media outputs while still preserving source grouping and readable fallback links. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
+3. **Output** — generates a styled standalone HTML page. Seven templates: Marquee, Creator Grid, Stream Catalog, Photo Wall, Spotlight Bento, Signal Board, and Story Deck. The default experience now leans toward streaming, gallery, and mixed-media outputs while still preserving source grouping and readable fallback links. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
 
 Parser is fully client-side. There are no network calls — your HTML never leaves the browser.
 
 ## Run locally
 
 ```bash
-# any static server works
-python3 -m http.server 8000
-# open http://localhost:8000
+npm install
+npm run dev
+# open http://localhost:3000
 ```
+
+You can still use any static server if you prefer (for example, `python3 -m http.server 8000`).
 
 ## Deployment
 
@@ -35,10 +37,4 @@ No environment variables required — the app is fully static.
 
 ## Tests
 
-`tests/run-sweep.js` is a Playwright-based parser regression harness — 17 fixtures from major news, video, and social sites. Run it with:
-
-```bash
-node tests/run-sweep.js
-```
-
-Latest results: `tests/sweep-results.json`.
+Parser sweep fixtures and the latest sweep outputs are in `tests/fixtures/` and `tests/sweep-results.json`.

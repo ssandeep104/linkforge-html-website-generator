@@ -2,11 +2,14 @@
    LINKFORGE — client-side HTML aggregator
    ===================================================== */
 
+const DEFAULT_SITE_TITLE = 'Streamstack';
+const DEFAULT_SITE_TAGLINE = 'A watchlist, gallery, and link hub built from the web.';
+
 // Exposed on window for in-browser test diagnostics (no behavior change).
 const state = window.__lfState = {
   sources: [], // {id, name, html, items[]}
   items: [], // flattened, with .enabled flag
-  site: { title: 'Streamstack', tagline: 'A watchlist, gallery, and link hub built from the web.', template: 'youtube' },
+  site: { title: DEFAULT_SITE_TITLE, tagline: DEFAULT_SITE_TAGLINE, template: 'youtube' },
 };
 
 // Source names are auto-derived from their position (Source 1, Source 2, …)
@@ -34,7 +37,9 @@ function showScreen(id) {
 // ---------- theme toggle ----------
 (function initTheme() {
   const root = document.documentElement;
-  let mode = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const savedMode = localStorage.getItem('lf-theme');
+  const systemMode = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  let mode = savedMode === 'dark' || savedMode === 'light' ? savedMode : systemMode;
   root.setAttribute('data-theme', mode);
   const sunSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
   const moonSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
@@ -50,6 +55,7 @@ function showScreen(id) {
     if (!t) return;
     mode = mode === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', mode);
+    localStorage.setItem('lf-theme', mode);
     render();
   });
 })();
@@ -2140,7 +2146,7 @@ function removeSourceFragment(src, fragmentId) {
 }
 
 function displayName(src, idx) {
-  return src.customName && src.name ? src.name : `Source ${idx + 1}`;
+  return src.name ? src.name : `Source ${idx + 1}`;
 }
 
 function removeSource(id) {
@@ -2214,7 +2220,8 @@ function renderSources() {
       // page groups them under the typed label instead of UNSOURCED. Without
       // this, items keep whatever sourceName they got at paste time (often '').
       if (src.items && src.items.length) {
-        for (const it of src.items) it.sourceName = src.name;
+        const nextSourceName = displayName(src, idx);
+        for (const it of src.items) it.sourceName = nextSourceName;
       }
       updateCounts();
     });
@@ -2255,6 +2262,28 @@ function runParse(src, card) {
   src.items = meta.items;
   src.unresolvedCount = meta.unresolvedCount;
   src.detectedBase = meta.baseURL;
+
+  // Auto-populate the source name based on the detected base URL/domain if not custom-named
+  const idx = state.sources.indexOf(src);
+  if (!src.customName) {
+    if (meta.baseURL) {
+      const domain = domainOf(meta.baseURL);
+      src.name = domain || '';
+    } else {
+      src.name = '';
+    }
+    const nameInput = card.querySelector('.source-card__name');
+    if (nameInput) {
+      nameInput.value = displayName(src, idx);
+    }
+  }
+
+  // Update item source names with the final display name
+  const finalSourceName = displayName(src, idx);
+  for (const it of src.items) {
+    it.sourceName = finalSourceName;
+  }
+
   // "Empty source" — we got non-empty HTML but zero items. Likely a JS-rendered
   // page or a snippet that needs different selectors. Track so we can show a hint.
   src.emptyAfterParse = !!(src.html.trim() && meta.items.length === 0 && meta.unresolvedCount === 0);
@@ -3132,6 +3161,39 @@ document.addEventListener('click', (e) => {
 // STEP 3 — GENERATE FINAL SITE
 // ===================================================
 
+const TEMPLATE_DEFAULTS = {
+  marquee: {
+    title: 'Marquee Showcase',
+    tagline: 'A curated marquee spotlight of streaming video highlights and media cards.'
+  },
+  youtube: {
+    title: DEFAULT_SITE_TITLE,
+    tagline: DEFAULT_SITE_TAGLINE
+  },
+  cinema: {
+    title: 'Stream Catalog',
+    tagline: 'A lean-back dark catalog with source tabs and an editorial watchlist feel.'
+  },
+  wall: {
+    title: 'Photo Wall',
+    tagline: 'A fluid gallery grid keeping each source in its own visual lane.'
+  },
+  bento: {
+    title: 'Spotlight Bento',
+    tagline: 'A custom bento arrangement featuring top clips and mixed story cards.'
+  },
+  signal: {
+    title: 'Signal Board',
+    tagline: 'A dense dark monitoring board and high-frequency update dashboard.'
+  },
+  editorial: {
+    title: 'Story Deck',
+    tagline: 'A calm story-led deck for article-heavy collections and reading lists.'
+  }
+};
+const DEFAULT_TEMPLATE_TITLES = new Set(Object.values(TEMPLATE_DEFAULTS).map((d) => d.title));
+const DEFAULT_TEMPLATE_TAGLINES = new Set(Object.values(TEMPLATE_DEFAULTS).map((d) => d.tagline));
+
 // ---------- TEMPLATE PICKER UI ----------
 function countByCategory(items) {
   // Provide both bucket counts (for suggesting templates from the 3-bucket world)
@@ -3207,7 +3269,27 @@ function renderTemplatePicker() {
     `;
     card.addEventListener('click', () => {
       if (disabledReason) { showToast(disabledReason); return; }
+
+      const currentTitle = $('#site-title').value.trim();
+      const currentTagline = $('#site-tagline').value.trim();
+
+      const isTitleDefault = !currentTitle || DEFAULT_TEMPLATE_TITLES.has(currentTitle);
+
+      const isTaglineDefault = !currentTagline || DEFAULT_TEMPLATE_TAGLINES.has(currentTagline);
+
       state.site.template = key;
+
+      if (isTitleDefault) {
+        const newTitle = TEMPLATE_DEFAULTS[key]?.title || DEFAULT_SITE_TITLE;
+        $('#site-title').value = newTitle;
+        state.site.title = newTitle;
+      }
+      if (isTaglineDefault) {
+        const newTagline = TEMPLATE_DEFAULTS[key]?.tagline || DEFAULT_SITE_TAGLINE;
+        $('#site-tagline').value = newTagline;
+        state.site.tagline = newTagline;
+      }
+
       $$('.template-card').forEach((c) => {
         const active = c.dataset.template === key;
         c.classList.toggle('template-card--active', active);
@@ -3220,8 +3302,8 @@ function renderTemplatePicker() {
 
 // ---------- BUILD GENERATED SITE ----------
 function buildGeneratedSite() {
-  state.site.title = $('#site-title').value.trim() || 'Streamstack';
-  state.site.tagline = $('#site-tagline').value.trim() || 'A watchlist, gallery, and link hub built from the web.';
+  state.site.title = $('#site-title').value.trim() || DEFAULT_SITE_TITLE;
+  state.site.tagline = $('#site-tagline').value.trim() || DEFAULT_SITE_TAGLINE;
 
   // The final site uses the same three buckets shown on the review page:
   //   withImage  -> rendered as image-card grid (articles section)
