@@ -87,6 +87,14 @@ function srcLabel(group) {
   return group.name || (group.items[0]?.domain) || 'Source';
 }
 
+function previewCoverage(group) {
+  const preview = (group?.previewItems || []).length;
+  const links = (group?.linkItems || []).length;
+  const total = preview + links;
+  if (!total) return 0;
+  return Math.round((preview / total) * 100);
+}
+
 const SOURCE_TABS_CSS = `
   .tab-shell { display: grid; gap: 24px; }
   .tab-nav { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -466,6 +474,7 @@ const MORE_LINKS_CSS_DARK = `
 `;
 
 function shell({ title, tagline, today, body, css, bodyClass = '' }) {
+  const bodyClasses = ['lf-template', bodyClass].filter(Boolean).join(' ');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -474,14 +483,115 @@ function shell({ title, tagline, today, body, css, bodyClass = '' }) {
 <title>${esc(title)}</title>
 <meta name="description" content="${attr(tagline || '')}" />
 <style>
+  :root {
+    --lf-radius-sm: 12px;
+    --lf-radius-md: 18px;
+    --lf-radius-lg: 24px;
+    --lf-radius-xl: 30px;
+    --lf-shadow-soft: 0 14px 34px rgba(15, 23, 42, 0.08);
+    --lf-shadow-deep: 0 24px 56px rgba(15, 23, 42, 0.14);
+  }
   *,*::before,*::after { box-sizing: border-box; }
   html,body { margin: 0; padding: 0; }
   img { display: block; max-width: 100%; }
-  a { color: inherit; text-decoration: none; }
+  a { color: inherit; text-decoration: none; transition: color .24s ease, transform .24s ease, box-shadow .24s ease; }
+  .lf-template {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .lf-template h1,
+  .lf-template h2,
+  .lf-template h3,
+  .lf-template h4 { text-wrap: balance; }
+  .lf-template p,
+  .lf-template .tagline { text-wrap: pretty; }
+  .lf-template a:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+  .lf-template .source-count,
+  .lf-template .src-count,
+  .lf-template .tab-stage__meta,
+  .lf-template .panel-count,
+  .lf-template .more-links__domain,
+  .lf-template .smart-links__domain {
+    font-variant-numeric: tabular-nums;
+  }
+  .lf-template .tab-btn,
+  .lf-template .card,
+  .lf-template .tile,
+  .lf-template .story-card,
+  .lf-template .source,
+  .lf-template .source-stage,
+  .lf-template .source-block,
+  .lf-template .tab-stage,
+  .lf-template .panel,
+  .lf-template .smart-links__group,
+  .lf-template .more-links__group {
+    transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease, background .28s ease;
+  }
+  .lf-template .tab-btn {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .lf-template .tab-btn::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(120deg, transparent 25%, rgba(255,255,255,0.28) 50%, transparent 75%);
+    transform: translateX(-60%);
+    transition: opacity .24s ease;
+  }
+  .lf-template .tab-btn:hover::after,
+  .lf-template .tab-btn.active::after {
+    opacity: 1;
+    animation: lf-tab-sheen .9s ease;
+  }
+  .lf-template .media-frame,
+  .lf-template .thumb-box {
+    border-radius: var(--lf-radius-md);
+    overflow: hidden;
+  }
+  .lf-template .media-frame img,
+  .lf-template .thumb-box img {
+    transform: translateZ(0);
+    transition: transform .36s ease;
+  }
+  .lf-template .story-card:hover .media-frame img,
+  .lf-template .tile:hover .media-frame img,
+  .lf-template .tile:hover .thumb-box img,
+  .lf-template .card:hover .thumb-box img,
+  .lf-template .story:hover .media-frame img {
+    transform: scale(1.045);
+  }
+  .lf-template .source,
+  .lf-template .source-stage,
+  .lf-template .source-block,
+  .lf-template .tab-stage,
+  .lf-template .panel {
+    border-radius: var(--lf-radius-xl);
+    box-shadow: var(--lf-shadow-soft);
+  }
+  .lf-template .source:hover,
+  .lf-template .source-stage:hover,
+  .lf-template .source-block:hover,
+  .lf-template .tab-stage:hover,
+  .lf-template .panel:hover {
+    box-shadow: var(--lf-shadow-deep);
+  }
+  @keyframes lf-tab-sheen {
+    from { transform: translateX(-60%); }
+    to { transform: translateX(70%); }
+  }
 ${css}
 </style>
 </head>
-<body class="${bodyClass}">
+<body class="${bodyClasses}">
 ${body}
 </body>
 </html>`;
@@ -510,6 +620,10 @@ function buildEditorial(ctx) {
   .source-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 18px; }
   .source-name { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
   .source-count { color: #78716c; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .source-progress { display: grid; gap: 6px; min-width: 170px; }
+  .source-progress__label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #a16207; font-weight: 700; }
+  .source-progress__bar { height: 6px; border-radius: 999px; background: rgba(217, 119, 6, 0.16); overflow: hidden; }
+  .source-progress__bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #d97706, #f59e0b); }
 
   .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
   .story-card { display: flex; flex-direction: column; min-width: 0; padding: 14px; border-radius: 26px; background: rgba(255,255,255,0.82); border: 1px solid rgba(24,24,27,0.08); box-shadow: 0 14px 34px rgba(41, 37, 36, 0.08); }
@@ -560,11 +674,13 @@ function buildEditorial(ctx) {
     .source-head { flex-direction: column; align-items: flex-start; }
     .source-stage { padding: 18px; border-radius: 24px; }
     .source-stage__head { flex-direction: column; align-items: flex-start; }
+    .source-progress { min-width: 100%; }
     .story-card { border-radius: 22px; }
     .story-card--lead h3 { font-size: 25px; }
   }`;
 
   const sections = renderSourceTabs(tabGroups, (group) => {
+    const coverage = previewCoverage(group);
     const cards = group.previewItems.map((i, idx) => {
       const cls = idx === 0 ? 'story-card story-card--lead' : idx === 1 ? 'story-card story-card--support' : 'story-card story-card--mini';
       return `<a class="${cls}" href="${attr(i.href)}" target="_blank" rel="noopener">
@@ -579,7 +695,11 @@ function buildEditorial(ctx) {
           <div class="source-stage__eyebrow">Source ${group.sourceIndex + 1}</div>
           <div class="source-name">${esc(srcLabel(group))}</div>
         </div>
-        <div class="source-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview' : 'previews'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</div>
+        <div class="source-progress">
+          <div class="source-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview' : 'previews'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</div>
+          <div class="source-progress__label">Preview coverage ${coverage}%</div>
+          <div class="source-progress__bar"><span style="width:${coverage}%"></span></div>
+        </div>
       </div>
       ${cards ? `<div class="grid">${cards}</div>` : '<div class="empty">This source has no thumbnail-ready items, but its saved links are still listed below.</div>'}
       ${tabLinksSection(group, 'More from this source')}
@@ -631,7 +751,7 @@ function buildYoutube(ctx) {
   .wrap { max-width: 1380px; margin: 0 auto; padding: 32px 24px 80px; }
   header.site { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #e5e5e5; }
   .site-head { display: flex; justify-content: space-between; gap: 20px; align-items: end; }
-  .site h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+  .site h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.03; margin: 0; }
   .site .tagline { color: #6b7280; font-size: 14px; margin-top: 6px; }
   .site-stat { flex: 0 0 auto; padding: 14px 16px; border-radius: 16px; background: #fff; border: 1px solid #e5e7eb; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06); }
   .site-stat strong { display: block; font-size: 24px; line-height: 1; letter-spacing: -0.04em; }
@@ -643,6 +763,10 @@ function buildYoutube(ctx) {
   .src-info { min-width: 0; }
   .src-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: #111; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .src-count { font-size: 12px; color: #8d91a0; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .src-health { display: grid; gap: 5px; min-width: 150px; }
+  .src-health__label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #2563eb; font-weight: 700; text-align: right; }
+  .src-health__bar { height: 6px; border-radius: 999px; background: rgba(37,99,235,0.16); overflow: hidden; }
+  .src-health__bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1d4ed8, #3b82f6); }
 
   .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px 16px; }
   .card { display: block; min-width: 0; border-radius: 12px; transition: transform .15s ease, box-shadow .15s ease; }
@@ -680,6 +804,8 @@ function buildYoutube(ctx) {
     .site-head { flex-direction: column; align-items: flex-start; }
     .source-block { padding: 16px; border-radius: 22px; }
     .source-hdr { flex-direction: column; align-items: flex-start; }
+    .src-health { width: 100%; }
+    .src-health__label { text-align: left; }
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
     .card h3 { font-size: 13px; }
   }`;
@@ -689,13 +815,15 @@ function buildYoutube(ctx) {
     const color = srcAccent(label);
     const initials = srcInitials(label);
     const cards = group.previewItems.map((i) => {
-      const badge = itemKind(i) === 'video' ? 'Video' : itemKind(i) === 'gallery' ? 'Image' : '';
+      const kind = itemKind(i);
+      const badge = kind === 'video' ? 'Video' : kind === 'gallery' ? 'Image' : 'Story';
       return `<a class="card" href="${attr(i.href)}" target="_blank" rel="noopener">
         <div class="thumb-box">${thumbImg(i)}${badge ? `<span class="thumb-badge">${badge}</span>` : ''}</div>
         <h3>${esc(i.title)}</h3>
         ${i.domain ? `<div class="card-meta">${esc(i.domain)}</div>` : ''}
       </a>`;
     }).join('');
+    const coverage = previewCoverage(group);
     return `<section class="source-block">
       <div class="source-hdr">
         <div class="source-hdr__main">
@@ -705,7 +833,11 @@ function buildYoutube(ctx) {
             <div class="src-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview' : 'previews'} ready to watch</div>
           </div>
         </div>
-        <div class="src-count">${group.linkItems.length} ${group.linkItems.length === 1 ? 'extra link' : 'extra links'}</div>
+        <div class="src-health">
+          <div class="src-count">${group.linkItems.length} ${group.linkItems.length === 1 ? 'extra link' : 'extra links'}</div>
+          <div class="src-health__label">Preview coverage ${coverage}%</div>
+          <div class="src-health__bar"><span style="width:${coverage}%"></span></div>
+        </div>
       </div>
       ${cards ? `<div class="grid">${cards}</div>` : '<div class="empty">This source only has saved links right now. The extra links list below still keeps them accessible.</div>'}
       ${tabLinksSection(group, 'Watchlist extras')}
@@ -744,8 +876,13 @@ function buildCinema(ctx) {
   body { background: #0a0a10; color: #e8e8f0; font-family: "Inter", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
   .wrap { max-width: 1520px; margin: 0 auto; padding: 32px 40px 80px; }
   header.site { margin-bottom: 28px; }
-  .site h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.025em; margin: 0; color: #fff; }
-  .site .tagline { font-size: 14px; color: #9191a4; margin-top: 8px; }
+  .site-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: end; }
+  .site h1 { font-size: 38px; font-weight: 820; letter-spacing: -0.03em; line-height: 0.98; margin: 0; color: #fff; }
+  .site .tagline { font-size: 15px; color: #9191a4; margin-top: 8px; max-width: 62ch; }
+  .site-stats { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+  .site-pill { padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(129, 140, 248, 0.34); background: rgba(30, 41, 59, 0.68); min-width: 120px; }
+  .site-pill strong { display: block; color: #fff; font-size: 22px; line-height: 1; letter-spacing: -0.04em; }
+  .site-pill span { display: block; color: #9191a4; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 6px; }
 
   ${SOURCE_TABS_CSS}
   .tab-shell {
@@ -766,8 +903,13 @@ function buildCinema(ctx) {
   .tab-stage__head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 18px; }
   .tab-stage__title { font-size: 22px; font-weight: 780; letter-spacing: -0.03em; color: #fff; }
   .tab-stage__meta { color: #9191a4; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .tab-stage__health { display: grid; gap: 5px; min-width: 170px; }
+  .tab-stage__health-label { color: #a5b4fc; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; text-align: right; }
+  .tab-stage__health-bar { height: 6px; border-radius: 999px; background: rgba(129, 140, 248, 0.16); overflow: hidden; }
+  .tab-stage__health-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #6366f1, #8b5cf6); }
   .tile { display: block; border-radius: 12px; }
-  .tile .thumb-box { aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #1a1a24; margin-bottom: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
+  .tile .thumb-box { position: relative; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; background: #1a1a24; margin-bottom: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
+  .tile .thumb-kind { position: absolute; left: 10px; top: 10px; padding: 5px 8px; border-radius: 999px; background: rgba(10,10,16,.76); border: 1px solid rgba(148,163,184,.3); color: #dbeafe; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
   .thumb-box img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s ease; }
   .tile:hover .thumb-box img { transform: scale(1.03); }
   .tile h4 { font-size: 16px; font-weight: 600; margin: 0; color: #d4d4e8; line-height: 1.35; letter-spacing: -0.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -785,22 +927,34 @@ function buildCinema(ctx) {
   @media (max-width: 1200px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 700px) {
     .wrap { padding: 20px 16px 56px; }
+    .site-head { grid-template-columns: 1fr; }
+    .site h1 { font-size: 30px; }
+    .site-stats { justify-content: flex-start; }
     .tab-stage { padding: 18px; border-radius: 22px; }
     .tab-stage__head { flex-direction: column; align-items: flex-start; }
+    .tab-stage__health { width: 100%; }
+    .tab-stage__health-label { text-align: left; }
     .grid { grid-template-columns: 1fr; gap: 20px; }
     .tile h4 { font-size: 15px; }
   }`;
 
   const tabsHtml = renderSourceTabs(tabGroups, (group) => {
+    const coverage = previewCoverage(group);
     const tiles = group.previewItems.map((item) => `<a class="tile" href="${attr(item.href)}" target="_blank" rel="noopener">
-      <div class="thumb-box">${thumbImg(item)}</div>
+      <div class="thumb-box">${thumbImg(item)}<span class="thumb-kind">${esc(itemKindLabel(item))}</span></div>
       <h4>${esc(item.title)}</h4>
       ${item.domain ? `<div class="tile-meta">${esc(item.domain)}</div>` : ''}
     </a>`).join('');
     return `<section class="tab-stage">
       <div class="tab-stage__head">
-        <div class="tab-stage__title">${esc(srcLabel(group))}</div>
-        <div class="tab-stage__meta">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview card' : 'preview cards'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'saved link' : 'saved links'}</div>
+        <div>
+          <div class="tab-stage__title">${esc(srcLabel(group))}</div>
+          <div class="tab-stage__meta">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview card' : 'preview cards'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'saved link' : 'saved links'}</div>
+        </div>
+        <div class="tab-stage__health">
+          <div class="tab-stage__health-label">Preview coverage ${coverage}%</div>
+          <div class="tab-stage__health-bar"><span style="width:${coverage}%"></span></div>
+        </div>
       </div>
       ${tiles ? `<div class="grid">${tiles}</div>` : '<div class="empty">This source has no thumbnail-led entries selected yet.</div>'}
       ${tabLinksSection(group, 'Queue extras')}
@@ -812,8 +966,16 @@ function buildCinema(ctx) {
 
   const body = `<div class="wrap">
     <header class="site">
-      <h1>${esc(ctx.title)}</h1>
-      ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+      <div class="site-head">
+        <div>
+          <h1>${esc(ctx.title)}</h1>
+          ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+        </div>
+        <div class="site-stats">
+          <div class="site-pill"><strong>${ctx.all.length}</strong><span>Total items</span></div>
+          <div class="site-pill"><strong>${ctx.sourceGroups.length}</strong><span>Sources</span></div>
+        </div>
+      </div>
     </header>
     ${tabsHtml}
   </div>`;
@@ -899,18 +1061,27 @@ function buildWall(ctx) {
   body { background: #fafafa; color: #0f0f0f; font-family: "Inter", system-ui, -apple-system, sans-serif; }
   .wrap { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; }
   header.site { margin-bottom: 32px; }
-  .site h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
-  .site .tagline { color: #71717a; font-size: 14px; margin-top: 4px; }
+  .site-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+  .site h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.02; margin: 0; }
+  .site .tagline { color: #71717a; font-size: 15px; margin-top: 6px; max-width: 58ch; }
+  .site-chip { padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(236,72,153,0.2); background: rgba(255,255,255,0.86); min-width: 120px; }
+  .site-chip strong { display: block; font-size: 22px; line-height: 1; letter-spacing: -0.04em; }
+  .site-chip span { display: block; margin-top: 6px; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
   .source { padding: 24px; border-radius: 32px; background: rgba(255,255,255,0.74); border: 1px solid rgba(15,23,42,0.08); box-shadow: 0 24px 58px rgba(15,23,42,0.08); }
   .source-hdr { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid #e5e5e5; }
   .source-hdr__main { display: flex; align-items: baseline; gap: 12px; min-width: 0; flex-wrap: wrap; }
   .src-pill { background: #111; color: #fff; padding: 3px 8px; border-radius: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; }
   .src-name { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
   .src-count { color: #71717a; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .src-health { display: grid; gap: 5px; min-width: 170px; }
+  .src-health__label { color: #db2777; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; }
+  .src-health__bar { height: 6px; border-radius: 999px; background: rgba(236,72,153,0.16); overflow: hidden; }
+  .src-health__bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #db2777, #f97316); }
 
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
   .tile { display: block; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-  .tile .thumb-box { aspect-ratio: 1; overflow: hidden; background: #f4f4f5; }
+  .tile .thumb-box { position: relative; aspect-ratio: 1; overflow: hidden; background: #f4f4f5; }
+  .tile .thumb-kind { position: absolute; left: 8px; top: 8px; padding: 4px 7px; border-radius: 999px; background: rgba(17,24,39,.72); color: #fff; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; }
   .thumb-box img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
   .tile:hover .thumb-box img { transform: scale(1.04); }
   .tile h3 { padding: 10px 12px 12px; font-size: 13px; font-weight: 500; line-height: 1.35; letter-spacing: -0.005em; margin: 0; }
@@ -933,15 +1104,19 @@ function buildWall(ctx) {
 
   @media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 700px) {
+    .site-head { grid-template-columns: 1fr; }
     .source { padding: 18px; border-radius: 24px; }
     .source-hdr { flex-direction: column; align-items: flex-start; }
+    .src-health { width: 100%; }
+    .src-health__label { text-align: left; }
     .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   }
   @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }`;
 
   const sections = renderSourceTabs(tabGroups, (group) => {
+    const coverage = previewCoverage(group);
     const tiles = group.previewItems.map((i) => `<a class="tile" href="${attr(i.href)}" target="_blank" rel="noopener">
-      <div class="thumb-box">${thumbImg(i)}</div>
+      <div class="thumb-box">${thumbImg(i)}<span class="thumb-kind">${esc(itemKindLabel(i))}</span></div>
       <h3>${esc(i.title)}</h3>
     </a>`).join('');
     return `<section class="source">
@@ -950,7 +1125,11 @@ function buildWall(ctx) {
           <span class="src-pill">${esc(srcLabel(group)).toUpperCase()}</span>
           <span class="src-name">${esc(srcLabel(group))}</span>
         </div>
-        <span class="src-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'tile' : 'tiles'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</span>
+        <div class="src-health">
+          <span class="src-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'tile' : 'tiles'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</span>
+          <span class="src-health__label">Preview coverage ${coverage}%</span>
+          <span class="src-health__bar"><span style="width:${coverage}%"></span></span>
+        </div>
       </div>
       ${tiles ? `<div class="grid">${tiles}</div>` : '<div class="empty">This source has no image tiles selected yet.</div>'}
       ${tabLinksSection(group, 'Gallery extras')}
@@ -962,8 +1141,16 @@ function buildWall(ctx) {
 
   const body = `<div class="wrap">
     <header class="site">
-      <h1>${esc(ctx.title)}</h1>
-      ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+      <div class="site-head">
+        <div>
+          <h1>${esc(ctx.title)}</h1>
+          ${ctx.tagline ? `<div class="tagline">${esc(ctx.tagline)}</div>` : ''}
+        </div>
+        <div class="site-chip">
+          <strong>${ctx.all.length}</strong>
+          <span>Wall items</span>
+        </div>
+      </div>
     </header>
     ${sections}
   </div>`;
@@ -1063,6 +1250,10 @@ function buildBento(ctx) {
   .source-head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
   .source-name { font-size: 24px; letter-spacing: -0.03em; font-weight: 800; }
   .source-count { font-size: 12px; color: #7c6e60; font-family: ui-monospace, Menlo, monospace; }
+  .source-health { display: grid; gap: 5px; min-width: 170px; }
+  .source-health__label { color: #c2410c; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; }
+  .source-health__bar { height: 6px; border-radius: 999px; background: rgba(194,65,12,0.16); overflow: hidden; }
+  .source-health__bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f97316, #14b8a6); }
 
   .bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
   .tile { display: flex; flex-direction: column; min-width: 0; border-radius: 28px; overflow: hidden; background: rgba(255,255,255,0.88); border: 1px solid rgba(18,18,18,0.08); box-shadow: 0 18px 46px rgba(34, 26, 15, 0.08); }
@@ -1122,6 +1313,8 @@ function buildBento(ctx) {
     .site h1 { font-size: 42px; max-width: none; }
     .source { padding: 18px; border-radius: 24px; }
     .source-head { flex-direction: column; align-items: flex-start; }
+    .source-health { width: 100%; }
+    .source-health__label { text-align: left; }
     .tile--lead, .tile--stack, .tile--mini { grid-column: span 12; }
     .smart-links__grid { grid-template-columns: 1fr; }
   }
@@ -1134,6 +1327,7 @@ function buildBento(ctx) {
   }`;
 
   const sections = renderSourceTabs(tabGroups, (group) => {
+    const coverage = previewCoverage(group);
     const cards = group.previewItems.map((i, idx) => {
       const cls = idx === 0 ? 'tile tile--lead' : idx === 1 ? 'tile tile--stack' : 'tile tile--mini';
       return `<a class="${cls}" href="${attr(i.href)}" target="_blank" rel="noopener">
@@ -1147,7 +1341,11 @@ function buildBento(ctx) {
     return `<section class="source">
       <div class="source-head">
         <div class="source-name">${esc(srcLabel(group))}</div>
-        <div class="source-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'card' : 'cards'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</div>
+        <div class="source-health">
+          <div class="source-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'card' : 'cards'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</div>
+          <div class="source-health__label">Preview coverage ${coverage}%</div>
+          <div class="source-health__bar"><span style="width:${coverage}%"></span></div>
+        </div>
       </div>
       ${cards ? `<div class="bento">${cards}</div>` : '<div class="empty">This source only has saved links right now, so the supporting list below is the primary view.</div>'}
       ${tabLinksSection(group, 'More from this source')}
@@ -1318,7 +1516,7 @@ function buildSignal(ctx) {
   .sidebar { border-radius: 28px; padding: 24px; position: sticky; top: 24px; align-self: start; }
   .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(56, 189, 248, 0.12); color: #7dd3fc; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
   .badge::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
-  .sidebar h1 { margin: 18px 0 0; font-size: 44px; line-height: 0.94; letter-spacing: -0.06em; font-weight: 800; }
+  .sidebar h1 { margin: 18px 0 0; font-size: 44px; line-height: 0.96; letter-spacing: -0.06em; font-weight: 800; }
   .sidebar .tagline { margin-top: 12px; color: #98a7bc; font-size: 15px; line-height: 1.6; }
   .metrics { display: grid; gap: 10px; margin-top: 24px; }
   .metric { padding: 14px 16px; border-radius: 18px; background: rgba(22, 34, 56, 0.9); }
@@ -1330,6 +1528,10 @@ function buildSignal(ctx) {
   .panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; padding: 18px 22px; border-bottom: 1px solid rgba(148, 163, 184, 0.12); }
   .panel-title { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; }
   .panel-count { color: #8ca0bc; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .panel-health { display: grid; gap: 6px; min-width: 170px; }
+  .panel-health__label { color: #38bdf8; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; }
+  .panel-health__bar { height: 6px; border-radius: 999px; background: rgba(56,189,248,0.14); overflow: hidden; }
+  .panel-health__bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0ea5e9, #14b8a6); }
   .stack { display: grid; gap: 1px; background: rgba(148, 163, 184, 0.09); }
   .story { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 18px; padding: 18px; border: 0; border-radius: 0; }
   .story:hover .media-frame img { transform: scale(1.03); }
@@ -1383,10 +1585,13 @@ function buildSignal(ctx) {
     .sidebar h1 { font-size: 34px; }
     .story { grid-template-columns: 1fr; }
     .story h3 { font-size: 20px; }
+    .panel-health { width: 100%; }
+    .panel-health__label { text-align: left; }
     .smart-links__header, .smart-links__list a { flex-direction: column; align-items: flex-start; }
   }`;
 
   const panels = renderSourceTabs(tabGroups, (group) => {
+    const coverage = previewCoverage(group);
     const rows = group.previewItems.map((i) => `<a class="story" href="${attr(i.href)}" target="_blank" rel="noopener">
       ${mediaFrame(i)}
       <div>
@@ -1400,8 +1605,14 @@ function buildSignal(ctx) {
     </a>`).join('');
     return `<section class="panel">
       <div class="panel-head">
-        <div class="panel-title">${esc(srcLabel(group))}</div>
-        <div class="panel-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'signal' : 'signals'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'saved link' : 'saved links'}</div>
+        <div>
+          <div class="panel-title">${esc(srcLabel(group))}</div>
+          <div class="panel-count">${group.previewItems.length} ${group.previewItems.length === 1 ? 'signal' : 'signals'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'saved link' : 'saved links'}</div>
+        </div>
+        <div class="panel-health">
+          <div class="panel-health__label">Preview coverage ${coverage}%</div>
+          <div class="panel-health__bar"><span style="width:${coverage}%"></span></div>
+        </div>
       </div>
       ${rows ? `<div class="stack">${rows}</div>` : '<div class="empty">This source has no preview cards selected, but its saved links remain available below.</div>'}
       ${tabLinksSection(group, 'Supporting links')}
