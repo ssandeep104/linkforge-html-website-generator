@@ -88,6 +88,55 @@ function safeURL(href, base) {
   }
 }
 
+function normalizeURL(urlStr) {
+  try {
+    const u = new URL(urlStr);
+
+    // 1) Handle YouTube URLs specifically
+    if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+      let videoId = null;
+      if (u.hostname.includes('youtu.be')) {
+        videoId = u.pathname.slice(1).split('/')[0];
+      } else {
+        if (u.searchParams.get('v')) {
+          videoId = u.searchParams.get('v');
+        } else {
+          const m = u.pathname.match(/\/(embed|shorts|v)\/([^/?]+)/);
+          if (m) videoId = m[2];
+        }
+      }
+      if (videoId) {
+        const cleanURL = new URL('https://www.youtube.com/watch');
+        cleanURL.searchParams.set('v', videoId);
+        const t = u.searchParams.get('t');
+        if (t) cleanURL.searchParams.set('t', t);
+        return cleanURL.toString();
+      }
+    }
+
+    // 2) Handle general URLs by stripping standard tracking parameters
+    const paramsToStrip = [
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+      'utm_cid', 'utm_reader', 'utm_name', 'utm_social', 'utm_social-type',
+      'fbclid', 'gclid', 'gclsrc', 'dclid', 'msclkid', 'yclid',
+      'ref', 'referrer', 'spm', '_openstat', 'action_object_map',
+      'action_type_map', 'action_ref_map', '__twitter_impression',
+      'pp', 'feature', 'si', 'embeds_referring_euri',
+      'embeds_referring_origin', 'source_ve_path', 'ab_channel', 'attr_tag'
+    ];
+
+    for (const param of paramsToStrip) {
+      if (u.searchParams.has(param)) {
+        u.searchParams.delete(param);
+      }
+    }
+
+    return u.toString();
+  } catch {
+    return urlStr;
+  }
+}
+
 // Try to detect the most likely host for a parsed document by counting absolute anchor hosts.
 function detectBaseFromAnchors(doc) {
   const counts = {};
@@ -602,8 +651,20 @@ function isLikelyContentMediaElement(el) {
     el.getAttribute?.('data-testid') || '',
   ].join(' ').toLowerCase();
 
-  if (/(^|\s)(avatar|logo|icon|badge|sprite|emoji|favicon)(\s|$)/.test(hintText)) {
+  if (/(?:^|[-_ \t])(avatar|logo|icon|badge|sprite|emoji|favicon)(?:[-_ \t]|$)/.test(hintText)) {
     return false;
+  }
+
+  const src = (el.getAttribute?.('src') || el.getAttribute?.('data-src') || '').toLowerCase();
+  if (src) {
+    if (
+      src.includes('yt3.ggpht.com') ||
+      src.includes('gravatar.com') ||
+      src.includes('avatars.githubusercontent.com') ||
+      src.includes('/profile_images/')
+    ) {
+      return false;
+    }
   }
 
   const width = Number(el.getAttribute?.('width') || 0);
@@ -1358,7 +1419,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // picker; nothing here is silently chosen.
   const jsonLdResult = extractJsonLd(doc, baseURL);
   const jsonLdByUrl = new Map();
-  for (const e of jsonLdResult.entries) jsonLdByUrl.set(e.url, e);
+  for (const e of jsonLdResult.entries) {
+    jsonLdByUrl.set(normalizeURL(e.url), e);
+  }
   const jsonLdMatchedUrls = new Set(); // urls consumed by anchor buckets
 
   const fallbackImage = getMetaImage(doc);
@@ -1411,12 +1474,12 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // anchors. Be conservative: false negatives keep the duplicate (annoying);
   // false positives delete real content (catastrophic).
   const CARD_SELECTOR =
-    'article[class*="card" i], div[class*="card" i], li[class*="card" i], ' +
-    'article[class*="tile" i], div[class*="tile" i], li[class*="tile" i], ' +
-    'article[class*="thumb" i], div[class*="thumb" i], li[class*="thumb" i], ' +
-    'div[class*="video-card" i], div[class*="video-thumb" i], div[class*="video-item" i], ' +
-    'div[class*="post-card" i], div[class*="post-tile" i], ' +
-    'div[class*="feed-item" i], div[class*="grid-item" i], div[class*="list-item" i]';
+    '*[class*="card" i], *[class*="tile" i], *[class*="thumb" i], ' +
+    '*[class*="video-card" i], *[class*="video-thumb" i], *[class*="video-item" i], ' +
+    '*[class*="post-card" i], *[class*="post-tile" i], ' +
+    '*[class*="feed-item" i], *[class*="grid-item" i], *[class*="list-item" i], ' +
+    'ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer, yt-lockup-view-model, ytd-compact-video-renderer, ' +
+    'article, [role="article"]';
   const cards = Array.from(doc.querySelectorAll(CARD_SELECTOR));
   // Sort smallest-first so a nested card wins over its ancestor wrapper.
   cards.sort((a, b) => a.querySelectorAll('a[href]').length - b.querySelectorAll('a[href]').length);
@@ -1489,12 +1552,15 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   for (const a of rawAnchors) {
     const rawHref = a.getAttribute('href') || a.getAttribute('data-href') || a.getAttribute('data-url') || a.getAttribute('data-video-url') || a.getAttribute('data-link');
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue;
-    const href = safeURL(rawHref, baseURL);
-    if (!href) {
+    const rawHrefResolved = safeURL(rawHref, baseURL);
+    if (!rawHrefResolved) {
       if (!/^https?:\/\//i.test(rawHref)) unresolvedCount++;
       continue;
     }
-    if (!/^https?:/i.test(href)) continue;
+    if (!/^https?:/i.test(rawHrefResolved)) continue;
+    
+    const href = normalizeURL(rawHrefResolved);
+
     if (demotedAnchors.has(a)) continue; // byline / uploader / avatar inside a card
     if (isChromeAnchor(a, href)) continue; // drop nav/footer/tag/account chrome
     // Drop URL-shortener / tracker hosts (#6). These appear inside Twitter
@@ -1737,26 +1803,27 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     // placeholder). Trust the markup: if it's an <img>, it's an image.
     let src = pickImgSrc(img) || img.getAttribute('src') || img.getAttribute('data-src');
     if (!src) continue;
-    src = safeURL(src, baseURL) || src;
-    if (!/^https?:/i.test(src)) continue;
+    const resolvedSrc = safeURL(src, baseURL) || src;
+    if (!/^https?:/i.test(resolvedSrc)) continue;
+    const normalizedSrc = normalizeURL(resolvedSrc);
     // No IMAGE_EXT filter — modern CDNs serve images from extensionless URLs
     // (imgix, Cloudinary, opaque CMS routes). If the markup says <img src="X">,
     // X is the image, regardless of what the URL looks like.
-    if (seen.has(src)) continue;
-    seen.add(src);
+    if (seen.has(normalizedSrc)) continue;
+    seen.add(normalizedSrc);
     const altTitle = img.getAttribute('alt')?.trim() || 'Image';
     items.push({
       id: uid(),
       sourceName,
-      href: src,
+      href: normalizedSrc,
       title: altTitle,
-      thumbnail: src,
+      thumbnail: normalizedSrc,
       video: null,
       titleCandidates: [{ value: altTitle, strategy: 'standalone-img-alt', label: 'image alt' }],
-      thumbCandidates: [{ value: src, strategy: 'standalone-img', label: 'standalone <img>' }],
+      thumbCandidates: [{ value: normalizedSrc, strategy: 'standalone-img', label: 'standalone <img>' }],
       videoCandidates: [],
       descriptionCandidates: [],
-      domain: domainOf(src),
+      domain: domainOf(normalizedSrc),
       category: 'gallery',
       pageSection: sectionFor.get(img) || 'Images',
       pattern: '<img>',
@@ -1770,26 +1837,27 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   for (const v of standaloneVideos) {
     let src = v.getAttribute('src') || v.querySelector?.('source')?.getAttribute('src');
     if (!src) continue;
-    src = safeURL(src, baseURL) || src;
-    if (!/^https?:/i.test(src)) continue;
-    if (seen.has(src)) continue;
+    const resolvedSrc = safeURL(src, baseURL) || src;
+    if (!/^https?:/i.test(resolvedSrc)) continue;
+    const normalizedSrc = normalizeURL(resolvedSrc);
+    if (seen.has(normalizedSrc)) continue;
     // only count actual video sources
-    if (!isVideoHref(src) && !(v.tagName === 'VIDEO')) continue;
-    seen.add(src);
+    if (!isVideoHref(normalizedSrc) && !(v.tagName === 'VIDEO')) continue;
+    seen.add(normalizedSrc);
     const vTitle = v.getAttribute('title') || 'Video';
     const vPoster = v.getAttribute('poster') || null;
     items.push({
       id: uid(),
       sourceName,
-      href: src,
+      href: normalizedSrc,
       title: vTitle,
       thumbnail: vPoster,
-      video: { src },
+      video: { src: normalizedSrc },
       titleCandidates: [{ value: vTitle, strategy: 'standalone-video-title', label: 'video title attr' }],
       thumbCandidates: vPoster ? [{ value: vPoster, strategy: 'standalone-video-poster', label: 'video poster' }] : [],
-      videoCandidates: [{ value: src, strategy: 'standalone-video', label: 'standalone <video>', info: { url: src } }],
+      videoCandidates: [{ value: normalizedSrc, strategy: 'standalone-video', label: 'standalone <video>', info: { url: normalizedSrc } }],
       descriptionCandidates: [],
-      domain: domainOf(src),
+      domain: domainOf(normalizedSrc),
       category: 'video',
       pageSection: sectionFor.get(v) || 'Videos',
       pattern: v.tagName === 'IFRAME' ? '<iframe>' : '<video>',
@@ -1828,9 +1896,10 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // top of the review list because they're typically the highest-confidence
   // signal on a page (the site itself declaring "this is the article").
   for (const entry of jsonLdResult.entries) {
-    if (jsonLdMatchedUrls.has(entry.url)) continue;
-    if (seen.has(entry.url)) continue;
-    seen.add(entry.url);
+    const entryUrl = normalizeURL(entry.url);
+    if (jsonLdMatchedUrls.has(entryUrl)) continue;
+    if (seen.has(entryUrl)) continue;
+    seen.add(entryUrl);
     const titleCandidates = [];
     const thumbCandidates = [];
     const descriptionCandidates = [];
@@ -1840,8 +1909,8 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     const item = {
       id: uid(),
       sourceName,
-      href: entry.url,
-      title: (entry.headline || entry.url).slice(0, 280),
+      href: entryUrl,
+      title: (entry.headline || entryUrl).slice(0, 280),
       thumbnail: entry.image || null,
       video: null,
       description: entry.description || null,
@@ -2442,12 +2511,13 @@ function escapeAttr(s) {
 // ===================================================
 
 const CATEGORY_META = {
-  'with-image': { title: 'Links with image preview', desc: 'Anchors that came with a thumbnail.' },
-  'with-video': { title: 'Links with video preview', desc: 'YouTube, Vimeo, and other embedded videos.' },
-  'plain': { title: 'Plain links (no preview)', desc: 'Anchors with text only — no image, no video.' },
+  'article': { title: 'Articles', desc: 'Links classified as articles, with image previews.' },
+  'video': { title: 'Videos', desc: 'Links classified as videos, with players or previews.' },
+  'gallery': { title: 'Images', desc: 'Standalone images and visual assets.' },
+  'link': { title: 'Plain Links', desc: 'Anchors with text only — no image or video previews.' },
 };
 
-const CATEGORY_ORDER = ['with-image', 'with-video', 'plain'];
+const CATEGORY_ORDER = ['article', 'video', 'gallery', 'link'];
 
 const reviewState = {
   activeSourceId: null,
@@ -2805,18 +2875,44 @@ function renderSourceStrategyPicker() {
     <div class="strategy-picker__list">
       ${rows.map(({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy }) => `
         <div class="strategy-row ${currentStrategy.exclude ? 'strategy-row--excluded' : ''}" data-src-id="${escapeAttr(src.id)}">
-          <div class="strategy-row__source">
-            <span class="strategy-row__name">${escapeText(src.name || 'Untitled source')}</span>
-            <span class="strategy-row__count muted">${items.length} link${items.length === 1 ? '' : 's'} matching ${escapeText(pattern)}</span>
-            <label class="strategy-row__toggle">
-              <input type="checkbox" data-strategy-include data-src-id="${escapeAttr(src.id)}" data-pattern="${escapeAttr(pattern)}" ${currentStrategy.exclude ? '' : 'checked'} />
-              <span>Include this tag group in the final list</span>
-            </label>
+          <div class="strategy-row__header">
+            <div class="strategy-row__header-left">
+              <span class="strategy-row__name">${escapeText(src.name || 'Untitled source')}</span>
+              <span class="strategy-row__count muted">${items.length} link${items.length === 1 ? '' : 's'} matching <code class="strategy-row__pattern" title="${escapeAttr(pattern)}">${escapeText(pattern)}</code></span>
+            </div>
+            <div class="strategy-row__header-right">
+              <label class="strategy-row__toggle">
+                <input type="checkbox" data-strategy-include data-src-id="${escapeAttr(src.id)}" data-pattern="${escapeAttr(pattern)}" ${currentStrategy.exclude ? '' : 'checked'} />
+                <span>Include this tag group</span>
+              </label>
+            </div>
           </div>
-          <div class="strategy-row__fields" ${currentStrategy.exclude ? 'aria-disabled="true"' : ''}>
-            ${showTitle ? renderStrategySelect('title', src, titleOpts, currentStrategy.title, pattern) : ''}
-            ${showThumb ? renderStrategySelect('thumb', src, thumbOpts, currentStrategy.thumb, pattern, { allowNone: true }) : ''}
-            ${showVideo ? renderStrategySelect('video', src, videoOpts, currentStrategy.video, pattern, { allowNone: true, optional: true }) : ''}
+          <div class="strategy-row__workspace" ${currentStrategy.exclude ? 'aria-disabled="true"' : ''}>
+            <div class="strategy-row__fields">
+              ${showTitle ? renderStrategySelect('title', src, titleOpts, currentStrategy.title, pattern) : ''}
+              ${showThumb ? renderStrategySelect('thumb', src, thumbOpts, currentStrategy.thumb, pattern, { allowNone: true }) : ''}
+              ${showVideo ? renderStrategySelect('video', src, videoOpts, currentStrategy.video, pattern, { allowNone: true, optional: true }) : ''}
+            </div>
+            <div class="strategy-row__previews" ${currentStrategy.exclude ? 'style="display:none;"' : ''}>
+              ${items.map(it => {
+                const hasThumb = !!it.thumbnail;
+                const thumbUrl = hasThumb ? it.thumbnail : '';
+                return `
+                  <div class="strategy-preview-card">
+                    <div class="strategy-preview-card__media">
+                      ${hasThumb 
+                        ? `<img src="${escapeAttr(thumbUrl)}" alt="" onerror="this.parentElement.innerHTML='<span class=\'strategy-preview-card__no-img\'>Err</span>'" />` 
+                        : `<div class="strategy-preview-card__no-img"><span>No img</span></div>`
+                      }
+                    </div>
+                    <div class="strategy-preview-card__info">
+                      <p class="strategy-preview-card__title" title="${escapeAttr(it.title || '')}">${escapeText(it.title || 'Untitled')}</p>
+                      <span class="strategy-preview-card__url" title="${escapeAttr(it.href || '')}">${escapeText(it.domain || '')}</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
           </div>
         </div>
       `).join('')}
@@ -2936,10 +3032,10 @@ function renderReview() {
     return;
   }
 
-  // Group by content-type bucket: with-image, with-video, plain.
+  // Group by existing category: article, video, gallery, link.
   const grouped = new Map();
   for (const it of activeItems) {
-    const k = bucketOf(it);
+    const k = it.category || 'link';
     if (!grouped.has(k)) grouped.set(k, []);
     grouped.get(k).push(it);
   }
@@ -2955,7 +3051,8 @@ function renderReview() {
   CATEGORY_ORDER.forEach((key, idx) => {
     const items = grouped.get(key);
     if (!items || items.length === 0) return;
-    root.appendChild(renderGroupPanel(key, items, idx === 0));
+    // Show all groups open by default so the user can immediately see images/titles
+    root.appendChild(renderGroupPanel(key, items, true));
   });
 }
 
@@ -3027,10 +3124,6 @@ function renderItemRow(item) {
        </div>`
     : `<div class="item-row__thumb item-row__thumb--empty"><span>${escapeText((item.domain || item.title || 'L').charAt(0).toUpperCase())}</span></div>`;
 
-  const typeLabel = item.category === 'article' ? 'Article'
-    : item.category === 'video' ? 'Video'
-    : item.category === 'gallery' ? 'Image' : 'Link';
-
   row.innerHTML = `
     <input type="checkbox" class="item-row__check" ${item.enabled ? 'checked' : ''} />
     <span class="item-row__box"></span>
@@ -3038,7 +3131,6 @@ function renderItemRow(item) {
     <div class="item-row__body">
       <p class="item-row__title">${escapeText(item.title)}</p>
       <div class="item-row__meta">
-        <span class="item-row__type item-row__type--${item.category}">${typeLabel}</span>
         <span class="item-row__domain">${escapeText(item.domain)}</span>
       </div>
       <span class="item-row__url">${escapeText(item.href)}</span>
@@ -3115,10 +3207,6 @@ function renderItemCard(item) {
 }
 
 function renderMedia(item) {
-  const typeLabel = item.category === 'article' ? 'Article'
-    : item.category === 'video' ? 'Video'
-    : item.category === 'gallery' ? 'Image' : 'Link';
-  const typeBadge = `<span class="item-card__type">${typeLabel}</span>`;
   if (item.thumbnail) {
     const videoOverlay = item.category === 'video' ? `
       <div class="item-card__play">
@@ -3126,7 +3214,6 @@ function renderMedia(item) {
       </div>` : '';
     return `
       <div class="item-card__media ${item.category === 'video' ? 'item-card__media--video' : ''}">
-        ${typeBadge}
         <img src="${escapeAttr(item.thumbnail)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('item-card__media--empty'); this.remove();" />
         ${videoOverlay}
       </div>
@@ -3136,7 +3223,6 @@ function renderMedia(item) {
   const mark = (item.domain || item.title || 'L').charAt(0).toUpperCase();
   return `
     <div class="item-card__media item-card__media--empty">
-      ${typeBadge}
       <span class="item-card__empty-mark">${escapeText(mark)}</span>
     </div>
   `;

@@ -50,56 +50,11 @@
         </div>
       </header>
 
-      <section class="hero">
-        <div class="hero__grid">
-          <div class="hero__copy">
-            <p class="eyebrow">Live link extraction studio</p>
-            <h1 class="display">
-              Paste HTML.
-              <br/>Forge a <em>watchlist or gallery.</em>
-            </h1>
-            <p class="lede">
-              Drop HTML from creator channels, photo sets, product feeds, research pages, or your own bookmarks. Linkforge pulls every link, thumbnail, and preview, then turns the selection into one of six layouts built for watchlists, galleries, and mixed-media drops. Client-side, no backend.
-            </p>
-          </div>
-
-          <aside class="hero__rail" aria-label="Product snapshot">
-            <div class="hero-card hero-card--primary">
-              <p class="hero-card__kicker">Workflow</p>
-              <h2 class="hero-card__title">From page source to polished microsite in one pass.</h2>
-              <p class="hero-card__text">
-                Designed for curators, creators, archivists, and media teams who want to turn messy source pages into a clean, downloadable watchlist, gallery, or microsite.
-              </p>
-              <div class="hero-card__chips" aria-label="Core features">
-                <span class="hero-chip">Video-ready</span>
-                <span class="hero-chip">Gallery-first</span>
-                <span class="hero-chip">Single HTML export</span>
-              </div>
-            </div>
-
-            <div class="hero-stats" aria-label="At a glance">
-              <div class="hero-stat">
-                <strong>6</strong>
-                <span>Layout modes</span>
-              </div>
-              <div class="hero-stat">
-                <strong>0</strong>
-                <span>Backend calls</span>
-              </div>
-              <div class="hero-stat">
-                <strong>1</strong>
-                <span>Standalone export</span>
-              </div>
-            </div>
-
-            <div class="hero-card">
-              <p class="hero-card__kicker">Output</p>
-              <p class="hero-card__text">
-                Review the extracted links, choose a layout, and ship a portable HTML page that keeps the structure of every source you added.
-              </p>
-            </div>
-          </aside>
-        </div>
+      <section class="workspace-header">
+        <h1 class="workspace-title">Paste HTML. Forge a <em>watchlist or gallery.</em></h1>
+        <p class="workspace-subtitle">
+          Extract links, images, and video previews from messy page sources. Curate them into six responsive, portable layouts — all client-side, zero backend.
+        </p>
       </section>
 
       <section class="composer">
@@ -123,13 +78,6 @@
                 hidden
               />
             </label>
-            <button
-              class="btn btn--ghost"
-              type="button"
-              data-add-source
-            >
-              + Add another source
-            </button>
           </div>
         </div>
 
@@ -139,6 +87,19 @@
         </p>
 
         <div id="sources" class="sources"></div>
+
+        <div class="composer__add-more">
+          <button
+            class="btn btn--dashed"
+            type="button"
+            data-add-source
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Add another source
+          </button>
+        </div>
 
         <div class="composer__foot">
           <div class="composer__counts">
@@ -171,29 +132,28 @@
         </div>
       </section>
 
-      <section class="how">
-        <div class="how__item">
-          <span class="how__num">§01 — INPUT</span>
-          <h3>Paste or upload HTML</h3>
-          <p>
-            Drop raw HTML from any site. Add as many sources as you want — Linkforge keeps them grouped end-to-end.
-          </p>
+      <details class="how-collapse">
+        <summary class="how-collapse__summary">
+          <span>How does Linkforge work?</span>
+          <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="how-collapse__content">
+          <div class="how-grid-compact">
+            <div class="how-item-compact">
+              <strong>§01 — Input</strong>
+              <p>Paste raw HTML or upload <code>.html</code> page source files from creator channels, photo sets, bookmarks, or social feeds.</p>
+            </div>
+            <div class="how-item-compact">
+              <strong>§02 — Review</strong>
+              <p>Choose from six responsive layout templates. Untick links you don't want, customize names, titles, and media selections.</p>
+            </div>
+            <div class="how-item-compact">
+              <strong>§03 — Ship</strong>
+              <p>Download a single, standalone HTML page containing your curated, source-grouped watchlist or gallery to host anywhere.</p>
+            </div>
+          </div>
         </div>
-        <div class="how__item">
-          <span class="how__num">§02 — REVIEW</span>
-          <h3>Pick the layout</h3>
-          <p>
-            Untick the duds. Choose from six templates — creator grid, stream catalog, photo wall, spotlight bento, signal board, or story deck. Source grouping is preserved.
-          </p>
-        </div>
-        <div class="how__item">
-          <span class="how__num">§03 — SHIP</span>
-          <h3>Download HTML</h3>
-          <p>
-            Export a single standalone HTML file. Host it anywhere — your own server, GitHub Pages, Netlify, S3, a USB stick. No tracking, no backend, no lock-in.
-          </p>
-        </div>
-      </section>
+      </details>
 
       <footer class="footer">
         <span>Linkforge</span>

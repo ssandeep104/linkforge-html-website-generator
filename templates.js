@@ -47,7 +47,6 @@ function mediaFrame(item, { className = 'media-frame', imageAttrs = '' } = {}) {
   const kind = itemKind(item);
   return `<div class="${className} ${className}--${kind}">
     ${thumbImg(item, imageAttrs)}
-    <span class="${className}__badge">${esc(itemKindLabel(item))}</span>
     ${kind === 'video' ? `<span class="${className}__play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>` : ''}
   </div>`;
 }
@@ -59,7 +58,6 @@ function smartLinksSection(linkGroups, { heading = 'More links' } = {}) {
       <a href="${attr(i.href)}" target="_blank" rel="noopener">
         <span class="smart-links__title">${esc(i.title || i.href)}</span>
         <span class="smart-links__meta">
-          <span class="smart-links__type">${esc(itemKindLabel(i))}</span>
           ${i.domain ? `<span class="smart-links__domain">${esc(i.domain)}</span>` : ''}
         </span>
       </a>
@@ -686,7 +684,7 @@ function buildEditorial(ctx) {
       return `<a class="${cls}" href="${attr(i.href)}" target="_blank" rel="noopener">
         ${mediaFrame(i)}
         <h3>${esc(i.title)}</h3>
-        <div class="meta"><span class="pill">${esc(itemKindLabel(i))}</span><span class="pill">${esc(i.domain || srcLabel(group))}</span></div>
+        <div class="meta"><span class="pill">${esc(i.domain || srcLabel(group))}</span></div>
       </a>`;
     }).join('');
     return `<section class="source-stage">
@@ -818,7 +816,7 @@ function buildYoutube(ctx) {
       const kind = itemKind(i);
       const badge = kind === 'video' ? 'Video' : kind === 'gallery' ? 'Image' : 'Story';
       return `<a class="card" href="${attr(i.href)}" target="_blank" rel="noopener">
-        <div class="thumb-box">${thumbImg(i)}${badge ? `<span class="thumb-badge">${badge}</span>` : ''}</div>
+        <div class="thumb-box">${thumbImg(i)}</div>
         <h3>${esc(i.title)}</h3>
         ${i.domain ? `<div class="card-meta">${esc(i.domain)}</div>` : ''}
       </a>`;
@@ -941,7 +939,7 @@ function buildCinema(ctx) {
   const tabsHtml = renderSourceTabs(tabGroups, (group) => {
     const coverage = previewCoverage(group);
     const tiles = group.previewItems.map((item) => `<a class="tile" href="${attr(item.href)}" target="_blank" rel="noopener">
-      <div class="thumb-box">${thumbImg(item)}<span class="thumb-kind">${esc(itemKindLabel(item))}</span></div>
+      <div class="thumb-box">${thumbImg(item)}</div>
       <h4>${esc(item.title)}</h4>
       ${item.domain ? `<div class="tile-meta">${esc(item.domain)}</div>` : ''}
     </a>`).join('');
@@ -1116,7 +1114,7 @@ function buildWall(ctx) {
   const sections = renderSourceTabs(tabGroups, (group) => {
     const coverage = previewCoverage(group);
     const tiles = group.previewItems.map((i) => `<a class="tile" href="${attr(i.href)}" target="_blank" rel="noopener">
-      <div class="thumb-box">${thumbImg(i)}<span class="thumb-kind">${esc(itemKindLabel(i))}</span></div>
+      <div class="thumb-box">${thumbImg(i)}</div>
       <h3>${esc(i.title)}</h3>
     </a>`).join('');
     return `<section class="source">
@@ -1334,7 +1332,7 @@ function buildBento(ctx) {
         ${mediaFrame(i)}
         <div class="body">
           <h3>${esc(i.title)}</h3>
-          <div class="meta"><span class="pill">${esc(itemKindLabel(i))}</span><span class="pill">${esc(i.domain || srcLabel(group))}</span></div>
+          <div class="meta"><span class="pill">${esc(i.domain || srcLabel(group))}</span></div>
         </div>
       </a>`;
     }).join('');
@@ -1456,12 +1454,12 @@ function buildBroadsheet(ctx) {
       ${mediaFrame(i)}
       <div>
         <h3>${esc(i.title)}</h3>
-        <div class="meta"><span class="pill">${esc(itemKindLabel(i))}</span><span class="pill">${esc(i.domain || srcLabel(g))}</span></div>
+        <div class="meta"><span class="pill">${esc(i.domain || srcLabel(g))}</span></div>
       </div>
     </a>`).join('');
     const briefs = rest.slice(3).map((i) => `<a class="brief" href="${attr(i.href)}" target="_blank" rel="noopener">
       <h4>${esc(i.title)}</h4>
-      <div class="meta"><span class="pill">${esc(itemKindLabel(i))}</span><span class="pill">${esc(i.domain || srcLabel(g))}</span></div>
+      <div class="meta"><span class="pill">${esc(i.domain || srcLabel(g))}</span></div>
     </a>`).join('');
     return `<section class="sheet">
       <div class="sheet-head">
@@ -1472,7 +1470,7 @@ function buildBroadsheet(ctx) {
         <a class="lead" href="${attr(lead.href)}" target="_blank" rel="noopener">
           ${mediaFrame(lead)}
           <h2>${esc(lead.title)}</h2>
-          <div class="meta"><span class="pill">${esc(itemKindLabel(lead))}</span><span class="pill">${esc(lead.domain || srcLabel(g))}</span></div>
+          <div class="meta"><span class="pill">${esc(lead.domain || srcLabel(g))}</span></div>
         </a>
         <div class="stack">${stackItems}</div>
       </div>
@@ -1598,7 +1596,6 @@ function buildSignal(ctx) {
         <h3>${esc(i.title)}</h3>
         <div class="meta">
           <span class="chip chip--source">${esc(srcLabel(group))}</span>
-          <span class="chip chip--kind">${esc(itemKindLabel(i))}</span>
           <span class="chip chip--domain">${esc(i.domain || 'source')}</span>
         </div>
       </div>
@@ -1709,21 +1706,21 @@ function marqueeValidate(ctx) {
 function buildMarquee(ctx) {
   const check = marqueeValidate(ctx);
   if (!check.ok) throw new Error(check.reason);
-  // Build per-source manifests. Discard items with neither thumbnail nor video.
+  // Build per-source manifests. Include items without thumbnails as secondary links.
   const sources = [];
   const seenSlugs = new Set();
   for (const group of ctx.sourceGroups || []) {
     const items = [];
     const videos = [];
     const images = [];
+    const linkItems = [];
     const seenHref = new Set();
     for (const it of group.items || []) {
       if (!it || !it.href) continue;
       if (seenHref.has(it.href)) continue;
+      seenHref.add(it.href);
       const vsrc = extractVideoSrc(it);
       const thumb = it.thumbnail || (it.video && it.video.poster) || null;
-      if (!vsrc && !thumb) continue;
-      seenHref.add(it.href);
       const clean = {
         href: it.href,
         title: it.title || it.href,
@@ -1732,11 +1729,15 @@ function buildMarquee(ctx) {
         domain: it.domain || '',
         kind: itemKind(it),
       };
-      items.push(clean);
-      if (vsrc) videos.push({ src: vsrc, poster: thumb || null });
-      if (thumb) images.push(thumb);
+      if (!vsrc && !thumb) {
+        linkItems.push(clean);
+      } else {
+        items.push(clean);
+        if (vsrc) videos.push({ src: vsrc, poster: thumb || null });
+        if (thumb) images.push(thumb);
+      }
     }
-    if (!items.length) continue;
+    if (!items.length && !linkItems.length) continue;
     let base = slugify(group.name || group.key || 'source');
     let slug = base;
     let n = 2;
@@ -1747,11 +1748,12 @@ function buildMarquee(ctx) {
     sources.push({
       slug,
       name: group.name || 'Source',
-      count: items.length,
+      count: items.length + linkItems.length,
       cover,
       videos,      // sequence of mp4/webm to chain
       images,      // slideshow fallback
       items,
+      linkItems,
     });
   }
 
@@ -1954,6 +1956,25 @@ function buildMarquee(ctx) {
 
   .mq-empty { padding: 40px; text-align: center; color: var(--mq-muted); border: 1px dashed var(--mq-border); border-radius: 20px; }
 
+  /* Fallback thumbnail for items without thumb */
+  .mq-item__no-thumb {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
+    color: var(--mq-muted); font-family: var(--mq-mono); font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase; text-align: center;
+    padding: 16px; box-sizing: border-box;
+  }
+
+  /* More links section */
+  .mq-links { margin-top: 56px; padding-top: 28px; border-top: 1px solid var(--mq-border); }
+  .mq-links__heading { font-family: var(--mq-serif); font-size: 20px; font-weight: 500; letter-spacing: -0.02em; color: var(--mq-text); margin: 0 0 20px; }
+  .mq-links__list { list-style: none; margin: 0; padding: 0; }
+  .mq-links__list li { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding: 10px 4px; font-size: 14.5px; line-height: 1.45; border-bottom: 1px solid var(--mq-border); }
+  .mq-links__list li:last-child { border-bottom: 0; }
+  .mq-links__list a { color: var(--mq-muted); flex: 1 1 auto; min-width: 0; transition: color .2s ease; }
+  .mq-links__list a:hover { color: var(--mq-accent); text-decoration: underline; }
+  .mq-links__domain { flex: 0 0 auto; font-size: 11px; color: var(--mq-faint); font-family: var(--mq-mono); letter-spacing: 0.02em; }
+
   @media (max-width: 640px) {
     .mq-nav { padding: 14px 18px; }
     .mq-view { padding: 24px 18px 90px; }
@@ -2104,7 +2125,7 @@ function buildMarquee(ctx) {
     var cards = data.sources.map(function(s){
       var videos = s.videos || [];
       var images = s.images || [];
-      var badgeLabel = videos.length ? 'Live Preview' : (images.length ? 'Slideshow' : 'Cover');
+      var badgeLabel = videos.length ? 'Live Preview' : (images.length ? 'Slideshow' : (s.cover ? 'Cover' : 'Links'));
       var tile =
         '<div class="mq-tile" data-videos="' + attr(JSON.stringify(videos)) + '" data-images="' + attr(JSON.stringify(images)) + '">' +
           (s.cover ? '<img class="mq-tile__poster" src="' + attr(s.cover) + '" alt="" loading="lazy"/>' : '') +
@@ -2118,13 +2139,13 @@ function buildMarquee(ctx) {
         tile +
         '<div class="mq-card__meta">' +
           '<div class="mq-card__title">' + esc(s.name) + '</div>' +
-          '<div class="mq-card__sub"><span class="type">' + esc(videos.length ? 'Video' : 'Gallery') + '</span><span>' + s.count + ' picks</span></div>' +
+          '<div class="mq-card__sub"><span class="type">' + esc(videos.length ? 'Video' : (images.length ? 'Gallery' : 'Links')) + '</span><span>' + s.count + ' picks</span></div>' +
         '</div>' +
       '</a>';
     }).join('');
     var grid = data.sources.length
       ? '<section class="mq-grid">' + cards + '</section>'
-      : '<div class="mq-empty">No sources with previews to show.</div>';
+      : '<div class="mq-empty">No sources to show.</div>';
     app.innerHTML = '<div class="mq-view">' + hero + grid + '</div>';
     window.scrollTo(0, 0);
     setupObserver(app);
@@ -2135,17 +2156,35 @@ function buildMarquee(ctx) {
     if (!s) { location.hash = '#/'; return; }
     if (crumbsEl) crumbsEl.innerHTML = '<a href="#/">Home</a><span class="sep">/</span><span>' + esc(s.name) + '</span>';
     var items = (s.items || []).map(function(it){
-      if (!it.thumb) return '';
       var isVideo = !!it.video;
+      var thumbHtml = it.thumb
+        ? '<img src="' + attr(it.thumb) + '" alt="" loading="lazy"/>'
+        : '<div class="mq-item__no-thumb"><span>' + esc(it.domain || 'video') + '</span></div>';
       return '<a class="mq-item" href="' + attr(it.href) + '" target="_blank" rel="noopener">' +
         '<div class="mq-item__thumb">' +
-          '<img src="' + attr(it.thumb) + '" alt="" loading="lazy"/>' +
+          thumbHtml +
           (isVideo ? '<span class="mq-item__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : '') +
         '</div>' +
         '<div class="mq-item__title">' + esc(it.title) + '</div>' +
         (it.domain ? '<div class="mq-item__domain">' + esc(it.domain) + '</div>' : '') +
       '</a>';
     }).join('');
+
+    var linkItemsHtml = '';
+    if (s.linkItems && s.linkItems.length) {
+      var lis = s.linkItems.map(function(it){
+        return '<li>' +
+          '<a href="' + attr(it.href) + '" target="_blank" rel="noopener">' + esc(it.title) + '</a>' +
+          (it.domain ? '<span class="mq-links__domain">' + esc(it.domain) + '</span>' : '') +
+        '</li>';
+      }).join('');
+      linkItemsHtml =
+        '<section class="mq-links">' +
+          '<h2 class="mq-links__heading">More links from this source</h2>' +
+          '<ul class="mq-links__list">' + lis + '</ul>' +
+        '</section>';
+    }
+
     var body =
       '<div class="mq-view">' +
         '<a class="mq-back" href="#/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>All sources</a>' +
@@ -2158,19 +2197,36 @@ function buildMarquee(ctx) {
             (s.images.length ? '<span>' + s.images.length + ' images</span>' : '') +
           '</div>' +
         '</header>' +
-        (items ? '<section class="mq-items">' + items + '</section>' : '<div class="mq-empty">No items in this source.</div>') +
+        (items ? '<section class="mq-items">' + items + '</section>' : '<div class="mq-empty">No preview items in this source.</div>') +
+        linkItemsHtml +
       '</div>';
     app.innerHTML = body;
     window.scrollTo(0, 0);
   }
 
-  function route() {
-    var h = location.hash || '#/';
+  function route(targetHash) {
+    var h = targetHash || location.hash || '#/';
     var m = h.match(/^#\\/s\\/(.+)$/);
     if (m) renderSource(decodeURIComponent(m[1]));
     else renderHome();
   }
-  window.addEventListener('hashchange', route);
+
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (href.indexOf('#/') === 0) {
+      e.preventDefault();
+      try {
+        location.hash = href;
+      } catch (err) {}
+      route(href);
+    }
+  });
+
+  window.addEventListener('hashchange', function() {
+    route();
+  });
   route();
 })();
 </script>`;
