@@ -3383,6 +3383,69 @@ function renderTemplatePicker() {
     });
     grid.appendChild(card);
   }
+
+  // Initialize template carousel controls
+  const viewport = $('.template-carousel__viewport');
+  const prevBtn = $('.template-carousel__btn--prev');
+  const nextBtn = $('.template-carousel__btn--next');
+  const dotsContainer = $('#template-carousel-dots');
+  const cards = Array.from(grid.children);
+
+  if (viewport && dotsContainer) {
+    dotsContainer.innerHTML = '';
+    
+    // Create dot indicators
+    cards.forEach((card, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'template-carousel__dot' + (card.classList.contains('template-card--active') ? ' template-carousel__dot--active' : '');
+      dot.setAttribute('aria-label', `Go to template ${index + 1}`);
+      dot.addEventListener('click', () => {
+        const cardWidth = card.offsetWidth + 16; // width + gap
+        viewport.scrollTo({
+          left: index * cardWidth,
+          behavior: 'smooth'
+        });
+      });
+      dotsContainer.appendChild(dot);
+    });
+
+    const updateControls = () => {
+      const scrollLeft = viewport.scrollLeft;
+      const cardWidth = cards[0]?.offsetWidth + 16 || 296;
+      const activeIndex = Math.round(scrollLeft / cardWidth);
+
+      // Update dot active state
+      Array.from(dotsContainer.children).forEach((dot, index) => {
+        dot.classList.toggle('template-carousel__dot--active', index === activeIndex);
+      });
+
+      // Update arrow buttons disabled state
+      if (prevBtn) prevBtn.disabled = scrollLeft <= 4;
+      if (nextBtn) {
+        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+        nextBtn.disabled = scrollLeft >= maxScroll - 4;
+      }
+    };
+
+    // Scroll handlers for arrow buttons
+    if (prevBtn) {
+      prevBtn.onclick = () => {
+        const cardWidth = cards[0]?.offsetWidth + 16 || 296;
+        viewport.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+      };
+    }
+    if (nextBtn) {
+      nextBtn.onclick = () => {
+        const cardWidth = cards[0]?.offsetWidth + 16 || 296;
+        viewport.scrollBy({ left: cardWidth, behavior: 'smooth' });
+      };
+    }
+
+    viewport.addEventListener('scroll', updateControls);
+    // Initialize state
+    setTimeout(updateControls, 100);
+  }
 }
 
 // ---------- BUILD GENERATED SITE ----------

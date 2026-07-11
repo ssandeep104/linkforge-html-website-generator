@@ -952,6 +952,101 @@ a:hover {
   margin-bottom: var(--space-1);
 }
 
+.template-carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.template-carousel__viewport {
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  width: 100%;
+  scrollbar-width: none; /* hide standard scrollbar */
+  -webkit-overflow-scrolling: touch;
+}
+
+.template-carousel__viewport::-webkit-scrollbar {
+  display: none; /* hide scrollbar in Chrome/Safari/Webkit */
+}
+
+.template-carousel__track {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: var(--space-4) !important;
+  padding: var(--space-2) 0 !important;
+}
+
+.template-carousel__track .template-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+}
+
+.template-carousel__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--color-surface-offset);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.template-carousel__btn:hover:not(:disabled) {
+  background: var(--color-primary-highlight);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: scale(1.08);
+}
+
+.template-carousel__btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.template-carousel__dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: var(--space-4);
+}
+
+.template-carousel__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-surface-offset);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  padding: 0;
+}
+
+.template-carousel__dot--active {
+  background: var(--color-primary);
+  transform: scale(1.25);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--color-primary) 50%, transparent);
+}
+
+@media (max-width: 768px) {
+  .template-carousel__btn {
+    display: none;
+  }
+  .template-carousel__track .template-card {
+    flex: 0 0 240px;
+  }
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
