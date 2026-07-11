@@ -2125,21 +2125,19 @@ function buildMarquee(ctx) {
     var cards = data.sources.map(function(s){
       var videos = s.videos || [];
       var images = s.images || [];
-      var badgeLabel = videos.length ? 'Live Preview' : (images.length ? 'Slideshow' : (s.cover ? 'Cover' : 'Links'));
       var tile =
         '<div class="mq-tile" data-videos="' + attr(JSON.stringify(videos)) + '" data-images="' + attr(JSON.stringify(images)) + '">' +
           (s.cover ? '<img class="mq-tile__poster" src="' + attr(s.cover) + '" alt="" loading="lazy"/>' : '') +
           '<div class="mq-tile__slides"><img alt="" loading="lazy"/><img alt="" loading="lazy"/></div>' +
           (videos.length ? '<video class="mq-tile__video" muted playsinline preload="metadata" ' + (s.cover ? 'poster="' + attr(s.cover) + '"' : '') + '></video>' : '') +
           '<div class="mq-tile__scrim"></div>' +
-          '<span class="mq-tile__badge"><span class="dot"></span>' + esc(badgeLabel) + '</span>' +
           '<span class="mq-tile__count">' + s.count + ' items</span>' +
         '</div>';
       return '<a class="mq-card" href="#/s/' + attr(s.slug) + '">' +
         tile +
         '<div class="mq-card__meta">' +
           '<div class="mq-card__title">' + esc(s.name) + '</div>' +
-          '<div class="mq-card__sub"><span class="type">' + esc(videos.length ? 'Video' : (images.length ? 'Gallery' : 'Links')) + '</span><span>' + s.count + ' picks</span></div>' +
+          '<div class="mq-card__sub"><span>' + s.count + ' picks</span></div>' +
         '</div>' +
       '</a>';
     }).join('');

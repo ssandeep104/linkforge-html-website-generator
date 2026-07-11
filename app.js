@@ -3341,8 +3341,7 @@ function renderTemplatePicker() {
 
     card.innerHTML = `
       <div class="template-card__meta">
-        ${tpl.featured ? `<span class="template-card__badge">${escapeText(tpl.featuredLabel || 'Featured')}</span>` : ''}
-        ${tpl.focus ? `<span class="template-card__focus">${escapeText(tpl.focus)}</span>` : ''}
+        ${tpl.featured ? `<span class="template-card__badge">Featured</span>` : ''}
         ${key === suggested ? '<span class="template-card__suggested">Suggested</span>' : ''}
       </div>
       <div class="template-card__preview">${tpl.preview()}</div>
