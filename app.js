@@ -829,7 +829,7 @@ function renderSourceStrategyPicker() {
                   <div class="strategy-preview-card">
                     <div class="strategy-preview-card__media">
                       ${hasThumb 
-                        ? `<img src="${escapeAttr(thumbUrl)}" alt="" onerror="this.parentElement.innerHTML='<span class=\'strategy-preview-card__no-img\'>Err</span>'" />` 
+                        ? `<img src="${escapeAttr(thumbUrl)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'strategy-preview-card__no-img', textContent: 'Err'}))" />`
                         : `<div class="strategy-preview-card__no-img"><span>No img</span></div>`
                       }
                     </div>
