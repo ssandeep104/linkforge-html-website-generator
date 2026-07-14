@@ -1,0 +1,70 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.youtube.com",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Every iPhone Camera — Compared",
+      "href": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLAmfZ1fq5xHhMD_syvkMiIgUYDu3Q",
+      "video": null,
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Galaxy S25 Ultra First Look",
+      "href": "https://www.youtube.com/watch?v=abc123xyz00",
+      "thumbnail": "https://i.ytimg.com/vi/abc123xyz00/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue",
+      "video": null,
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Best Budget Laptop 2024",
+      "href": "https://www.youtube.com/watch?v=xyz999shorts",
+      "thumbnail": "https://i.ytimg.com/vi/xyz999shorts/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue2",
+      "video": null,
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Watch This Before Buying AirPods Pro 2",
+      "href": "https://www.youtube.com/watch?v=lmnop567890",
+      "thumbnail": "https://i.ytimg.com/vi/lmnop567890/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue3",
+      "video": null,
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}

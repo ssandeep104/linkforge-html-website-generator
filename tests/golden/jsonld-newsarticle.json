@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.example-news.com/",
+  "jsonLdMeta": {
+    "scriptCount": 2,
+    "parsedCount": 2,
+    "entryCount": 3,
+    "matchedCount": 2,
+    "orphanCount": 1
+  },
+  "items": [
+    {
+      "title": "City Council Approves $4.2B Budget After Marathon Session",
+      "href": "https://www.example-news.com/2026/06/26/city-council-approves-budget",
+      "thumbnail": "https://cdn.example-news.com/images/2026/06/council-vote-1600.jpg",
+      "video": null,
+      "description": "After nine hours of public testimony, council passed the FY2027 budget 7-2, with new investments in transit and parks.",
+      "domain": "example-news.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Light Rail Expansion Hits Construction Milestone",
+      "href": "https://www.example-news.com/2026/06/25/transit-rollout",
+      "thumbnail": "https://cdn.example-news.com/images/2026/06/rail.jpg",
+      "video": null,
+      "description": null,
+      "domain": "example-news.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Parks Department Lands Federal Grant for Greenway",
+      "href": "https://www.example-news.com/2026/06/24/parks-funding",
+      "thumbnail": "https://cdn.example-news.com/images/2026/06/greenway.jpg",
+      "video": null,
+      "description": "A $12M grant will accelerate work on the southside greenway.",
+      "domain": "example-news.com",
+      "category": "article",
+      "pageSection": "JSON-LD",
+      "pattern": "JSON-LD",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://techpulse.substack.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Diffusion Models Explained: A Visual Guide",
+      "href": "https://techpulse.substack.com/p/diffusion-models-explained",
+      "thumbnail": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdiffusion-cover.jpg",
+      "video": null,
+      "description": null,
+      "domain": "techpulse.substack.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"post-preview-title\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Claude 4 vs GPT-4o: Full Benchmark Breakdown",
+      "href": "https://techpulse.substack.com/p/claude-vs-gpt4-benchmark",
+      "thumbnail": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbenchmark-chart.jpg",
+      "video": null,
+      "description": null,
+      "domain": "techpulse.substack.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"post-preview-title\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "The AI Video Revolution Is Here",
+      "href": "https://www.youtube.com/embed/HK6y8DAPN_0",
+      "thumbnail": "https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fai-video-timeline.jpg",
+      "video": {
+        "src": "https://www.youtube.com/embed/HK6y8DAPN_0"
+      },
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Videos",
+      "pattern": "<iframe>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 1
+    },
+    {
+      "title": "The AI Video Revolution Is Here",
+      "href": "https://www.youtube.com/embed/RUNWAY_GEN3_DEMO",
+      "thumbnail": "https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fai-video-timeline.jpg",
+      "video": {
+        "src": "https://www.youtube.com/embed/RUNWAY_GEN3_DEMO"
+      },
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Videos",
+      "pattern": "<iframe>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 1
+    }
+  ]
+}

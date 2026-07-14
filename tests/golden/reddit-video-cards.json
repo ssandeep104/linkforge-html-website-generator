@@ -1,0 +1,65 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.reddit.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Amazing drone footage of Yosemite National Park",
+      "href": "https://www.reddit.com/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/",
+      "thumbnail": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
+      "video": {
+        "src": "https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback",
+        "poster": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123"
+      },
+      "description": null,
+      "domain": "reddit.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<a class=\"post-title\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Incredible timelapse of Northern Lights in Norway",
+      "href": "https://www.reddit.com/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/",
+      "thumbnail": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
+      "video": {
+        "src": "https://v.redd.it/def456lights/DASH_720.mp4?source=fallback",
+        "poster": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456"
+      },
+      "description": null,
+      "domain": "reddit.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<a class=\"post-title\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Dog learns to skateboard in one afternoon",
+      "href": "https://www.reddit.com/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/",
+      "thumbnail": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
+      "video": {
+        "src": "https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback",
+        "poster": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789"
+      },
+      "description": null,
+      "domain": "reddit.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<a class=\"post-title\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}

@@ -1,6 +1,3 @@
-# QA test artifacts (regenerated locally) — ignore everything under tests/ EXCEPT fixtures/
-tests/*
-!tests/fixtures/
 assets/test-*.png
 assets/v2-*.png
 assets/v3-*.png

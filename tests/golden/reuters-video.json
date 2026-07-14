@@ -1,0 +1,70 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.reuters.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Negotiators at ceasefire talks",
+      "href": "https://www.reuters.com/world/middle-east/ceasefire-negotiations-latest-update-2026-06-10/",
+      "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
+      "video": null,
+      "description": null,
+      "domain": "reuters.com",
+      "category": "article",
+      "pageSection": "Latest Videos",
+      "pattern": "<a class=\"story-card__media-content\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Factory workers on assembly line",
+      "href": "https://www.reuters.com/business/economy/us-jobs-report-may-2026-analysis-2026-06-10/",
+      "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
+      "video": null,
+      "description": null,
+      "domain": "reuters.com",
+      "category": "article",
+      "pageSection": "Latest Videos",
+      "pattern": "<a class=\"story-card__media-content\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Power grid control room monitors",
+      "href": "https://www.reuters.com/technology/cyber/major-cyberattack-hits-eu-energy-grid-2026-06-10/",
+      "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
+      "video": null,
+      "description": null,
+      "domain": "reuters.com",
+      "category": "article",
+      "pageSection": "Latest Videos",
+      "pattern": "<a class=\"story-card__media-content\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Tennis player serving on grass court",
+      "href": "https://www.reuters.com/sports/tennis/wimbledon-2026-draw-preview-2026-06-10/",
+      "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
+      "video": null,
+      "description": null,
+      "domain": "reuters.com",
+      "category": "article",
+      "pageSection": "Latest Videos",
+      "pattern": "<a class=\"story-card__media-content\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.bbc.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "California wildfires: What started them?",
+      "href": "https://www.bbc.com/news/articles/c9d0gex9q3go",
+      "thumbnail": "https://ichef.bbci.co.uk/news/480/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+      "video": null,
+      "description": null,
+      "domain": "bbc.com",
+      "category": "article",
+      "pageSection": "Most Watched Video",
+      "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 7,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Astronauts return after eight months on ISS",
+      "href": "https://www.bbc.com/news/articles/cy8n7z2xm9lo",
+      "thumbnail": "https://ichef.bbci.co.uk/news/480/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+      "video": null,
+      "description": null,
+      "domain": "bbc.com",
+      "category": "article",
+      "pageSection": "Most Watched Video",
+      "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 7,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Millions march in global climate rally",
+      "href": "https://www.bbc.com/news/articles/cq5xp0r4wkno",
+      "thumbnail": "https://ichef.bbci.co.uk/news/480/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+      "video": null,
+      "description": null,
+      "domain": "bbc.com",
+      "category": "article",
+      "pageSection": "Most Watched Video",
+      "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 6,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "G7 leaders agree on new AI safety framework",
+      "href": "https://www.bbc.com/news/articles/cm3n8w1vt5po",
+      "thumbnail": "https://ichef.bbci.co.uk/news/480/cpsprodpb/3456/production/_133034567_summit.jpg",
+      "video": null,
+      "description": null,
+      "domain": "bbc.com",
+      "category": "article",
+      "pageSection": "Most Watched Video",
+      "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    }
+  ]
+}

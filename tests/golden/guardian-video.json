@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.theguardian.com",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "New drone footage reveals scale of Amazon deforestation",
+      "href": "https://www.theguardian.com/environment/video/2026/jun/10/amazon-deforestation-drone-footage-video",
+      "thumbnail": "https://i.guim.co.uk/img/media/abc123/master/300.jpg?width=300&quality=45&auto=format",
+      "video": null,
+      "description": null,
+      "domain": "theguardian.com",
+      "category": "article",
+      "pageSection": "Video",
+      "pattern": "<a class=\"fc-item__link\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 4,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "England 3-1 Germany: Euro 2026 quarter-final highlights",
+      "href": "https://www.theguardian.com/sport/video/2026/jun/10/euro-2026-england-germany-highlights-video",
+      "thumbnail": "https://i.guim.co.uk/img/media/def456/master/300.jpg?width=300&quality=45&auto=format",
+      "video": null,
+      "description": null,
+      "domain": "theguardian.com",
+      "category": "article",
+      "pageSection": "Video",
+      "pattern": "<a class=\"fc-item__link\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 4,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Deepfakes explained: how AI is blurring reality",
+      "href": "https://www.theguardian.com/technology/video/2026/jun/10/ai-deepfakes-explained-video",
+      "thumbnail": "https://i.guim.co.uk/img/media/ghi789/master/300.jpg?width=300&quality=45&auto=format",
+      "video": null,
+      "description": null,
+      "domain": "theguardian.com",
+      "category": "article",
+      "pageSection": "Video",
+      "pattern": "<a class=\"fc-item__link\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}

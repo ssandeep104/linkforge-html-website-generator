@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.example-mag.com/",
+  "jsonLdMeta": {
+    "scriptCount": 1,
+    "parsedCount": 1,
+    "entryCount": 3,
+    "matchedCount": 3,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "The Quiet City: A Year Without Cars",
+      "href": "https://www.example-mag.com/long-reads/the-quiet-city",
+      "thumbnail": "https://cdn.example-mag.com/quiet-city-hero.jpg",
+      "video": null,
+      "description": "What we learned when the downtown loop went pedestrian-only for twelve months.",
+      "domain": "example-mag.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<li>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "The Midnight Bakers Who Feed the Morning Shift",
+      "href": "https://www.example-mag.com/long-reads/midnight-bakers",
+      "thumbnail": "https://cdn.example-mag.com/bakers-hero.jpg",
+      "video": null,
+      "description": "Inside the 24-hour bakery that supplies half the city's hospitals.",
+      "domain": "example-mag.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<li>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "When the Library Is Home",
+      "href": "https://www.example-mag.com/long-reads/library-as-home",
+      "thumbnail": "https://cdn.example-mag.com/library-hero.jpg",
+      "video": null,
+      "description": null,
+      "domain": "example-mag.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<li>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    }
+  ]
+}

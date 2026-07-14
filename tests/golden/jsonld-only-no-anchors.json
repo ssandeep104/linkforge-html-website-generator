@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://app.example.com/",
+  "jsonLdMeta": {
+    "scriptCount": 1,
+    "parsedCount": 1,
+    "entryCount": 3,
+    "matchedCount": 0,
+    "orphanCount": 3
+  },
+  "items": [
+    {
+      "title": "Atlas Mission Launches at Dawn",
+      "href": "https://app.example.com/v/atlas-launches",
+      "thumbnail": "https://cdn.example.com/atlas-thumb.jpg",
+      "video": null,
+      "description": "First successful crewed launch from the new pad.",
+      "domain": "app.example.com",
+      "category": "article",
+      "pageSection": "JSON-LD",
+      "pattern": "JSON-LD",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Transit Tax Passes by 6-Point Margin",
+      "href": "https://app.example.com/a/transit-tax-passes",
+      "thumbnail": "https://cdn.example.com/transit-tax.jpg",
+      "video": null,
+      "description": "Voters approved the fifteen-year sales tax extension.",
+      "domain": "app.example.com",
+      "category": "article",
+      "pageSection": "JSON-LD",
+      "pattern": "JSON-LD",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Hospital Workers Enter Day Three of Strike",
+      "href": "https://app.example.com/a/hospital-strike-day-3",
+      "thumbnail": "https://cdn.example.com/strike.jpg",
+      "video": null,
+      "description": null,
+      "domain": "app.example.com",
+      "category": "article",
+      "pageSection": "JSON-LD",
+      "pattern": "JSON-LD",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}

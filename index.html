@@ -383,7 +383,21 @@
     <!-- Toasts -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="./templates.js"></script>
-    <script src="./app.js"></script>
+    <!--
+      templates.js/app.js are classic (non-module) scripts, but must run
+      AFTER the module bridge below sets window.parseSourceWithMeta.
+      Module scripts are always deferred; `defer` here queues these two
+      into the same "execute after parsing, in document order" list so the
+      ordering is guaranteed by spec rather than by accident (a classic
+      script with no defer/async runs synchronously during parsing, which
+      would otherwise race ahead of the deferred module).
+    -->
+    <script type="module">
+      import { parseSource, parseSourceWithMeta } from './parser.js';
+      window.parseSource = parseSource;
+      window.parseSourceWithMeta = parseSourceWithMeta;
+    </script>
+    <script src="./templates.js" defer></script>
+    <script src="./app.js" defer></script>
   </body>
 </html>
