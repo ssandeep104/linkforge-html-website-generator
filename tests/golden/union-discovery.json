@@ -20,9 +20,31 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Article A",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "A lazy",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/a-lazy.jpg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        },
+        {
+          "value": "https://cdn.example.com/a-lazy.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Article B",
@@ -34,9 +56,36 @@
       "category": "link",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Article B",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "B srcset",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/b-800.jpg",
+          "strategy": "img-srcset:800w",
+          "label": "<img srcset> · 800w"
+        },
+        {
+          "value": "https://cdn.example.com/b-1600.jpg",
+          "strategy": "img-srcset:1600w",
+          "label": "<img srcset> · 1600w"
+        },
+        {
+          "value": "https://cdn.example.com/b-1600.jpg",
+          "strategy": "img-srcset:any",
+          "label": "<img srcset> · any size (largest)"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Article C",
@@ -48,9 +97,86 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 13,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Article C",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "C picture",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/c.avif",
+          "strategy": "picture-source:image-avif",
+          "label": "picture <source> (image/avif)"
+        },
+        {
+          "value": "https://cdn.example.com/c.avif",
+          "strategy": "picture-source:image-avif:any",
+          "label": "picture <source> (image/avif) · any size"
+        },
+        {
+          "value": "https://cdn.example.com/c.webp",
+          "strategy": "picture-source:image-webp",
+          "label": "picture <source> (image/webp)"
+        },
+        {
+          "value": "https://cdn.example.com/c.webp",
+          "strategy": "picture-source:image-webp:any",
+          "label": "picture <source> (image/webp) · any size"
+        },
+        {
+          "value": "https://cdn.example.com/c.avif",
+          "strategy": "picture-source:any",
+          "label": "picture <source> · any"
+        },
+        {
+          "value": "https://cdn.example.com/c-fallback.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.example.com/c.avif",
+          "strategy": "container-picture-source:image-avif",
+          "label": "container picture <source> (image/avif)"
+        },
+        {
+          "value": "https://cdn.example.com/c.avif",
+          "strategy": "container-picture-source:image-avif:any",
+          "label": "container picture <source> (image/avif) · any size"
+        },
+        {
+          "value": "https://cdn.example.com/c.webp",
+          "strategy": "container-picture-source:image-webp",
+          "label": "container picture <source> (image/webp)"
+        },
+        {
+          "value": "https://cdn.example.com/c.webp",
+          "strategy": "container-picture-source:image-webp:any",
+          "label": "container picture <source> (image/webp) · any size"
+        },
+        {
+          "value": "https://cdn.example.com/c.avif",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://cdn.example.com/c-fallback.jpg",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://cdn.example.com/c-fallback.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Article D",
@@ -62,9 +188,26 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Article D",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/d-bg.jpg",
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
+        },
+        {
+          "value": "https://cdn.example.com/d-bg.jpg",
+          "strategy": "container-bg-image",
+          "label": "container background-image"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Article E",
@@ -76,9 +219,26 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Article E",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/e-sibling.jpg",
+          "strategy": "adjacent-sibling-img",
+          "label": "adjacent <img>"
+        },
+        {
+          "value": "https://cdn.example.com/e-sibling.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

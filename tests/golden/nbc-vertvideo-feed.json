@@ -20,9 +20,21 @@
       "category": "article",
       "pageSection": "Images",
       "pattern": "<img>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Image",
+          "strategy": "standalone-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2026-01/asterisk-43f04b.svg",
+          "strategy": "standalone-img",
+          "label": "standalone <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

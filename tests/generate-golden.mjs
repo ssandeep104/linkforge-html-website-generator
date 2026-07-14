@@ -35,9 +35,15 @@ export function toGolden(result) {
       category: it.category,
       pageSection: it.pageSection,
       pattern: it.pattern,
-      titleCandidateCount: it.titleCandidates?.length || 0,
-      thumbCandidateCount: it.thumbCandidates?.length || 0,
-      videoCandidateCount: it.videoCandidates?.length || 0,
+      // Full candidate lists (not just counts) so a value/order drift on a
+      // non-winning candidate — e.g. a rule silently returning a slightly
+      // wrong URL that never becomes the default winner — actually fails
+      // this snapshot instead of passing unnoticed. `info` included for
+      // video candidates: it can carry fields (e.g. `poster`) that don't
+      // show up in `value` alone.
+      titleCandidates: (it.titleCandidates || []).map((c) => ({ value: c.value, strategy: c.strategy, label: c.label })),
+      thumbCandidates: (it.thumbCandidates || []).map((c) => ({ value: c.value, strategy: c.strategy, label: c.label })),
+      videoCandidates: (it.videoCandidates || []).map((c) => ({ value: c.value, strategy: c.strategy, label: c.label, info: c.info ?? null })),
     })),
   };
 }

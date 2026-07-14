@@ -20,9 +20,36 @@
       "category": "article",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "2:47",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Negotiators at ceasefire talks",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Gaza ceasefire talks enter critical phase, mediators say",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Factory workers on assembly line",
@@ -34,9 +61,36 @@
       "category": "article",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "3:15",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Factory workers on assembly line",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "U.S. adds 280,000 jobs in May, beating expectations",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Power grid control room monitors",
@@ -48,9 +102,36 @@
       "category": "article",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "4:33",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Power grid control room monitors",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "State-sponsored hackers breach European energy infrastructure",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Tennis player serving on grass court",
@@ -62,9 +143,31 @@
       "category": "article",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "1:58",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Tennis player serving on grass court",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Wimbledon 2026 draw: Djokovic and Swiatek headline favorites",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

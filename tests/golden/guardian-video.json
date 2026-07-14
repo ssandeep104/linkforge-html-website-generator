@@ -20,9 +20,46 @@
       "category": "article",
       "pageSection": "Video",
       "pattern": "<a class=\"fc-item__link\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 4,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "New drone footage reveals scale of Amazon deforestation",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        },
+        {
+          "value": "Environment New drone footage reveals scale of Amazon deforestation Environmentalists release shocking footage showing extent of illegal logging 4m 22s",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Aerial view of deforested Amazon",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "picture-source:min-width-980px:620w",
+          "label": "picture <source> ((min-width: 980px)) · 620w"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "picture-source:min-width-980px:any",
+          "label": "picture <source> ((min-width: 980px)) · any size"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "picture-source:any",
+          "label": "picture <source> · any"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "England 3-1 Germany: Euro 2026 quarter-final highlights",
@@ -34,9 +71,46 @@
       "category": "article",
       "pageSection": "Video",
       "pattern": "<a class=\"fc-item__link\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 4,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "England 3-1 Germany: Euro 2026 quarter-final highlights",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        },
+        {
+          "value": "Football England 3-1 Germany: Euro 2026 quarter-final highlights England secure dominant victory to advance to the semi-finals 6m 18s",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "England vs Germany match action",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "picture-source:min-width-980px:620w",
+          "label": "picture <source> ((min-width: 980px)) · 620w"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "picture-source:min-width-980px:any",
+          "label": "picture <source> ((min-width: 980px)) · any size"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "picture-source:any",
+          "label": "picture <source> · any"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Deepfakes explained: how AI is blurring reality",
@@ -48,9 +122,31 @@
       "category": "article",
       "pageSection": "Video",
       "pattern": "<a class=\"fc-item__link\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Deepfakes explained: how AI is blurring reality",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        },
+        {
+          "value": "Technology Deepfakes explained: how AI is blurring reality Our guide to detecting synthetic media in an era of disinformation 7m 45s",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Split-screen showing real vs deepfake face",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.guim.co.uk/img/media/ghi789/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

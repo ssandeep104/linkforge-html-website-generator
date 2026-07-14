@@ -20,9 +20,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Every iPhone Camera — Compared",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Every iPhone Camera — Compared",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLAmfZ1fq5xHhMD_syvkMiIgUYDu3Q",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Galaxy S25 Ultra First Look",
@@ -34,9 +51,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Galaxy S25 Ultra First Look",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Galaxy S25 Ultra First Look",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.ytimg.com/vi/abc123xyz00/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Best Budget Laptop 2024",
@@ -48,9 +82,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Best Budget Laptop 2024",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Best Budget Laptop 2024",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.ytimg.com/vi/xyz999shorts/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue2",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Watch This Before Buying AirPods Pro 2",
@@ -62,9 +113,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Watch This Before Buying AirPods Pro 2",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Watch This Before Buying AirPods Pro 2",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.ytimg.com/vi/lmnop567890/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue3",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

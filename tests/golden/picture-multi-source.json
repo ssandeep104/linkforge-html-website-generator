@@ -20,9 +20,196 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 35,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Breaking: Council Approves Budget",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "Breaking news",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-news.com/hero-800.avif",
+          "strategy": "picture-source:image-avif:800w",
+          "label": "picture <source> (image/avif) · 800w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.avif",
+          "strategy": "picture-source:image-avif:1600w",
+          "label": "picture <source> (image/avif) · 1600w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-2400.avif",
+          "strategy": "picture-source:image-avif:2400w",
+          "label": "picture <source> (image/avif) · 2400w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-2400.avif",
+          "strategy": "picture-source:image-avif:any",
+          "label": "picture <source> (image/avif) · any size"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-800.webp",
+          "strategy": "picture-source:image-webp:800w",
+          "label": "picture <source> (image/webp) · 800w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.webp",
+          "strategy": "picture-source:image-webp:1600w",
+          "label": "picture <source> (image/webp) · 1600w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.webp",
+          "strategy": "picture-source:image-webp:any",
+          "label": "picture <source> (image/webp) · any size"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-mobile-400.jpg",
+          "strategy": "picture-source:max-width-600px:1x",
+          "label": "picture <source> ((max-width: 600px)) · 1x"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-mobile-800.jpg",
+          "strategy": "picture-source:max-width-600px:2x",
+          "label": "picture <source> ((max-width: 600px)) · 2x"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-mobile-800.jpg",
+          "strategy": "picture-source:max-width-600px:any",
+          "label": "picture <source> ((max-width: 600px)) · any size"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-2400.avif",
+          "strategy": "picture-source:any",
+          "label": "picture <source> · any"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-fallback-1200.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-800.jpg",
+          "strategy": "img-srcset:800w",
+          "label": "<img srcset> · 800w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.jpg",
+          "strategy": "img-srcset:1600w",
+          "label": "<img srcset> · 1600w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.jpg",
+          "strategy": "img-srcset:any",
+          "label": "<img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-lazy-1200.jpg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-original-2400.jpg",
+          "strategy": "img-data-original",
+          "label": "<img data-original>"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-800.avif",
+          "strategy": "container-picture-source:image-avif:800w",
+          "label": "container picture <source> (image/avif) · 800w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.avif",
+          "strategy": "container-picture-source:image-avif:1600w",
+          "label": "container picture <source> (image/avif) · 1600w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-2400.avif",
+          "strategy": "container-picture-source:image-avif:2400w",
+          "label": "container picture <source> (image/avif) · 2400w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-2400.avif",
+          "strategy": "container-picture-source:image-avif:any",
+          "label": "container picture <source> (image/avif) · any size"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-800.webp",
+          "strategy": "container-picture-source:image-webp:800w",
+          "label": "container picture <source> (image/webp) · 800w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.webp",
+          "strategy": "container-picture-source:image-webp:1600w",
+          "label": "container picture <source> (image/webp) · 1600w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.webp",
+          "strategy": "container-picture-source:image-webp:any",
+          "label": "container picture <source> (image/webp) · any size"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-mobile-400.jpg",
+          "strategy": "container-picture-source:max-width-600px:1x",
+          "label": "container picture <source> ((max-width: 600px)) · 1x"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-mobile-800.jpg",
+          "strategy": "container-picture-source:max-width-600px:2x",
+          "label": "container picture <source> ((max-width: 600px)) · 2x"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-mobile-800.jpg",
+          "strategy": "container-picture-source:max-width-600px:any",
+          "label": "container picture <source> ((max-width: 600px)) · any size"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-2400.avif",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-fallback-1200.jpg",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-800.jpg",
+          "strategy": "container-img-srcset:800w",
+          "label": "container <img srcset> · 800w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.jpg",
+          "strategy": "container-img-srcset:1600w",
+          "label": "container <img srcset> · 1600w"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-1600.jpg",
+          "strategy": "container-img-srcset:any",
+          "label": "container <img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-lazy-1200.jpg",
+          "strategy": "container-img-data-src",
+          "label": "container <img data-src>"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-original-2400.jpg",
+          "strategy": "container-img-data-original",
+          "label": "container <img data-original>"
+        },
+        {
+          "value": "https://cdn.example-news.com/hero-fallback-1200.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Transit",
@@ -34,9 +221,71 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 11,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Transit",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_800/v1/transit.webp",
+          "strategy": "picture-source:image-webp:800w",
+          "label": "picture <source> (image/webp) · 800w"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/transit.webp",
+          "strategy": "picture-source:image-webp:1600w",
+          "label": "picture <source> (image/webp) · 1600w"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/transit.webp",
+          "strategy": "picture-source:image-webp:any",
+          "label": "picture <source> (image/webp) · any size"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/transit.webp",
+          "strategy": "picture-source:any",
+          "label": "picture <source> · any"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/transit.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_800/v1/transit.webp",
+          "strategy": "container-picture-source:image-webp:800w",
+          "label": "container picture <source> (image/webp) · 800w"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/transit.webp",
+          "strategy": "container-picture-source:image-webp:1600w",
+          "label": "container picture <source> (image/webp) · 1600w"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/transit.webp",
+          "strategy": "container-picture-source:image-webp:any",
+          "label": "container picture <source> (image/webp) · any size"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1600/v1/transit.webp",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/transit.jpg",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/transit.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Parks Department Lands Federal Grant",
@@ -48,9 +297,61 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 8,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Parks Department Lands Federal Grant",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "Parks",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-news.com/parks-fallback.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.example-news.com/parks-400.jpg",
+          "strategy": "img-srcset:400w",
+          "label": "<img srcset> · 400w"
+        },
+        {
+          "value": "https://cdn.example-news.com/parks-800.jpg",
+          "strategy": "img-srcset:800w",
+          "label": "<img srcset> · 800w"
+        },
+        {
+          "value": "https://cdn.example-news.com/parks-1200.jpg",
+          "strategy": "img-srcset:1200w",
+          "label": "<img srcset> · 1200w"
+        },
+        {
+          "value": "https://cdn.example-news.com/parks-1600.jpg",
+          "strategy": "img-srcset:1600w",
+          "label": "<img srcset> · 1600w"
+        },
+        {
+          "value": "https://cdn.example-news.com/parks-1600.jpg",
+          "strategy": "img-srcset:any",
+          "label": "<img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://cdn.example-news.com/parks-original-3200.jpg",
+          "strategy": "img-data-hi-res-src",
+          "label": "<img data-hi-res-src>"
+        },
+        {
+          "value": "https://cdn.example-news.com/parks-fallback.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

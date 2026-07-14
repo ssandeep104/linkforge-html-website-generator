@@ -23,9 +23,31 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 1
+      "titleCandidates": [
+        {
+          "value": "Visiting a Soldier's Funeral in Ukraine",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static01.nyt.com/images/2026/04/21/arts/Kim-Barker/Kim-Barker-verticalTwoByThree735.png?auto=webp&quality=30&disable=upscale&format=pjpg",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "videoCandidates": [
+        {
+          "value": "https://vp.nyt.com/video/2026/06/09/167399_1_00vid-rv-ukraine-Grief_wg_1080p.mp4",
+          "strategy": "synthesized",
+          "label": "synthesized from article",
+          "info": {
+            "src": "https://vp.nyt.com/video/2026/06/09/167399_1_00vid-rv-ukraine-Grief_wg_1080p.mp4",
+            "poster": "https://static01.nyt.com/images/2026/04/21/arts/Kim-Barker/Kim-Barker-verticalTwoByThree735.png?auto=webp&quality=30&disable=upscale&format=pjpg"
+          }
+        }
+      ]
     },
     {
       "title": "Scott Pelley: Bari Weiss Put a 'Thumb on the Scale' for Trump",
@@ -40,9 +62,31 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 1
+      "titleCandidates": [
+        {
+          "value": "Scott Pelley: Bari Weiss Put a 'Thumb on the Scale' for Trump",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static01.nyt.com/images/2026/06/07/arts/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16-verticalTwoByThree735.jpg?auto=webp&quality=30&disable=upscale&format=pjpg",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "videoCandidates": [
+        {
+          "value": "https://vp.nyt.com/video/2026/06/06/171154_1_6-pelley-bari-weiss-clip_wg_1080p.mp4",
+          "strategy": "synthesized",
+          "label": "synthesized from article",
+          "info": {
+            "src": "https://vp.nyt.com/video/2026/06/06/171154_1_6-pelley-bari-weiss-clip_wg_1080p.mp4",
+            "poster": "https://static01.nyt.com/images/2026/06/07/arts/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16/TI_ScottPelley-Social-Clip-Bari-Weiss-V4-9x16-verticalTwoByThree735.jpg?auto=webp&quality=30&disable=upscale&format=pjpg"
+          }
+        }
+      ]
     },
     {
       "title": "Soccer Referee Receives Hero's Welcome in Somalia After U.S. Denies Him Entry",
@@ -57,9 +101,31 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 1
+      "titleCandidates": [
+        {
+          "value": "Soccer Referee Receives Hero's Welcome in Somalia After U.S. Denies Him Entry",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static01.nyt.com/images/2026/06/10/sports/soccer/somali-ref-thumb-onsite/somali-ref-thumb-onsite-smallTwoByThree.jpg",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "videoCandidates": [
+        {
+          "value": "https://vp.nyt.com/video/2026/06/10/171412_1_10vid-referee_wg_1080p.mp4",
+          "strategy": "synthesized",
+          "label": "synthesized from article",
+          "info": {
+            "src": "https://vp.nyt.com/video/2026/06/10/171412_1_10vid-referee_wg_1080p.mp4",
+            "poster": "https://static01.nyt.com/images/2026/06/10/sports/soccer/somali-ref-thumb-onsite/somali-ref-thumb-onsite-smallTwoByThree.jpg"
+          }
+        }
+      ]
     },
     {
       "title": "Russian Military Official Killed in Car Explosion Near Moscow",
@@ -74,9 +140,31 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 1
+      "titleCandidates": [
+        {
+          "value": "Russian Military Official Killed in Car Explosion Near Moscow",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static01.nyt.com/images/2026/06/10/multimedia/10Russia-Bombing-qgbl/10Russia-Bombing-qgbl-verticalTwoByThree735-v2.jpg",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "videoCandidates": [
+        {
+          "value": "https://vp.nyt.com/video/2026/06/10/171435_1_10Vid-moscow-car-explosion_wg_1080p.mp4",
+          "strategy": "synthesized",
+          "label": "synthesized from article",
+          "info": {
+            "src": "https://vp.nyt.com/video/2026/06/10/171435_1_10Vid-moscow-car-explosion_wg_1080p.mp4",
+            "poster": "https://static01.nyt.com/images/2026/06/10/multimedia/10Russia-Bombing-qgbl/10Russia-Bombing-qgbl-verticalTwoByThree735-v2.jpg"
+          }
+        }
+      ]
     },
     {
       "title": "Southern Lights Seen From International Space Station",
@@ -91,9 +179,31 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 1
+      "titleCandidates": [
+        {
+          "value": "Southern Lights Seen From International Space Station",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static01.nyt.com/images/2026/06/10/science/space/10vid-southern-lights-cover/10vid-southern-lights-cover-smallTwoByThree.jpg",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "videoCandidates": [
+        {
+          "value": "https://vp.nyt.com/video/2026/06/10/171454_1_10vid-southern-lights_wg_1080p.mp4",
+          "strategy": "synthesized",
+          "label": "synthesized from article",
+          "info": {
+            "src": "https://vp.nyt.com/video/2026/06/10/171454_1_10vid-southern-lights_wg_1080p.mp4",
+            "poster": "https://static01.nyt.com/images/2026/06/10/science/space/10vid-southern-lights-cover/10vid-southern-lights-cover-smallTwoByThree.jpg"
+          }
+        }
+      ]
     }
   ]
 }

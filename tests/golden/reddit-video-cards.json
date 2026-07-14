@@ -23,9 +23,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"post-title\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Amazing drone footage of Yosemite National Park",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Amazing drone footage thumbnail",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Incredible timelapse of Northern Lights in Norway",
@@ -40,9 +57,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"post-title\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Incredible timelapse of Northern Lights in Norway",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Northern Lights timelapse thumbnail",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Dog learns to skateboard in one afternoon",
@@ -57,9 +91,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"post-title\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Dog learns to skateboard in one afternoon",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Skateboarding dog thumbnail",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

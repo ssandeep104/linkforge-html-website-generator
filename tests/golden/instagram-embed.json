@@ -22,9 +22,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"post-content\">",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Fashion lookbook reel preview",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://www.instagram.com/p/C8x9YZabc12/media/?size=t",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://www.instagram.com/p/C8x9YZabc12/media/?size=t",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Behind the scenes shoot",
@@ -38,9 +55,26 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"post-content\">",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Behind the scenes shoot",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://www.instagram.com/p/C7w8XYzde34/media/?size=t",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://www.instagram.com/p/C8x9YZabc12/media/?size=t",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

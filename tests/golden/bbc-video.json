@@ -20,9 +20,56 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 7,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "California wildfires: What started them?",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
+        {
+          "value": "Wildfire spreading across hillside",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/240/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+          "strategy": "img-srcset:240w",
+          "label": "<img srcset> · 240w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+          "strategy": "img-srcset:480w",
+          "label": "<img srcset> · 480w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/976/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+          "strategy": "img-srcset:976w",
+          "label": "<img srcset> · 976w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/976/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+          "strategy": "img-srcset:any",
+          "label": "<img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/1234/production/_133012345_gettyimages.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Astronauts return after eight months on ISS",
@@ -34,9 +81,56 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 7,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Astronauts return after eight months on ISS",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
+        {
+          "value": "Astronauts in orange suits",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/240/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+          "strategy": "img-srcset:240w",
+          "label": "<img srcset> · 240w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+          "strategy": "img-srcset:480w",
+          "label": "<img srcset> · 480w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/976/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+          "strategy": "img-srcset:976w",
+          "label": "<img srcset> · 976w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/976/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+          "strategy": "img-srcset:any",
+          "label": "<img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/5678/production/_133056789_space-crew.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Millions march in global climate rally",
@@ -48,9 +142,51 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 6,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Millions march in global climate rally",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
+        {
+          "value": "Large crowd at climate protest",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/240/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+          "strategy": "img-srcset:240w",
+          "label": "<img srcset> · 240w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+          "strategy": "img-srcset:480w",
+          "label": "<img srcset> · 480w"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+          "strategy": "img-srcset:any",
+          "label": "<img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/9012/production/_133090123_protest-crowd.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "G7 leaders agree on new AI safety framework",
@@ -62,9 +198,36 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "G7 leaders agree on new AI safety framework",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
+        {
+          "value": "G7 world leaders at summit table",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/3456/production/_133034567_summit.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/3456/production/_133034567_summit.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://ichef.bbci.co.uk/news/480/cpsprodpb/3456/production/_133034567_summit.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

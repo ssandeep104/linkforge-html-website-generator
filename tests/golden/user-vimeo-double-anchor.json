@@ -20,9 +20,56 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"video-card\">",
-      "titleCandidateCount": 4,
-      "thumbCandidateCount": 5,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "You will Feel Me Playdaddy channel 1.2M views",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
+        {
+          "value": "You will Feel Me",
+          "strategy": "anchor-aria-label",
+          "label": "aria-label"
+        },
+        {
+          "value": "Watched 04:34",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "You will Feel Me",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://ic-vt-nss.xhcdn.com/a/MzU1YmRiZTU2ZWY2ODk1MjE5ZDgxYWNjNzJmMDk2NjM/s(w:640,h:360),webp/006/419/696/v2/2560x1440.205.webp",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://ic-vt-nss.xhcdn.com/a/ZTRkNTI0ZWVlNjc1Y2M3YWE2NTA5M2YxYTRmOTIxYWE/s(w:526,h:298),webp/006/419/696/v2/526x298.205.webp",
+          "strategy": "img-srcset",
+          "label": "<img srcset>"
+        },
+        {
+          "value": "https://ic-vt-nss.xhcdn.com/a/ZTRkNTI0ZWVlNjc1Y2M3YWE2NTA5M2YxYTRmOTIxYWE/s(w:526,h:298),webp/006/419/696/v2/526x298.205.webp",
+          "strategy": "img-srcset:any",
+          "label": "<img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://ic-vt-nss.xhcdn.com/a/MzU1YmRiZTU2ZWY2ODk1MjE5ZDgxYWNjNzJmMDk2NjM/s(w:640,h:360),webp/006/419/696/v2/2560x1440.205.webp",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://ic-vt-nss.xhcdn.com/a/MzU1YmRiZTU2ZWY2ODk1MjE5ZDgxYWNjNzJmMDk2NjM/s(w:640,h:360),webp/006/419/696/v2/2560x1440.205.webp",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Another Clip Some Channel",
@@ -34,9 +81,36 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"video-card\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Another Clip Some Channel",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
+        {
+          "value": "Another Clip",
+          "strategy": "anchor-aria-label",
+          "label": "aria-label"
+        },
+        {
+          "value": "Another Clip",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://ic-vt-nss.xhcdn.com/a/X/s(w:640,h:360),webp/001/234/567/v2/2560x1440.webp",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://ic-vt-nss.xhcdn.com/a/X/s(w:640,h:360),webp/001/234/567/v2/2560x1440.webp",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

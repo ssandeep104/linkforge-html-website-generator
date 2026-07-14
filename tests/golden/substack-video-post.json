@@ -20,9 +20,26 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<a class=\"post-preview-title\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Diffusion Models Explained: A Visual Guide",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "Diffusion model visualisation",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdiffusion-cover.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Claude 4 vs GPT-4o: Full Benchmark Breakdown",
@@ -34,9 +51,26 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<a class=\"post-preview-title\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Claude 4 vs GPT-4o: Full Benchmark Breakdown",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "Benchmark comparison chart",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbenchmark-chart.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "The AI Video Revolution Is Here",
@@ -50,9 +84,30 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<iframe>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 1
+      "titleCandidates": [
+        {
+          "value": "The AI Video Revolution Is Here",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fai-video-timeline.jpg",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "videoCandidates": [
+        {
+          "value": "https://www.youtube.com/embed/HK6y8DAPN_0",
+          "strategy": "synthesized",
+          "label": "synthesized from article",
+          "info": {
+            "src": "https://www.youtube.com/embed/HK6y8DAPN_0"
+          }
+        }
+      ]
     },
     {
       "title": "The AI Video Revolution Is Here",
@@ -66,9 +121,30 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<iframe>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 1
+      "titleCandidates": [
+        {
+          "value": "The AI Video Revolution Is Here",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://substackcdn.com/image/fetch/w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fai-video-timeline.jpg",
+          "strategy": "synthesized",
+          "label": "synthesized from article"
+        }
+      ],
+      "videoCandidates": [
+        {
+          "value": "https://www.youtube.com/embed/RUNWAY_GEN3_DEMO",
+          "strategy": "synthesized",
+          "label": "synthesized from article",
+          "info": {
+            "src": "https://www.youtube.com/embed/RUNWAY_GEN3_DEMO"
+          }
+        }
+      ]
     }
   ]
 }

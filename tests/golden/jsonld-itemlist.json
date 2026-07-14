@@ -20,9 +20,36 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "The Quiet City: A Year Without Cars",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        },
+        {
+          "value": "Quiet City",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-mag.com/quiet-city-hero.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        },
+        {
+          "value": "https://cdn.example-mag.com/quiet-city-thumb.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.example-mag.com/quiet-city-thumb.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "The Midnight Bakers Who Feed the Morning Shift",
@@ -34,9 +61,36 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "The Midnight Bakers Who Feed the Morning Shift",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        },
+        {
+          "value": "Midnight Bakers",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-mag.com/bakers-hero.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        },
+        {
+          "value": "https://cdn.example-mag.com/bakers-thumb.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.example-mag.com/bakers-thumb.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "When the Library Is Home",
@@ -48,9 +102,36 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "When the Library Is Home",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        },
+        {
+          "value": "Library as Home",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-mag.com/library-hero.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        },
+        {
+          "value": "https://cdn.example-mag.com/library-thumb.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.example-mag.com/library-thumb.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

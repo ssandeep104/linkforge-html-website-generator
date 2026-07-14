@@ -20,9 +20,41 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "City Council Approves $4.2B Budget After Marathon Session",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        },
+        {
+          "value": "Council OKs Budget",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "Council vote",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-news.com/images/2026/06/council-vote-1600.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        },
+        {
+          "value": "https://cdn.example-news.com/images/2026/06/council-vote-thumb.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.example-news.com/images/2026/06/council-vote-thumb.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Light Rail Expansion Hits Construction Milestone",
@@ -34,9 +66,26 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Light Rail Expansion Hits Construction Milestone",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        },
+        {
+          "value": "Transit Update",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-news.com/images/2026/06/rail.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Parks Department Lands Federal Grant for Greenway",
@@ -48,9 +97,21 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Parks Department Lands Federal Grant for Greenway",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example-news.com/images/2026/06/greenway.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }
