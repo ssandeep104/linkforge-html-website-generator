@@ -1,0 +1,66 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.youtube.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "How to Build a Home Server From Scratch",
+      "href": "https://www.youtube.com/watch?v=abc123XYZ89",
+      "thumbnail": "https://i.ytimg.com/vi/abc123XYZ89/hqdefault.jpg",
+      "video": null,
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "How to Build a Home Server From Scratch",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.ytimg.com/vi/abc123XYZ89/hqdefault.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "I Tried Cooking Without Recipes for a Week",
+      "href": "https://www.youtube.com/watch?v=def456UVW12",
+      "thumbnail": "https://i.ytimg.com/vi/def456UVW12/hqdefault.jpg",
+      "video": null,
+      "description": null,
+      "domain": "youtube.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "I Tried Cooking Without Recipes for a Week",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.ytimg.com/vi/def456UVW12/hqdefault.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

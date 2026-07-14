@@ -1,0 +1,86 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://framewright.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Foggy Pier — Dawn Series #4",
+      "href": "https://framewright.example/photos/12",
+      "thumbnail": "https://cdn.framewright.example/full/pier-dawn.jpg",
+      "video": null,
+      "description": null,
+      "domain": "framewright.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<figure class=\"portfolio-item\">",
+      "titleCandidates": [
+        {
+          "value": "Foggy Pier — Dawn Series #4",
+          "strategy": "container-caption",
+          "label": "caption"
+        },
+        {
+          "value": "Foggy pier at dawn",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.framewright.example/full/pier-dawn.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.framewright.example/full/pier-dawn.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Desert Highway — Solitude Series #1",
+      "href": "https://framewright.example/photos/13",
+      "thumbnail": "https://cdn.framewright.example/full/desert-road.jpg",
+      "video": null,
+      "description": null,
+      "domain": "framewright.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<figure class=\"portfolio-item\">",
+      "titleCandidates": [
+        {
+          "value": "Desert Highway — Solitude Series #1",
+          "strategy": "container-caption",
+          "label": "caption"
+        },
+        {
+          "value": "Empty desert highway",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.framewright.example/full/desert-road.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.framewright.example/full/desert-road.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

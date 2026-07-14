@@ -241,6 +241,43 @@ function looksLikePlaceholder(url) {
   return false;
 }
 
+// Narrower than looksLikePlaceholder() above, and used for a different job:
+// deciding whether <img src> is a lazy-load stand-in that should lose to a
+// real lazy-load attribute (data-src, etc.) in pickImgSrc. This runs on the
+// DEFAULT-WINNER path for every image in the document, so a false positive
+// here silently swaps a legitimate thumbnail for something worse — a much
+// costlier mistake than a false negative, which just leaves the (long-
+// standing) placeholder-wins behavior unchanged for that one image.
+//
+// Two rounds of review found real false positives in a keyword-SUBSTRING
+// approach: dropping "logo"/"empty"/"default"/"loading" still left "blank"/
+// "transparent" matching inside real multi-word filenames like
+// "blank-space-taylor-swift-cover.jpg" (delimited by the same "-" the regex
+// used as a word boundary). Any English word is at risk of this, so instead
+// of continuing to narrow a keyword list, this matches the URL's BASENAME
+// (path segment before the extension) EXACTLY against a small set of known
+// placeholder names. A real content photo is essentially never named
+// exactly "blank.gif" with nothing else in the filename — that's a
+// structurally different, much stronger signal than "contains the word
+// blank somewhere."
+const KNOWN_PLACEHOLDER_BASENAMES = new Set([
+  '1x1', '2x2', 'blank', 'spacer', 'placeholder', 'transparent',
+  'noimage', 'no-image', 'no_image', 'pixel',
+]);
+function looksLikeLazyLoadPlaceholder(url) {
+  if (!url) return true;
+  const u = url.toLowerCase();
+  if (u.startsWith('data:')) return true; // base64 blank/spinner pixels — the dominant real-world case
+  const path = u.split(/[?#]/)[0];
+  const basename = path.slice(path.lastIndexOf('/') + 1).replace(/\.[a-z0-9]+$/, '');
+  if (KNOWN_PLACEHOLDER_BASENAMES.has(basename)) return true;
+  // Tiny width/height query param — anchored to end-of-value with `(?=$|[&#])`
+  // so a hash-like suffix ("?h=4a2b1c9d") can't false-match "h=4" the way a
+  // plain "next char is not a digit" lookahead would ("a" also isn't a digit).
+  if (/[\?&](w|width|h|height)=(1|2|4|8|10)(?=$|[&#])/.test(u)) return true;
+  return false;
+}
+
 // Parse a srcset attribute robustly, respecting commas that appear inside
 // URLs (CDN transform syntax like Cloudinary's `f_auto,q_auto/...`, Imgix
 // param strings, data: URIs with base64, etc.).
@@ -481,14 +518,19 @@ function expandImageCandidates(img, picture) {
 // Pick the best <img> src across normal + lazy-load attributes.
 // Prefers data-src / data-original / srcset over src when src looks like a placeholder.
 function pickImgSrc(img) {
-  // Trust the markup. If <img> has a src, that's the thumbnail. Period.
+  // Trust the markup — with one exception: a lazy-load placeholder in `src`
+  // (base64 blank pixel, spacer.gif, site logo, ...) is not the thumbnail,
+  // it's a stand-in the page's own JS swaps out after paint. The extremely
+  // common convention is <img src="tiny-placeholder" data-src="real.jpg">;
+  // trusting `src` unconditionally here means every lazy-loaded gallery site
+  // (most of them, in practice) would default to showing the placeholder.
   // We do NOT parse srcset to "pick the largest" — srcset URLs can contain
   // commas inside their path (CDN transform syntax), which breaks naive
   // splitting. The picker exposes srcset/data-* values as alternates the
   // user can switch to manually.
   const src = img.getAttribute('src');
-  if (src && src.trim()) return src.trim();
-  // Only if src is missing/empty, fall back to lazy-load attributes.
+  if (src && src.trim() && !looksLikeLazyLoadPlaceholder(src.trim())) return src.trim();
+  // src missing, empty, or placeholder-shaped — try lazy-load attributes.
   const fallbacks = [
     img.getAttribute('data-src'),
     img.getAttribute('data-original'),
@@ -501,6 +543,8 @@ function pickImgSrc(img) {
   for (const v of fallbacks) {
     if (v && typeof v === 'string' && v.trim()) return v.trim();
   }
+  // Nothing better — a placeholder-looking src still beats no thumbnail.
+  if (src && src.trim()) return src.trim();
   return null;
 }
 
@@ -948,6 +992,22 @@ const TITLE_RULES = [
       return (titleEl && titleEl !== heading) ? [{ value: visibleText(titleEl), strategy: 'anchor-title-class', label: 'class=title/headline' }] : [];
     },
   },
+  {
+    // Photography-portfolio pattern: <figure><a><img alt="..."></a>
+    // <figcaption>Real Title</figcaption></figure>. A caption is the
+    // author's deliberately-chosen title; alt text just describes the image
+    // for accessibility. Ranked above anchor-visible-text/anchor-img-alt
+    // (below) specifically because captions are a stronger authorial signal
+    // than either — found via manual end-to-end testing against portfolio
+    // sites, where alt text was winning over an obviously-better caption.
+    id: 'container-caption',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const cap = container.querySelector('figcaption, [class*="caption" i]');
+      return cap ? [{ value: visibleText(cap), strategy: 'container-caption', label: 'caption' }] : [];
+    },
+  },
   { id: 'anchor-visible-text', extract: (a) => [{ value: visibleText(a), strategy: 'anchor-visible-text', label: 'anchor text' }] },
   {
     id: 'anchor-img-alt',
@@ -958,17 +1018,15 @@ const TITLE_RULES = [
     },
   },
   {
-    // Nearest article/li/figure that ISN'T the anchor itself.
-    id: 'container-aria-and-caption',
+    // Nearest article/li/figure that ISN'T the anchor itself. Weak signal —
+    // an aria-label on a whole card container usually describes the card's
+    // ROLE ("video card"), not a specific title, so this stays low-priority.
+    id: 'container-aria-label',
     extract(a) {
       const container = a.closest(CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
-      const out = [];
       const cAria = container.getAttribute('aria-label');
-      if (cAria) out.push({ value: cAria, strategy: 'container-aria-label', label: 'container aria-label' });
-      const cap = container.querySelector('figcaption, [class*="caption" i]');
-      if (cap) out.push({ value: visibleText(cap), strategy: 'container-caption', label: 'caption' });
-      return out;
+      return cAria ? [{ value: cAria, strategy: 'container-aria-label', label: 'container aria-label' }] : [];
     },
   },
   {

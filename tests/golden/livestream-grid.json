@@ -1,0 +1,76 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://livecast.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Ranked grind to Diamond! Road to top 500",
+      "href": "https://livecast.example/directory/game/valor-arena/stream1",
+      "thumbnail": "https://thumbs.livecast.example/stream1.jpg",
+      "video": null,
+      "description": null,
+      "domain": "livecast.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"stream-card\">",
+      "titleCandidates": [
+        {
+          "value": "Ranked grind to Diamond! Road to top 500",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "LIVE 12.4K viewers Ranked grind to Diamond! Road to top 500 NovaPlaysLive",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://thumbs.livecast.example/stream1.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "chill sunday coding + chatting",
+      "href": "https://livecast.example/directory/game/valor-arena/stream2",
+      "thumbnail": "https://thumbs.livecast.example/stream2.jpg",
+      "video": null,
+      "description": null,
+      "domain": "livecast.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"stream-card\">",
+      "titleCandidates": [
+        {
+          "value": "chill sunday coding + chatting",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "LIVE 3.1K viewers chill sunday coding + chatting devwithkay",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://thumbs.livecast.example/stream2.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

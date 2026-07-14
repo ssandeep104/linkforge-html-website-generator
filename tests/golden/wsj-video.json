@@ -13,7 +13,7 @@
     {
       "title": "Markets Rally After Fed Signals Two Rate Cuts in 2026",
       "href": "https://www.wsj.com/video/series/markets-hub/market-reaction-to-rate-decision-june-2026/AB1234CD-5678-EFGH-IJKL-MN9012OPQRST",
-      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "thumbnail": "https://images.wsj.net/im-12345678?width=700&height=394",
       "video": null,
       "description": null,
       "domain": "wsj.com",
@@ -39,11 +39,6 @@
       ],
       "thumbCandidates": [
         {
-          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-          "strategy": "fallback",
-          "label": "fallback"
-        },
-        {
           "value": "https://images.wsj.net/im-12345678?width=700&height=394",
           "strategy": "img-data-src",
           "label": "<img data-src>"
@@ -62,6 +57,16 @@
           "value": "https://images.wsj.net/im-12345678?width=700&height=394",
           "strategy": "img-data-srcset:any",
           "label": "<img data-srcset> · any size (largest)"
+        },
+        {
+          "value": "https://images.wsj.net/im-12345678?width=700&height=394",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://images.wsj.net/im-12345678?width=700&height=394",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -69,7 +74,7 @@
     {
       "title": "EV Market Faces Reckoning as Sales Growth Slows",
       "href": "https://www.wsj.com/video/series/journal-report/future-of-electric-vehicles-2026-outlook/EF5678GH-9012-IJKL-MNOP-QR3456STUVWX",
-      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "thumbnail": "https://images.wsj.net/im-23456789?width=700&height=394",
       "video": null,
       "description": null,
       "domain": "wsj.com",
@@ -95,14 +100,19 @@
       ],
       "thumbCandidates": [
         {
-          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-          "strategy": "fallback",
-          "label": "fallback"
-        },
-        {
           "value": "https://images.wsj.net/im-23456789?width=700&height=394",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://images.wsj.net/im-23456789?width=700&height=394",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://images.wsj.net/im-23456789?width=700&height=394",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -110,7 +120,7 @@
     {
       "title": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall",
       "href": "https://www.wsj.com/video/series/the-economics-of/why-housing-remains-unaffordable-june-2026/GH9012IJ-3456-KLMN-OPQR-ST7890UVWXYZ",
-      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "thumbnail": "https://images.wsj.net/im-34567890?width=700&height=394",
       "video": null,
       "description": null,
       "domain": "wsj.com",
@@ -136,14 +146,19 @@
       ],
       "thumbCandidates": [
         {
-          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-          "strategy": "fallback",
-          "label": "fallback"
-        },
-        {
           "value": "https://images.wsj.net/im-34567890?width=700&height=394",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://images.wsj.net/im-34567890?width=700&height=394",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://images.wsj.net/im-34567890?width=700&height=394",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []

@@ -1,0 +1,86 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://vidshare.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Aerial Views of Iceland — 4K",
+      "href": "https://vidshare.example/videos/998877",
+      "thumbnail": "https://i.vidsharecdn.example/998877_640.jpg",
+      "video": null,
+      "description": null,
+      "domain": "vidshare.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<div class=\"video-card\">",
+      "titleCandidates": [
+        {
+          "value": "Aerial Views of Iceland — 4K",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
+        {
+          "value": "Aerial Views of Iceland — 4K",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.vidsharecdn.example/998877_640.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://i.vidsharecdn.example/998877_640.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Street Food Tour: Bangkok",
+      "href": "https://vidshare.example/videos/998878",
+      "thumbnail": "https://i.vidsharecdn.example/998878_640.jpg",
+      "video": null,
+      "description": null,
+      "domain": "vidshare.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<div class=\"video-card\">",
+      "titleCandidates": [
+        {
+          "value": "Street Food Tour: Bangkok",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
+        {
+          "value": "Street Food Tour: Bangkok",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.vidsharecdn.example/998878_640.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://i.vidsharecdn.example/998878_640.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}
