@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://medium.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Stop Using ChatGPT for Code. Do This Instead.",
+      "href": "https://medium.com/towards-data-science/stop-using-chatgpt-for-code-do-this-instead-abc123def456",
+      "thumbnail": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*xKvkMbsS7L0Zp5hWKqX9AA.jpeg",
+      "video": null,
+      "description": null,
+      "domain": "medium.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article class=\"ch ci\">",
+      "titleCandidateCount": 4,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "The One Design Principle Every Developer Ignores",
+      "href": "https://medium.com/ux-planet/the-one-design-principle-every-developer-ignores-xyz789abc123",
+      "thumbnail": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*pQ8LkMrNbRe2_Yv7tJw0xA.jpeg",
+      "video": null,
+      "description": null,
+      "domain": "medium.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article class=\"ch ci\">",
+      "titleCandidateCount": 4,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "TypeScript 5.4 Is a Game-Changer. Here's Why.",
+      "href": "https://medium.com/javascript-in-plain-english/typescript-5-4-is-a-game-changer-heres-why-ghi012jkl345",
+      "thumbnail": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*mR4NtPkWvFa3bCs2xYe1PQ.jpeg",
+      "video": null,
+      "description": null,
+      "domain": "medium.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article class=\"ch ci\">",
+      "titleCandidateCount": 5,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    }
+  ]
+}

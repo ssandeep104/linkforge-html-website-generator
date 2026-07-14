@@ -1,0 +1,28 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://example-blog.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Read our full analysis of IFT-5 →",
+      "href": "https://example-blog.com/spacex-ift5-analysis",
+      "thumbnail": null,
+      "video": null,
+      "description": null,
+      "domain": "example-blog.com",
+      "category": "link",
+      "pageSection": "Other",
+      "pattern": "<div class=\"blog-post-content\">",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 0,
+      "videoCandidateCount": 0
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.example-news.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Breaking: Council Approves Budget",
+      "href": "https://www.example-news.com/2026/06/26/breaking-news",
+      "thumbnail": "https://cdn.example-news.com/hero-fallback-1200.jpg",
+      "video": null,
+      "description": null,
+      "domain": "example-news.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 35,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Transit",
+      "href": "https://www.example-news.com/2026/06/25/transit",
+      "thumbnail": "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v1/transit.jpg",
+      "video": null,
+      "description": null,
+      "domain": "example-news.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 11,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Parks Department Lands Federal Grant",
+      "href": "https://www.example-news.com/2026/06/24/parks",
+      "thumbnail": "https://cdn.example-news.com/parks-fallback.jpg",
+      "video": null,
+      "description": null,
+      "domain": "example-news.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 8,
+      "videoCandidateCount": 0
+    }
+  ]
+}

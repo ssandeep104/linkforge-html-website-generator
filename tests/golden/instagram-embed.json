@@ -1,0 +1,46 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://fashion-blog.example.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Fashion lookbook reel preview",
+      "href": "https://www.instagram.com/reel/C8x9YZabc12/",
+      "thumbnail": "https://www.instagram.com/p/C8x9YZabc12/media/?size=t",
+      "video": {
+        "src": "https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/"
+      },
+      "description": null,
+      "domain": "instagram.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<div class=\"post-content\">",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Behind the scenes shoot",
+      "href": "https://www.instagram.com/p/C7w8XYzde34/",
+      "thumbnail": "https://www.instagram.com/p/C7w8XYzde34/media/?size=t",
+      "video": {
+        "src": "https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/"
+      },
+      "description": null,
+      "domain": "instagram.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<div class=\"post-content\">",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    }
+  ]
+}

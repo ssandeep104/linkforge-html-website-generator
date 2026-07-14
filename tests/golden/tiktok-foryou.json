@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.tiktok.com",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "How bees make honey — 3D animation",
+      "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000001",
+      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "video": null,
+      "description": null,
+      "domain": "tiktok.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Why do we yawn? The real science",
+      "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000002",
+      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "video": null,
+      "description": null,
+      "domain": "tiktok.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Space facts that will break your brain",
+      "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000003",
+      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "video": null,
+      "description": null,
+      "domain": "tiktok.com",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    }
+  ]
+}

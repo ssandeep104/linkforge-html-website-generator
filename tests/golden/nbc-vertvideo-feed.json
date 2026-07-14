@@ -1,0 +1,28 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": false,
+  "baseURL": null,
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Image",
+      "href": "https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2026-01/asterisk-43f04b.svg",
+      "thumbnail": "https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2026-01/asterisk-43f04b.svg",
+      "video": null,
+      "description": null,
+      "domain": "media-cldnry.s-nbcnews.com",
+      "category": "article",
+      "pageSection": "Images",
+      "pattern": "<img>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}

@@ -383,6 +383,11 @@
     <!-- Toasts -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <script type="module">
+      import { parseSource, parseSourceWithMeta } from './parser.js';
+      window.parseSource = parseSource;
+      window.parseSourceWithMeta = parseSourceWithMeta;
+    </script>
     <script src="./templates.js"></script>
     <script src="./app.js"></script>
   </body>

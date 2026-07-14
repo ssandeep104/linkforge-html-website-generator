@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://time.com",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
+      "href": "https://time.com/article/2026/06/10/every-year-after-finale/",
+      "thumbnail": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+      "video": null,
+      "description": null,
+      "domain": "time.com",
+      "category": "article",
+      "pageSection": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
+      "pattern": "<article>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 7,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Marjane Satrapi Always Defied Convention",
+      "href": "https://time.com/article/2026/06/10/marjane-satrapi-remembrance/",
+      "thumbnail": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+      "video": null,
+      "description": null,
+      "domain": "time.com",
+      "category": "article",
+      "pageSection": "Marjane Satrapi Always Defied Convention",
+      "pattern": "<article>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 7,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Inside the Surprising Cast of 'Disclosure Day'",
+      "href": "https://time.com/article/2026/06/03/disclosure-day-cast-interview/",
+      "thumbnail": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+      "video": null,
+      "description": null,
+      "domain": "time.com",
+      "category": "article",
+      "pageSection": "Inside the Surprising Cast of 'Disclosure Day'",
+      "pattern": "<article>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 7,
+      "videoCandidateCount": 0
+    }
+  ]
+}

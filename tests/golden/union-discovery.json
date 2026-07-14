@@ -1,0 +1,84 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://union-test.example.com/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Article A",
+      "href": "https://union-test.example.com/article-a",
+      "thumbnail": "https://cdn.example.com/a-lazy.jpg",
+      "video": null,
+      "description": null,
+      "domain": "union-test.example.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Article B",
+      "href": "https://union-test.example.com/article-b",
+      "thumbnail": null,
+      "video": null,
+      "description": null,
+      "domain": "union-test.example.com",
+      "category": "link",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 3,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Article C",
+      "href": "https://union-test.example.com/article-c",
+      "thumbnail": "https://cdn.example.com/c-fallback.jpg",
+      "video": null,
+      "description": null,
+      "domain": "union-test.example.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 2,
+      "thumbCandidateCount": 13,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Article D",
+      "href": "https://union-test.example.com/article-d",
+      "thumbnail": "https://cdn.example.com/d-bg.jpg",
+      "video": null,
+      "description": null,
+      "domain": "union-test.example.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Article E",
+      "href": "https://union-test.example.com/article-e",
+      "thumbnail": "https://cdn.example.com/e-sibling.jpg",
+      "video": null,
+      "description": null,
+      "domain": "union-test.example.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<article>",
+      "titleCandidateCount": 1,
+      "thumbCandidateCount": 2,
+      "videoCandidateCount": 0
+    }
+  ]
+}

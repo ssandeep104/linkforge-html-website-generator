@@ -1,0 +1,56 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.bloomberg.com",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Fed Holds Rates Steady as Inflation Data Cools",
+      "href": "https://www.bloomberg.com/news/videos/2026-06-10/fed-rate-decision-analysis",
+      "thumbnail": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
+      "video": null,
+      "description": null,
+      "domain": "bloomberg.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<button class=\"video-card__trigger\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "Big Tech Earnings: What to Expect This Week",
+      "href": "https://www.bloomberg.com/news/videos/2026-06-10/tech-earnings-preview",
+      "thumbnail": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
+      "video": null,
+      "description": null,
+      "domain": "bloomberg.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<button class=\"video-card__trigger\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    },
+    {
+      "title": "OPEC+ Cuts Output Again: Oil Prices React",
+      "href": "https://www.bloomberg.com/news/videos/2026-06-10/oil-markets-opec-decision",
+      "thumbnail": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
+      "video": null,
+      "description": null,
+      "domain": "bloomberg.com",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<button class=\"video-card__trigger\">",
+      "titleCandidateCount": 3,
+      "thumbCandidateCount": 1,
+      "videoCandidateCount": 0
+    }
+  ]
+}
