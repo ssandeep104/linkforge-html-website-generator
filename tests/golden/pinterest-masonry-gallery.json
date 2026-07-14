@@ -1,0 +1,92 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://boardly.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Sunset over the Dolomites",
+      "href": "https://boardly.example/pin/44201",
+      "thumbnail": "https://images.boardly.example/orig/44201.jpg",
+      "video": null,
+      "description": null,
+      "domain": "boardly.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "Sunset over the Dolomites",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://images.boardly.example/orig/44201.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Minimalist kitchen renovation ideas",
+      "href": "https://boardly.example/pin/44202",
+      "thumbnail": "https://images.boardly.example/orig/44202.jpg",
+      "video": null,
+      "description": null,
+      "domain": "boardly.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "Minimalist kitchen renovation ideas",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://images.boardly.example/orig/44202.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Hand-lettered wedding invitation set",
+      "href": "https://boardly.example/pin/44203",
+      "thumbnail": "https://images.boardly.example/orig/44203.jpg",
+      "video": null,
+      "description": null,
+      "domain": "boardly.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "Hand-lettered wedding invitation set",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://images.boardly.example/orig/44203.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

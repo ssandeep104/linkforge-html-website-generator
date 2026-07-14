@@ -1,0 +1,102 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://streamvault.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Midnight Protocol",
+      "href": "https://streamvault.example/watch/midnight-protocol",
+      "thumbnail": "https://art.streamvault.example/posters/midnight-protocol.jpg",
+      "video": null,
+      "description": null,
+      "domain": "streamvault.example",
+      "category": "article",
+      "pageSection": "Trending Now",
+      "pattern": "<a class=\"rail-card\">",
+      "titleCandidates": [
+        {
+          "value": "Midnight Protocol",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "Midnight Protocol NEW",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://art.streamvault.example/posters/midnight-protocol.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Coastal Drift",
+      "href": "https://streamvault.example/watch/coastal-drift",
+      "thumbnail": "https://art.streamvault.example/posters/coastal-drift.jpg",
+      "video": null,
+      "description": null,
+      "domain": "streamvault.example",
+      "category": "article",
+      "pageSection": "Trending Now",
+      "pattern": "<a class=\"rail-card\">",
+      "titleCandidates": [
+        {
+          "value": "Coastal Drift",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "Coastal Drift S2",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://art.streamvault.example/posters/coastal-drift.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "The Long Orbit",
+      "href": "https://streamvault.example/watch/the-long-orbit",
+      "thumbnail": "https://art.streamvault.example/posters/the-long-orbit.jpg",
+      "video": null,
+      "description": null,
+      "domain": "streamvault.example",
+      "category": "article",
+      "pageSection": "Trending Now",
+      "pattern": "<a class=\"rail-card\">",
+      "titleCandidates": [
+        {
+          "value": "The Long Orbit",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://art.streamvault.example/posters/the-long-orbit.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

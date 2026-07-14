@@ -13,7 +13,7 @@
     {
       "title": "How bees make honey — 3D animation",
       "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000001",
-      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "thumbnail": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/osPfmAVlbIXfG3e7oLsBCpPDQBFRBAhc7ABDC?x-expires=1718500000&x-signature=abc123",
       "video": null,
       "description": null,
       "domain": "tiktok.com",
@@ -34,14 +34,19 @@
       ],
       "thumbCandidates": [
         {
-          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-          "strategy": "fallback",
-          "label": "fallback"
-        },
-        {
           "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/osPfmAVlbIXfG3e7oLsBCpPDQBFRBAhc7ABDC?x-expires=1718500000&x-signature=abc123",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/osPfmAVlbIXfG3e7oLsBCpPDQBFRBAhc7ABDC?x-expires=1718500000&x-signature=abc123",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/osPfmAVlbIXfG3e7oLsBCpPDQBFRBAhc7ABDC?x-expires=1718500000&x-signature=abc123",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -49,7 +54,7 @@
     {
       "title": "Why do we yawn? The real science",
       "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000002",
-      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "thumbnail": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/qrPgmBWmcJYgH4f8pMtCDqREhcAGBhd8ABEd?x-expires=1718500001&x-signature=def456",
       "video": null,
       "description": null,
       "domain": "tiktok.com",
@@ -70,14 +75,19 @@
       ],
       "thumbCandidates": [
         {
-          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-          "strategy": "fallback",
-          "label": "fallback"
-        },
-        {
           "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/qrPgmBWmcJYgH4f8pMtCDqREhcAGBhd8ABEd?x-expires=1718500001&x-signature=def456",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/qrPgmBWmcJYgH4f8pMtCDqREhcAGBhd8ABEd?x-expires=1718500001&x-signature=def456",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/qrPgmBWmcJYgH4f8pMtCDqREhcAGBhd8ABEd?x-expires=1718500001&x-signature=def456",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -85,7 +95,7 @@
     {
       "title": "Space facts that will break your brain",
       "href": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000003",
-      "thumbnail": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "thumbnail": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/sTQimCXncKZhI5g9rNuDErSFicBHCie9BCFe?x-expires=1718500002&x-signature=ghi789",
       "video": null,
       "description": null,
       "domain": "tiktok.com",
@@ -106,14 +116,19 @@
       ],
       "thumbCandidates": [
         {
-          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-          "strategy": "fallback",
-          "label": "fallback"
-        },
-        {
           "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/sTQimCXncKZhI5g9rNuDErSFicBHCie9BCFe?x-expires=1718500002&x-signature=ghi789",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/sTQimCXncKZhI5g9rNuDErSFicBHCie9BCFe?x-expires=1718500002&x-signature=ghi789",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/sTQimCXncKZhI5g9rNuDErSFicBHCie9BCFe?x-expires=1718500002&x-signature=ghi789",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []

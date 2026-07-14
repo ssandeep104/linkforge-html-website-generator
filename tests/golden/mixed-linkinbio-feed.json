@@ -1,0 +1,95 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://mypersonalsite.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Beach trip",
+      "href": "https://mypersonalsite.example/gallery/1",
+      "thumbnail": "https://cdn.mypersonalsite.example/g1.jpg",
+      "video": null,
+      "description": null,
+      "domain": "mypersonalsite.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "Beach trip",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.mypersonalsite.example/g1.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Mountain hike",
+      "href": "https://mypersonalsite.example/gallery/2",
+      "thumbnail": "https://cdn.mypersonalsite.example/g2.jpg",
+      "video": null,
+      "description": null,
+      "domain": "mypersonalsite.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "Mountain hike",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.mypersonalsite.example/g2.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Latest vlog: Road trip highlights",
+      "href": "https://mypersonalsite.example/watch/latest",
+      "thumbnail": "https://cdn.mypersonalsite.example/poster/latest.jpg",
+      "video": {
+        "src": "https://cdn.mypersonalsite.example/videos/latest.mp4",
+        "poster": "https://cdn.mypersonalsite.example/poster/latest.jpg"
+      },
+      "description": null,
+      "domain": "mypersonalsite.example",
+      "category": "video",
+      "pageSection": "Other",
+      "pattern": "Default Link",
+      "titleCandidates": [
+        {
+          "value": "Latest vlog: Road trip highlights",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.mypersonalsite.example/poster/latest.jpg",
+          "strategy": "fallback",
+          "label": "fallback"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

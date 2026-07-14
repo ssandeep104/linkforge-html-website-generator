@@ -481,14 +481,19 @@ function expandImageCandidates(img, picture) {
 // Pick the best <img> src across normal + lazy-load attributes.
 // Prefers data-src / data-original / srcset over src when src looks like a placeholder.
 function pickImgSrc(img) {
-  // Trust the markup. If <img> has a src, that's the thumbnail. Period.
+  // Trust the markup — with one exception: a lazy-load placeholder in `src`
+  // (base64 blank pixel, spacer.gif, site logo, ...) is not the thumbnail,
+  // it's a stand-in the page's own JS swaps out after paint. The extremely
+  // common convention is <img src="tiny-placeholder" data-src="real.jpg">;
+  // trusting `src` unconditionally here means every lazy-loaded gallery site
+  // (most of them, in practice) would default to showing the placeholder.
   // We do NOT parse srcset to "pick the largest" — srcset URLs can contain
   // commas inside their path (CDN transform syntax), which breaks naive
   // splitting. The picker exposes srcset/data-* values as alternates the
   // user can switch to manually.
   const src = img.getAttribute('src');
-  if (src && src.trim()) return src.trim();
-  // Only if src is missing/empty, fall back to lazy-load attributes.
+  if (src && src.trim() && !looksLikePlaceholder(src.trim())) return src.trim();
+  // src missing, empty, or placeholder-shaped — try lazy-load attributes.
   const fallbacks = [
     img.getAttribute('data-src'),
     img.getAttribute('data-original'),
@@ -501,6 +506,8 @@ function pickImgSrc(img) {
   for (const v of fallbacks) {
     if (v && typeof v === 'string' && v.trim()) return v.trim();
   }
+  // Nothing better — a placeholder-looking src still beats no thumbnail.
+  if (src && src.trim()) return src.trim();
   return null;
 }
 
@@ -948,6 +955,22 @@ const TITLE_RULES = [
       return (titleEl && titleEl !== heading) ? [{ value: visibleText(titleEl), strategy: 'anchor-title-class', label: 'class=title/headline' }] : [];
     },
   },
+  {
+    // Photography-portfolio pattern: <figure><a><img alt="..."></a>
+    // <figcaption>Real Title</figcaption></figure>. A caption is the
+    // author's deliberately-chosen title; alt text just describes the image
+    // for accessibility. Ranked above anchor-visible-text/anchor-img-alt
+    // (below) specifically because captions are a stronger authorial signal
+    // than either — found via manual end-to-end testing against portfolio
+    // sites, where alt text was winning over an obviously-better caption.
+    id: 'container-caption',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const cap = container.querySelector('figcaption, [class*="caption" i]');
+      return cap ? [{ value: visibleText(cap), strategy: 'container-caption', label: 'caption' }] : [];
+    },
+  },
   { id: 'anchor-visible-text', extract: (a) => [{ value: visibleText(a), strategy: 'anchor-visible-text', label: 'anchor text' }] },
   {
     id: 'anchor-img-alt',
@@ -958,17 +981,15 @@ const TITLE_RULES = [
     },
   },
   {
-    // Nearest article/li/figure that ISN'T the anchor itself.
-    id: 'container-aria-and-caption',
+    // Nearest article/li/figure that ISN'T the anchor itself. Weak signal —
+    // an aria-label on a whole card container usually describes the card's
+    // ROLE ("video card"), not a specific title, so this stays low-priority.
+    id: 'container-aria-label',
     extract(a) {
       const container = a.closest(CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
-      const out = [];
       const cAria = container.getAttribute('aria-label');
-      if (cAria) out.push({ value: cAria, strategy: 'container-aria-label', label: 'container aria-label' });
-      const cap = container.querySelector('figcaption, [class*="caption" i]');
-      if (cap) out.push({ value: visibleText(cap), strategy: 'container-caption', label: 'caption' });
-      return out;
+      return cAria ? [{ value: cAria, strategy: 'container-aria-label', label: 'container aria-label' }] : [];
     },
   },
   {

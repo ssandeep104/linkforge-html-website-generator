@@ -1,0 +1,66 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://stockshelf.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Golden retriever puppy playing in autumn leaves",
+      "href": "https://stockshelf.example/detail/photo-789",
+      "thumbnail": "https://cdn.stockshelf.example/full/789.jpg",
+      "video": null,
+      "description": null,
+      "domain": "stockshelf.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"asset-tile\">",
+      "titleCandidates": [
+        {
+          "value": "Golden retriever puppy playing in autumn leaves",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.stockshelf.example/full/789.jpg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Aerial view of terraced rice fields",
+      "href": "https://stockshelf.example/detail/photo-790",
+      "thumbnail": "https://cdn.stockshelf.example/full/790.jpg",
+      "video": null,
+      "description": null,
+      "domain": "stockshelf.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"asset-tile\">",
+      "titleCandidates": [
+        {
+          "value": "Aerial view of terraced rice fields",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.stockshelf.example/full/790.jpg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}
