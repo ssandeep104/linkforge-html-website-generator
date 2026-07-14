@@ -902,6 +902,85 @@ function getAnchorTitle(a) {
 //   - The `strategy` field is a STABLE identifier (don't rename casually —
 //     it's used as the dropdown selection key).
 //   - The `label` field is human-readable for the dropdown.
+//
+// Each field's candidates are produced by an ordered list of named RULES
+// instead of one hand-written cascade. This is the point: every site- or
+// vendor-specific heuristic (TikTok's PVideoLabel traversal, the
+// BBC/Reuters/Medium container-heading priority, ...) is its own enumerable,
+// independently nameable unit — grep the id, see exactly what it does and
+// why — rather than an anonymous branch buried inside a 60-line function.
+// Rules are pure: they read the anchor's DOM neighborhood and return zero or
+// more candidates; they never mutate anything or depend on call order.
+
+const CARD_CONTAINER_SELECTOR = 'article, li, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i], figure';
+
+const TITLE_RULES = [
+  {
+    // BBC / Reuters / Medium: the image anchor comes first in the card and
+    // steals the default title via its alt text unless a real heading in
+    // the shared container outranks it.
+    id: 'container-heading',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const out = [];
+      const ch = container.querySelector('h1, h2, h3, h4');
+      if (ch && !a.contains(ch)) out.push({ value: visibleText(ch), strategy: 'container-heading', label: `container <${ch.tagName.toLowerCase()}>` });
+      const cTitle = container.querySelector('[class*="title" i], [class*="headline" i]');
+      if (cTitle && !a.contains(cTitle) && cTitle !== ch) out.push({ value: visibleText(cTitle), strategy: 'container-title-class', label: 'container class=title' });
+      return out;
+    },
+  },
+  { id: 'anchor-aria-label', extract: (a) => [{ value: a.getAttribute('aria-label'), strategy: 'anchor-aria-label', label: 'aria-label' }] },
+  { id: 'anchor-title-attr', extract: (a) => [{ value: a.getAttribute('title'), strategy: 'anchor-title-attr', label: 'title attribute' }] },
+  {
+    id: 'anchor-heading',
+    extract(a) {
+      const heading = a.querySelector('h1, h2, h3, h4, h5, h6');
+      return heading ? [{ value: visibleText(heading), strategy: 'anchor-heading', label: `<${heading.tagName.toLowerCase()}>` }] : [];
+    },
+  },
+  {
+    id: 'anchor-title-class',
+    extract(a) {
+      const heading = a.querySelector('h1, h2, h3, h4, h5, h6');
+      const titleEl = a.querySelector('[class*="title" i], [class*="headline" i]');
+      return (titleEl && titleEl !== heading) ? [{ value: visibleText(titleEl), strategy: 'anchor-title-class', label: 'class=title/headline' }] : [];
+    },
+  },
+  { id: 'anchor-visible-text', extract: (a) => [{ value: visibleText(a), strategy: 'anchor-visible-text', label: 'anchor text' }] },
+  {
+    id: 'anchor-img-alt',
+    extract(a) {
+      const img = a.querySelector('img[alt]');
+      const alt = img?.getAttribute('alt')?.trim();
+      return alt ? [{ value: alt, strategy: 'anchor-img-alt', label: 'image alt' }] : [];
+    },
+  },
+  {
+    // Nearest article/li/figure that ISN'T the anchor itself.
+    id: 'container-aria-and-caption',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const out = [];
+      const cAria = container.getAttribute('aria-label');
+      if (cAria) out.push({ value: cAria, strategy: 'container-aria-label', label: 'container aria-label' });
+      const cap = container.querySelector('figcaption, [class*="caption" i]');
+      if (cap) out.push({ value: visibleText(cap), strategy: 'container-caption', label: 'caption' });
+      return out;
+    },
+  },
+  {
+    // TikTok: the caption lives in a sibling <p class="css-*-PVideoLabel">,
+    // reached via a 2-level-up parent walk from the content anchor.
+    id: 'tiktok-pvideolabel',
+    extract(a) {
+      const p = a.parentElement?.parentElement?.querySelector('p[class*="PVideoLabel"]');
+      return p ? [{ value: visibleText(p), strategy: 'sibling-p-title', label: 'sibling <p> title' }] : [];
+    },
+  },
+];
 
 function collectTitleCandidates(a) {
   const out = [];
@@ -913,41 +992,143 @@ function collectTitleCandidates(a) {
     if (out.some((c) => c.value === v)) return;
     out.push({ value: v.slice(0, 280), strategy, label });
   };
-  // Prioritize container heading if it exists, to fix BBC / Reuters / Medium
-  // where the image anchor comes first and steals the default title with its alt text.
-  const container = a.closest('article, li, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i], figure');
-  if (container && container !== a) {
-    const ch = container.querySelector('h1, h2, h3, h4');
-    if (ch && !a.contains(ch)) push(visibleText(ch), 'container-heading', `container <${ch.tagName.toLowerCase()}>`);
-    const cTitle = container.querySelector('[class*="title" i], [class*="headline" i]');
-    if (cTitle && !a.contains(cTitle) && cTitle !== ch) push(visibleText(cTitle), 'container-title-class', 'container class=title');
+  for (const rule of TITLE_RULES) {
+    for (const c of rule.extract(a) || []) push(c?.value, c?.strategy, c?.label);
   }
-
-  const aria = a.getAttribute('aria-label');
-  push(aria, 'anchor-aria-label', 'aria-label');
-  const ttl = a.getAttribute('title');
-  push(ttl, 'anchor-title-attr', 'title attribute');
-  const heading = a.querySelector('h1, h2, h3, h4, h5, h6');
-  if (heading) push(visibleText(heading), 'anchor-heading', `<${heading.tagName.toLowerCase()}>`);
-  const titleEl = a.querySelector('[class*="title" i], [class*="headline" i]');
-  if (titleEl && titleEl !== heading) push(visibleText(titleEl), 'anchor-title-class', 'class=title/headline');
-  push(visibleText(a), 'anchor-visible-text', 'anchor text');
-  const img = a.querySelector('img[alt]');
-  if (img?.getAttribute('alt')?.trim()) push(img.getAttribute('alt'), 'anchor-img-alt', 'image alt');
-  // Container-level fallbacks — nearest article/li/figure that ISN'T the anchor.
-  if (container && container !== a) {
-    const cAria = container.getAttribute('aria-label');
-    if (cAria && container !== a) push(cAria, 'container-aria-label', 'container aria-label');
-    const cap = container.querySelector('figcaption, [class*="caption" i]');
-    if (cap) push(visibleText(cap), 'container-caption', 'caption');
-  }
-
-  // TikTok fallback: sibling .css-13cdu78-PVideoLabel
-  const pTitle = a.parentElement && a.parentElement.parentElement ? a.parentElement.parentElement.querySelector('p[class*="PVideoLabel"]') : null;
-  if (pTitle) push(visibleText(pTitle), 'sibling-p-title', 'sibling <p> title');
-
   return out;
 }
+
+function extractBackgroundImageUrl(el) {
+  const m = (el.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
+  return m ? m[2] : null;
+}
+
+const THUMB_RULES = [
+  {
+    // <img>/<picture> inside the anchor — surface EVERY URL the markup
+    // exposes: <picture><source srcset> entries (all of them, with
+    // type/media descriptors), <img src>, <img srcset> entries, and every
+    // lazy-load data-* attribute (WordPress/Jetpack, Flickity, ...). The
+    // user picks via the strategy dropdown; we don't pre-decide.
+    id: 'anchor-img-picture',
+    extract(a) {
+      const innerImg = a.querySelector('img');
+      const innerPicture = a.querySelector('picture');
+      if (!innerImg && !innerPicture) return [];
+      return expandImageCandidates(innerImg, innerPicture);
+    },
+  },
+  {
+    id: 'anchor-bg-image',
+    extract(a) {
+      const bgEl = a.matches?.('[style*="background-image"]') ? a : a.querySelector('[style*="background-image"]');
+      if (!bgEl) return [];
+      const url = extractBackgroundImageUrl(bgEl);
+      return url ? [{ value: url, strategy: 'anchor-bg-image', label: 'background-image' }] : [];
+    },
+  },
+  {
+    // Adjacent-sibling <img> outside the anchor (flat lists with no card
+    // wrapper) — scan a few sibling elements forward/backward.
+    // NOTE: this hop-scanning walk is intentionally similar to (but not
+    // shared with) findAdjacentSiblingThumb's Tier-3 fallback below — that
+    // one also needs to respect a claimedSet and a "nearest anchor wins"
+    // parent-children pass that doesn't apply to plain candidate
+    // enumeration here. Left as two implementations rather than forced into
+    // one to avoid changing either's behavior; a good target for a future
+    // pass once the ownership-claiming logic itself is reworked.
+    id: 'adjacent-sibling-img',
+    extract(a) {
+      const out = [];
+      const seen = new Set();
+      const collect = (img) => {
+        if (!img || seen.has(img)) return;
+        seen.add(img);
+        const v = pickImgSrc(img);
+        if (v) out.push({ value: v, strategy: 'adjacent-sibling-img', label: 'adjacent <img>' });
+      };
+      let sib = a.nextElementSibling;
+      for (let i = 0; sib && i < 3; i++) {
+        if (sib.tagName === 'A') break;
+        if (sib.tagName === 'IMG') collect(sib);
+        const inner = sib.querySelector?.('img');
+        if (inner && !sib.querySelector?.('a[href]')) collect(inner);
+        sib = sib.nextElementSibling;
+      }
+      sib = a.previousElementSibling;
+      for (let i = 0; sib && i < 3; i++) {
+        if (sib.tagName === 'A') break;
+        if (sib.tagName === 'IMG') collect(sib);
+        sib = sib.previousElementSibling;
+      }
+      return out;
+    },
+  },
+  {
+    // Container-level images: hero/poster/thumb classed <img>s.
+    id: 'container-class-img',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const imgs = container.querySelectorAll('img[class*="thumb" i], img[class*="poster" i], img[class*="hero" i], img[class*="image" i], img[class*="media" i], img[class*="photo" i]');
+      return Array.from(imgs)
+        .map((img) => pickImgSrc(img))
+        .filter(Boolean)
+        .map((v) => ({ value: v, strategy: 'container-class-img', label: 'container thumb/hero/poster img' }));
+    },
+  },
+  {
+    id: 'container-video-poster',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const poster = container.querySelector('video[poster]')?.getAttribute('poster');
+      return poster ? [{ value: poster, strategy: 'container-video-poster', label: 'video poster' }] : [];
+    },
+  },
+  {
+    // Picture sources — expand every <source> + <img> in every container
+    // <picture>. Container scope means the candidate list can get long;
+    // that's fine, the picker is the right place to dig through alternates.
+    id: 'container-picture',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const out = [];
+      container.querySelectorAll('picture').forEach((pic) => {
+        const picImg = pic.querySelector('img');
+        expandImageCandidates(picImg, pic).forEach((c) => {
+          // Re-label container-scoped candidates so they don't masquerade
+          // as anchor-scoped picks in the picker.
+          out.push({ value: c.value, strategy: 'container-' + c.strategy, label: 'container ' + c.label });
+        });
+      });
+      return out;
+    },
+  },
+  {
+    id: 'container-bg-image',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const cBg = container.querySelector('[style*="background-image"]');
+      if (!cBg) return [];
+      const url = extractBackgroundImageUrl(cBg);
+      return url ? [{ value: url, strategy: 'container-bg-image', label: 'container background-image' }] : [];
+    },
+  },
+  {
+    id: 'container-any-img',
+    extract(a) {
+      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const anyImg = container.querySelector('img');
+      if (!anyImg) return [];
+      const v = pickImgSrc(anyImg);
+      return v ? [{ value: v, strategy: 'container-any-img', label: 'any container <img>' }] : [];
+    },
+  },
+];
 
 function collectThumbCandidates(a, baseURL) {
   const out = [];
@@ -961,80 +1142,49 @@ function collectThumbCandidates(a, baseURL) {
     if (out.some((c) => c.value === resolved && c.strategy === strategy)) return;
     out.push({ value: resolved, strategy, label });
   };
-  // 1. <img>/<picture> inside the anchor — surface EVERY URL the markup
-  // exposes: <picture><source srcset> entries (all of them, with type/media
-  // descriptors), <img src>, <img srcset> entries, and every lazy-load
-  // data-* attribute. The user picks; we don't pre-decide.
-  const innerImg = a.querySelector('img');
-  const innerPicture = a.querySelector('picture');
-  if (innerImg || innerPicture) {
-    expandImageCandidates(innerImg, innerPicture).forEach((c) => push(c.value, c.strategy, c.label));
-  }
-  // 3. inline background-image on anchor or anchor descendant
-  const bgEl = a.matches?.('[style*="background-image"]') ? a : a.querySelector('[style*="background-image"]');
-  if (bgEl) {
-    const m = (bgEl.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
-    if (m) push(m[2], 'anchor-bg-image', 'background-image');
-  }
-  // 3b. Adjacent-sibling <img> outside the anchor (flat lists with no card wrapper).
-  // We scan forward/backward sibling elements of the anchor and also same-parent
-  // images that aren't inside another anchor.
-  const scanForAdjacentImgs = () => {
-    const seen = new Set();
-    const collect = (img) => {
-      if (!img || seen.has(img)) return;
-      seen.add(img);
-      const v = pickImgSrc(img);
-      if (v) push(v, 'adjacent-sibling-img', 'adjacent <img>');
-    };
-    let sib = a.nextElementSibling;
-    for (let i = 0; sib && i < 3; i++) {
-      if (sib.tagName === 'A') break;
-      if (sib.tagName === 'IMG') collect(sib);
-      const inner = sib.querySelector?.('img');
-      if (inner && !sib.querySelector?.('a[href]')) collect(inner);
-      sib = sib.nextElementSibling;
-    }
-    sib = a.previousElementSibling;
-    for (let i = 0; sib && i < 3; i++) {
-      if (sib.tagName === 'A') break;
-      if (sib.tagName === 'IMG') collect(sib);
-      sib = sib.previousElementSibling;
-    }
-  };
-  scanForAdjacentImgs();
-  // 4. Container-level images (figure-sibling, hero/poster/thumb classed)
-  const container = a.closest('article, li, figure, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i]');
-  if (container && container !== a) {
-    const cPosters = container.querySelectorAll('img[class*="thumb" i], img[class*="poster" i], img[class*="hero" i], img[class*="image" i], img[class*="media" i], img[class*="photo" i]');
-    cPosters.forEach((img) => push(pickImgSrc(img), 'container-class-img', 'container thumb/hero/poster img'));
-    // video poster on a container <video>
-    const vid = container.querySelector('video[poster]');
-    if (vid) push(vid.getAttribute('poster'), 'container-video-poster', 'video poster');
-    // picture sources — expand every <source> + <img> in every <picture>.
-    // Container scope means the candidate list can get long; that's fine,
-    // the picker is the right place to dig through alternates.
-    const cPictures = container.querySelectorAll('picture');
-    cPictures.forEach((pic) => {
-      const picImg = pic.querySelector('img');
-      expandImageCandidates(picImg, pic).forEach((c) => {
-        // Re-label container-scoped candidates so they don't masquerade as
-        // anchor-scoped picks in the picker.
-        push(c.value, 'container-' + c.strategy, 'container ' + c.label);
-      });
-    });
-    // bg-image on container
-    const cBg = container.querySelector('[style*="background-image"]');
-    if (cBg) {
-      const m = (cBg.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
-      if (m) push(m[2], 'container-bg-image', 'container background-image');
-    }
-    // any-img fallback
-    const anyImg = container.querySelector('img');
-    if (anyImg) push(pickImgSrc(anyImg), 'container-any-img', 'any container <img>');
+  for (const rule of THUMB_RULES) {
+    for (const c of rule.extract(a, baseURL) || []) push(c?.value, c?.strategy, c?.label);
   }
   return out;
 }
+
+const VIDEO_CONTAINER_SELECTOR = 'article, li, figure, [class*="item" i], [class*="card" i], [class*="tile" i]';
+const VIDEO_HOVER_DATA_ATTRS = ['data-video', 'data-video-src', 'data-hover-video', 'data-preview-video', 'data-mp4'];
+
+const VIDEO_RULES = [
+  {
+    id: 'anchor-video',
+    extract(a) {
+      const v = extractVideoFromAnchor(a);
+      return v ? [{ info: v, strategy: 'anchor-video', label: 'anchor <video>' }] : [];
+    },
+  },
+  {
+    id: 'container-video',
+    extract(a) {
+      const container = a.closest(VIDEO_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const containerVid = container.querySelector('video');
+      if (!containerVid) return [];
+      const src = containerVid.getAttribute('src') || containerVid.querySelector('source')?.getAttribute('src');
+      return src ? [{ info: { url: src, kind: 'inline' }, strategy: 'container-video', label: 'container <video>' }] : [];
+    },
+  },
+  {
+    // Hover-play preview attributes, checked on the anchor and its card
+    // container.
+    id: 'hover-play-data-attrs',
+    extract(a) {
+      const container = a.closest(VIDEO_CONTAINER_SELECTOR);
+      const out = [];
+      for (const attr of VIDEO_HOVER_DATA_ATTRS) {
+        const val = a.getAttribute(attr) || container?.getAttribute(attr);
+        if (val) out.push({ info: { url: val, kind: 'data-attr' }, strategy: `data-attr-${attr}`, label: `${attr} attribute` });
+      }
+      return out;
+    },
+  },
+];
 
 function collectVideoCandidates(a, baseURL) {
   // Video previews are intentionally low-priority. We still expose candidates
@@ -1047,22 +1197,8 @@ function collectVideoCandidates(a, baseURL) {
     if (out.some((c) => c.value === resolved)) return;
     out.push({ value: resolved, strategy, label, info: { ...info, url: resolved } });
   };
-  // anchor-embedded <video>/<source>
-  const v = extractVideoFromAnchor(a);
-  if (v) push(v, 'anchor-video', 'anchor <video>');
-  // container-embedded
-  const container = a.closest('article, li, figure, [class*="item" i], [class*="card" i], [class*="tile" i]');
-  if (container && container !== a) {
-    const containerVid = container.querySelector('video');
-    if (containerVid) {
-      const src = containerVid.getAttribute('src') || containerVid.querySelector('source')?.getAttribute('src');
-      if (src) push({ url: src, kind: 'inline' }, 'container-video', 'container <video>');
-    }
-  }
-  // data-* attributes commonly used for hover-play
-  for (const attr of ['data-video', 'data-video-src', 'data-hover-video', 'data-preview-video', 'data-mp4']) {
-    const val = a.getAttribute(attr) || container?.getAttribute(attr);
-    if (val) push({ url: val, kind: 'data-attr' }, `data-attr-${attr}`, `${attr} attribute`);
+  for (const rule of VIDEO_RULES) {
+    for (const c of rule.extract(a, baseURL) || []) push(c?.info, c?.strategy, c?.label);
   }
   return out;
 }
@@ -1311,109 +1447,30 @@ function pickJsonLdAuthor(v) {
   return null;
 }
 
-// Parse a source's HTML into items.
-// Returns an array of items (back-compat — callers can also read `.meta` for
-// the unresolved-anchors info via parseSourceWithMeta below).
-function parseSource(html, sourceName, opts = {}) {
-  return parseSourceWithMeta(html, sourceName, opts).items;
-}
-
-function parseSourceWithMeta(html, sourceName, opts = {}) {
-  if (!html?.trim()) return { items: [], unresolvedCount: 0, hasBase: false };
-  let doc;
-  try {
-    doc = new DOMParser().parseFromString(html, 'text/html');
-  } catch {
-    return { items: [], unresolvedCount: 0, hasBase: false };
-  }
-
-  // Flatten declarative Shadow DOM so we can see media inside <template shadowrootmode>.
-  // Required for sites like NYT video feeds.
-  expandShadowTemplates(doc);
-
-  // Try to detect a base URL from multiple signals, in order of reliability.
-  // Used to resolve relative hrefs/thumbnails. If we can't find one, we leave
-  // relative links unresolved (the parser will skip them) so we never invent
-  // a fake host like example.com.
-  let baseURL = doc.querySelector('base')?.href || null;
-  if (!baseURL) {
-    const ogu = doc.querySelector('meta[property="og:url"]')?.content;
-    if (ogu) try { baseURL = new URL(ogu).origin; } catch {}
-  }
-  if (!baseURL) {
-    const canon = doc.querySelector('link[rel="canonical"]')?.href;
-    if (canon) try { baseURL = new URL(canon).origin; } catch {}
-  }
-  if (!baseURL) {
-    const tw = doc.querySelector('meta[name="twitter:url"]')?.content || doc.querySelector('meta[property="twitter:url"]')?.content;
-    if (tw) try { baseURL = new URL(tw).origin; } catch {}
-  }
-  if (!baseURL) baseURL = detectBaseFromAnchors(doc);
-
-  // YouTube heuristic: pages always have relative /shorts/<id> hrefs and no
-  // <base> tag. If we still have no base and the DOM contains YouTube custom
-  // elements, synthesize the canonical origin. (Issue #6)
-  if (!baseURL && doc.querySelector('ytd-app, [class^="ytd-"], [class*=" ytd-"], yt-formatted-string, [class*="yt-simple-endpoint"]')) {
-    baseURL = 'https://www.youtube.com';
-  }
-
-  // Allow caller to override base (e.g. user typed a domain into the prompt).
-  if (opts.overrideBase) baseURL = opts.overrideBase;
-
-  // JSON-LD pass — collect schema.org metadata before walking the DOM so we
-  // can enrich anchor buckets with authoritative headline/image/description
-  // and also emit standalone cards for entries whose URL doesn't appear as
-  // an anchor in the pasted HTML. The user picks via the existing strategy
-  // picker; nothing here is silently chosen.
-  const jsonLdResult = extractJsonLd(doc, baseURL);
-  const jsonLdByUrl = new Map();
-  for (const e of jsonLdResult.entries) {
-    jsonLdByUrl.set(normalizeURL(e.url), e);
-  }
-  const jsonLdMatchedUrls = new Set(); // urls consumed by anchor buckets
-
-  const fallbackImage = getMetaImage(doc);
-  const items = [];
-  const seen = new Set();
-  let unresolvedCount = 0;
-
-  // Pre-compute the section that each anchor sits in so the review page can
-  // group items the way they appear on the original page (Top News, Sports, etc.)
-  const sectionFor = buildSectionMap(doc);
-
-  // 1) anchors with href — bucketed by resolved href so two-anchor card patterns
-  // (image-link + headline-link → same URL) merge into a single item with the
-  // best title from either half and the best thumbnail from either half.
-  // Also filters out navigation/chrome anchors (tag chips, account links,
-  // footer/nav, modal dialogs) to prevent them polluting the output.
-  // Issues #5 (two-anchor) and #10 (chrome filter, figure-sibling thumb).
-  const claimedImgs = new WeakSet(); // images claimed by article-level synthesis
-  const claimedVideos = new WeakSet(); // <video>/<iframe> claimed by anchor-bucket items (#5/Reddit)
-  const buckets = new Map(); // href -> { anchors: [a, ...], firstAnchor: a }
-  const rawAnchors = Array.from(doc.querySelectorAll('a[href], button[data-href], button[data-url], button[data-video-url], button[data-link], [role="link"][data-href]'));
-
-  // Pre-pass: card-level grouping (the "byline-anchor" / uploader fix).
-  //
-  // Many feed layouts (Vimeo, YouTube, Reddit, etc.) put TWO+ anchors with
-  // DIFFERENT hrefs inside a single visual card:
-  //   <div class="video-card">
-  //     <a href="/videos/clip-A"><img>...</a>          ← primary content link
-  //     <div class="titleContainer">
-  //       <a href="/videos/clip-A">Clip A</a>          ← same href, merges in bucket
-  //     </div>
-  //     <a href="/channels/foo">Foo Channel</a>       ← byline link, NOT a card
-  //     <a class="avatar" href="/channels/foo"></a>   ← byline avatar, NOT a card
-  //   </div>
-  //
-  // The basic bucket-by-href merges the two clip-A anchors. But the channel
-  // anchors have a different href and would otherwise emit their own card.
-  // Visually that looks like a duplicate of the video (same thumbnail block,
-  // similar title because the container fallback pulls the whole card's text).
-  //
-  // Rule: inside a card wrapper, the anchor that owns the thumbnail (has an
-  // <img>/<video>/<picture> child or has a thumbnail-shaped class) is the
-  // PRIMARY. All other anchors in that card whose href differs from the
-  // primary are demoted to byline chrome.
+// ---------- card-level byline/uploader demotion ----------
+// Many feed layouts (Vimeo, YouTube, Reddit, etc.) put TWO+ anchors with
+// DIFFERENT hrefs inside a single visual card:
+//   <div class="video-card">
+//     <a href="/videos/clip-A"><img>...</a>          ← primary content link
+//     <div class="titleContainer">
+//       <a href="/videos/clip-A">Clip A</a>          ← same href, merges in bucket
+//     </div>
+//     <a href="/channels/foo">Foo Channel</a>       ← byline link, NOT a card
+//     <a class="avatar" href="/channels/foo"></a>   ← byline avatar, NOT a card
+//   </div>
+//
+// The basic bucket-by-href merges the two clip-A anchors. But the channel
+// anchors have a different href and would otherwise emit their own card.
+// Visually that looks like a duplicate of the video (same thumbnail block,
+// similar title because the container fallback pulls the whole card's text).
+//
+// Rule: inside a card wrapper, the anchor that owns the thumbnail (has an
+// <img>/<video>/<picture> child or has a thumbnail-shaped class) is the
+// PRIMARY. All other anchors in that card whose href differs from the
+// primary are demoted to byline chrome.
+//
+// Returns a WeakSet of anchors to skip entirely during the main anchor walk.
+function detectDemotedBylineAnchors(doc, baseURL) {
   const demotedAnchors = new WeakSet();
   // Only run card-demotion when the wrapper class strongly suggests a single
   // visual media card (video-card, thumb-container, post-card, etc.). Broad
@@ -1497,6 +1554,93 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       }
     }
   }
+  return demotedAnchors;
+}
+
+// Parse a source's HTML into items.
+// Returns an array of items (back-compat — callers can also read `.meta` for
+// the unresolved-anchors info via parseSourceWithMeta below).
+function parseSource(html, sourceName, opts = {}) {
+  return parseSourceWithMeta(html, sourceName, opts).items;
+}
+
+function parseSourceWithMeta(html, sourceName, opts = {}) {
+  if (!html?.trim()) return { items: [], unresolvedCount: 0, hasBase: false };
+  let doc;
+  try {
+    doc = new DOMParser().parseFromString(html, 'text/html');
+  } catch {
+    return { items: [], unresolvedCount: 0, hasBase: false };
+  }
+
+  // Flatten declarative Shadow DOM so we can see media inside <template shadowrootmode>.
+  // Required for sites like NYT video feeds.
+  expandShadowTemplates(doc);
+
+  // Try to detect a base URL from multiple signals, in order of reliability.
+  // Used to resolve relative hrefs/thumbnails. If we can't find one, we leave
+  // relative links unresolved (the parser will skip them) so we never invent
+  // a fake host like example.com.
+  let baseURL = doc.querySelector('base')?.href || null;
+  if (!baseURL) {
+    const ogu = doc.querySelector('meta[property="og:url"]')?.content;
+    if (ogu) try { baseURL = new URL(ogu).origin; } catch {}
+  }
+  if (!baseURL) {
+    const canon = doc.querySelector('link[rel="canonical"]')?.href;
+    if (canon) try { baseURL = new URL(canon).origin; } catch {}
+  }
+  if (!baseURL) {
+    const tw = doc.querySelector('meta[name="twitter:url"]')?.content || doc.querySelector('meta[property="twitter:url"]')?.content;
+    if (tw) try { baseURL = new URL(tw).origin; } catch {}
+  }
+  if (!baseURL) baseURL = detectBaseFromAnchors(doc);
+
+  // YouTube heuristic: pages always have relative /shorts/<id> hrefs and no
+  // <base> tag. If we still have no base and the DOM contains YouTube custom
+  // elements, synthesize the canonical origin. (Issue #6)
+  if (!baseURL && doc.querySelector('ytd-app, [class^="ytd-"], [class*=" ytd-"], yt-formatted-string, [class*="yt-simple-endpoint"]')) {
+    baseURL = 'https://www.youtube.com';
+  }
+
+  // Allow caller to override base (e.g. user typed a domain into the prompt).
+  if (opts.overrideBase) baseURL = opts.overrideBase;
+
+  // JSON-LD pass — collect schema.org metadata before walking the DOM so we
+  // can enrich anchor buckets with authoritative headline/image/description
+  // and also emit standalone cards for entries whose URL doesn't appear as
+  // an anchor in the pasted HTML. The user picks via the existing strategy
+  // picker; nothing here is silently chosen.
+  const jsonLdResult = extractJsonLd(doc, baseURL);
+  const jsonLdByUrl = new Map();
+  for (const e of jsonLdResult.entries) {
+    jsonLdByUrl.set(normalizeURL(e.url), e);
+  }
+  const jsonLdMatchedUrls = new Set(); // urls consumed by anchor buckets
+
+  const fallbackImage = getMetaImage(doc);
+  const items = [];
+  const seen = new Set();
+  let unresolvedCount = 0;
+
+  // Pre-compute the section that each anchor sits in so the review page can
+  // group items the way they appear on the original page (Top News, Sports, etc.)
+  const sectionFor = buildSectionMap(doc);
+
+  // 1) anchors with href — bucketed by resolved href so two-anchor card patterns
+  // (image-link + headline-link → same URL) merge into a single item with the
+  // best title from either half and the best thumbnail from either half.
+  // Also filters out navigation/chrome anchors (tag chips, account links,
+  // footer/nav, modal dialogs) to prevent them polluting the output.
+  // Issues #5 (two-anchor) and #10 (chrome filter, figure-sibling thumb).
+  const claimedImgs = new WeakSet(); // images claimed by article-level synthesis
+  const claimedVideos = new WeakSet(); // <video>/<iframe> claimed by anchor-bucket items (#5/Reddit)
+  const buckets = new Map(); // href -> { anchors: [a, ...], firstAnchor: a }
+  const rawAnchors = Array.from(doc.querySelectorAll('a[href], button[data-href], button[data-url], button[data-video-url], button[data-link], [role="link"][data-href]'));
+
+  // Card-level grouping (the "byline-anchor" / uploader fix) — see
+  // detectDemotedBylineAnchors below for the full explanation.
+  const demotedAnchors = detectDemotedBylineAnchors(doc, baseURL);
   for (const a of rawAnchors) {
     const rawHref = a.getAttribute('href') || a.getAttribute('data-href') || a.getAttribute('data-url') || a.getAttribute('data-video-url') || a.getAttribute('data-link');
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue;
