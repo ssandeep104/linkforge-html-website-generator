@@ -1557,6 +1557,100 @@ function detectDemotedBylineAnchors(doc, baseURL) {
   return demotedAnchors;
 }
 
+// ---------- per-bucket title/thumbnail/video resolution ----------
+// A "bucket" is every anchor found to share one resolved href (see the
+// bucketing pass in parseSourceWithMeta). These three functions pick the
+// bucket's default title/video/thumbnail winner from its anchors.
+//
+// `claims` tracks which <img>/<video> DOM elements have already been used
+// as another bucket's thumbnail/video, so the standalone image/video walk
+// later doesn't re-emit them as orphan items, AND so two different buckets
+// don't both claim the same nearby image (e.g. a byline photo shared by two
+// adjacent cards). This is INTENTIONALLY stateful and order-dependent —
+// buckets are resolved in DOM-discovery order, and "first bucket to claim an
+// element wins" is real, load-bearing product behavior, not an accident of
+// implementation. A fully stateless/order-independent resolver would change
+// which bucket gets a shared image when two anchors sit near the same
+// element, so — unlike the title/thumb/video CANDIDATE rules above, which
+// are pure — this stays as an explicit shared-state object passed into each
+// resolver rather than being eliminated.
+function resolveBucketTitle(bucket) {
+  let lastResort = null;
+  for (const a of bucket.anchors) {
+    const t = getAnchorTitle(a);
+    if (!t) continue;
+    if (!looksLikeBadTitle(t)) return t;
+    if (!lastResort) lastResort = t;
+  }
+  return lastResort;
+}
+
+function resolveBucketVideo(bucket, baseURL, claims) {
+  for (const a of bucket.anchors) {
+    const v = extractVideoFromAnchor(a);
+    if (v) return v;
+  }
+  for (const a of bucket.anchors) {
+    const found = findSiblingVideo(a, baseURL);
+    if (found) {
+      if (found.claimedEl) {
+        claims.videos.add(found.claimedEl);
+        // also claim every <source> child so source-level dedup works
+        found.claimedEl.querySelectorAll?.('source').forEach((s) => claims.videos.add(s));
+      }
+      return found.videoInfo;
+    }
+  }
+  return null;
+}
+
+// Thumbnail priority (per docs/thumbnail-and-chrome-spec.md):
+//   Tier 1: video poster for the href (checked by the caller, before this
+//           runs, so a real video preview wins over an adjacent <img> that
+//           may just be a play-button icon)
+//   Tier 2: direct <img> / <picture> / background-image / figure-sibling
+//   Tier 3: og:image fallback (single-item only, handled later)
+//   Tier 4: synthesized poster from URL pattern (YouTube, etc.) — later
+//   Tier 5: deterministic SVG placeholder — later
+function resolveBucketThumbnail(bucket, baseURL, claims, rawAnchors) {
+  // Tier 2 — direct image inside / adjacent to the anchor.
+  for (const a of bucket.anchors) {
+    const cand = extractImageFromAnchor(a);
+    if (cand) {
+      // mark the <img> we picked so the standalone walk doesn't re-emit it
+      const innerImg = a.querySelector('img');
+      if (innerImg) claims.imgs.add(innerImg);
+      return safeURL(cand, baseURL) || cand;
+    }
+  }
+  // figure-sibling fallback — covers Time.com and similar.
+  for (const a of bucket.anchors) {
+    const found = findFigureSiblingThumb(a, baseURL, claims.imgs);
+    if (found) {
+      if (found.claimedEl) {
+        // claim the <img> (or every <img> inside the <picture>)
+        if (found.claimedEl.tagName === 'PICTURE') {
+          found.claimedEl.querySelectorAll('img').forEach((i) => claims.imgs.add(i));
+        } else {
+          claims.imgs.add(found.claimedEl);
+        }
+      }
+      return found.thumb;
+    }
+  }
+  // adjacent-sibling fallback — covers flat <a>...</a><img> lists with no
+  // card wrapper. Each anchor only claims an <img> if it's the nearest
+  // anchor to that <img> in the parent.
+  for (const a of bucket.anchors) {
+    const found = findAdjacentSiblingThumb(a, rawAnchors, baseURL, claims.imgs);
+    if (found) {
+      if (found.claimedEl) claims.imgs.add(found.claimedEl);
+      return found.thumb;
+    }
+  }
+  return null;
+}
+
 // Parse a source's HTML into items.
 // Returns an array of items (back-compat — callers can also read `.meta` for
 // the unresolved-anchors info via parseSourceWithMeta below).
@@ -1676,98 +1770,24 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     buckets.get(href).anchors.push(a);
   }
 
+  const claims = { imgs: claimedImgs, videos: claimedVideos };
   for (const [href, bucket] of buckets) {
     if (seen.has(href)) continue;
     seen.add(href);
 
-    // Best title: try every anchor in the bucket; structured signals beat raw text.
-    let title = null;
-    for (const a of bucket.anchors) {
-      const t = getAnchorTitle(a);
-      if (t && !looksLikeBadTitle(t)) { title = t; break; }
-      if (t && !title) title = t; // keep as last-resort fallback
-    }
-    if (!title) title = domainOf(href);
+    // `title`/`thumb` are reassigned below if JSON-LD offers a stronger pick.
+    let title = resolveBucketTitle(bucket) || domainOf(href);
 
-    // Thumbnail priority (per docs/thumbnail-and-chrome-spec.md):
-    //   Tier 1: video poster for the href (run FIRST so a real video preview
-    //           wins over an adjacent <img>, which may be a play-button icon)
-    //   Tier 2: direct <img> / <picture> / background-image / figure-sibling
-    //   Tier 3: og:image fallback (single-item only, handled later)
-    //   Tier 4: synthesized poster from URL pattern (YouTube, etc.) — later
-    //   Tier 5: deterministic SVG placeholder — later
+    // Tier 1 — find a video first, so a real video preview wins over an
+    // adjacent <img> that might just be a play-button icon (see tier
+    // ordering comment on resolveBucketThumbnail).
+    const video = resolveBucketVideo(bucket, baseURL, claims);
 
-    // Tier 1 — find a video first.
-    let video = null;
-    for (const a of bucket.anchors) {
-      const v = extractVideoFromAnchor(a);
-      if (v) { video = v; break; }
-    }
-    if (!video) {
-      for (const a of bucket.anchors) {
-        const found = findSiblingVideo(a, baseURL);
-        if (found) {
-          video = found.videoInfo;
-          if (found.claimedEl) {
-            claimedVideos.add(found.claimedEl);
-            // also claim every <source> child so source-level dedup works
-            found.claimedEl.querySelectorAll?.('source').forEach((s) => claimedVideos.add(s));
-          }
-          break;
-        }
-      }
-    }
-
-    let thumb = null;
-    // Promote video.poster to the thumbnail immediately if we found one.
-    if (video && video.poster) {
-      thumb = safeURL(video.poster, baseURL) || video.poster;
-    }
-
-    // Tier 2 — direct image inside / adjacent to the anchor.
-    if (!thumb) {
-      for (const a of bucket.anchors) {
-        const cand = extractImageFromAnchor(a);
-        if (cand) {
-          thumb = safeURL(cand, baseURL) || cand;
-          // mark the <img> we picked so the standalone walk doesn't re-emit it
-          const innerImg = a.querySelector('img');
-          if (innerImg) claimedImgs.add(innerImg);
-          break;
-        }
-      }
-    }
-    if (!thumb) {
-      // figure-sibling fallback — covers Time.com and similar.
-      for (const a of bucket.anchors) {
-        const found = findFigureSiblingThumb(a, baseURL, claimedImgs);
-        if (found) {
-          thumb = found.thumb;
-          if (found.claimedEl) {
-            // claim the <img> (or every <img> inside the <picture>)
-            if (found.claimedEl.tagName === 'PICTURE') {
-              found.claimedEl.querySelectorAll('img').forEach((i) => claimedImgs.add(i));
-            } else {
-              claimedImgs.add(found.claimedEl);
-            }
-          }
-          break;
-        }
-      }
-    }
-    if (!thumb) {
-      // adjacent-sibling fallback — covers flat <a>...</a><img> lists with no
-      // card wrapper. Each anchor only claims an <img> if it's the nearest
-      // anchor to that <img> in the parent.
-      for (const a of bucket.anchors) {
-        const found = findAdjacentSiblingThumb(a, rawAnchors, baseURL, claimedImgs);
-        if (found) {
-          thumb = found.thumb;
-          if (found.claimedEl) claimedImgs.add(found.claimedEl);
-          break;
-        }
-      }
-    }
+    // Promote video.poster to the thumbnail immediately if we found one;
+    // otherwise fall through Tiers 2-3 in resolveBucketThumbnail.
+    let thumb = (video && video.poster)
+      ? (safeURL(video.poster, baseURL) || video.poster)
+      : resolveBucketThumbnail(bucket, baseURL, claims, rawAnchors);
 
     // Collect ALL candidates for title/thumb/video across every anchor in the
     // bucket so the Review-step picker can offer alternatives. Defaults stay
