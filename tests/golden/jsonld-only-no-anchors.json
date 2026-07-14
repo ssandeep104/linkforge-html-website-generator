@@ -20,9 +20,21 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Atlas Mission Launches at Dawn",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/atlas-thumb.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Transit Tax Passes by 6-Point Margin",
@@ -34,9 +46,21 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Transit Tax Passes by 6-Point Margin",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/transit-tax.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Hospital Workers Enter Day Three of Strike",
@@ -48,9 +72,21 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Hospital Workers Enter Day Three of Strike",
+          "strategy": "jsonld-headline",
+          "label": "JSON-LD headline"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.example.com/strike.jpg",
+          "strategy": "jsonld-image",
+          "label": "JSON-LD image"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

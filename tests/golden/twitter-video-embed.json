@@ -20,9 +20,15 @@
       "category": "link",
       "pageSection": "Other",
       "pattern": "<div class=\"blog-post-content\">",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 0,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Read our full analysis of IFT-5 →",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [],
+      "videoCandidates": []
     }
   ]
 }

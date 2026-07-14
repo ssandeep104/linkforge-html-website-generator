@@ -20,9 +20,36 @@
       "category": "article",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Space debris lights up night sky over Pacific Northwest",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "Glowing streak of space debris re-entering atmosphere",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2215088888.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2215088888.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2215088888.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Senate passes sweeping infrastructure package 67-33",
@@ -34,9 +61,36 @@
       "category": "article",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Senate passes sweeping infrastructure package 67-33",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "Senators on the floor during vote",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-senate-floor.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-senate-floor.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-senate-floor.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Massive tornado tears through Texas Panhandle, dozens injured",
@@ -48,9 +102,36 @@
       "category": "article",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Massive tornado tears through Texas Panhandle, dozens injured",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "Tornado funnel cloud over flat farmland",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/tornado-funnel-cloud.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/tornado-funnel-cloud.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/tornado-funnel-cloud.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "OpenAI unveils new reasoning model at surprise event",
@@ -62,9 +143,36 @@
       "category": "article",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "OpenAI unveils new reasoning model at surprise event",
+          "strategy": "anchor-title-class",
+          "label": "class=title/headline"
+        },
+        {
+          "value": "OpenAI demo screen showing new model capabilities",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/openai-model-demo.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/openai-model-demo.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://media.cnn.com/api/v1/images/stellar/prod/openai-model-demo.jpg?c=16x9&q=h_438,w_780,c_fill",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

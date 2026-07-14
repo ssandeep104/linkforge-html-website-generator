@@ -20,9 +20,31 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<button class=\"video-card__trigger\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Fed Holds Rates Steady as Inflation Data Cools",
+          "strategy": "anchor-aria-label",
+          "label": "aria-label"
+        },
+        {
+          "value": "MARKETS Fed Holds Rates Steady as Inflation Data Cools 5:23",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Federal Reserve building exterior",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Big Tech Earnings: What to Expect This Week",
@@ -34,9 +56,31 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<button class=\"video-card__trigger\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Big Tech Earnings: What to Expect This Week",
+          "strategy": "anchor-aria-label",
+          "label": "aria-label"
+        },
+        {
+          "value": "TECHNOLOGY Big Tech Earnings: What to Expect This Week 3:47",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Stock market ticker boards",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "OPEC+ Cuts Output Again: Oil Prices React",
@@ -48,9 +92,31 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<button class=\"video-card__trigger\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "OPEC+ Cuts Output Again: Oil Prices React",
+          "strategy": "anchor-aria-label",
+          "label": "aria-label"
+        },
+        {
+          "value": "ENERGY OPEC+ Cuts Output Again: Oil Prices React 4:15",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Oil refinery at sunset",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

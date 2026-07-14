@@ -20,9 +20,56 @@
       "category": "article",
       "pageSection": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
       "pattern": "<article>",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 7,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
+        {
+          "value": "Justine Yeung—Prime Video",
+          "strategy": "container-caption",
+          "label": "caption"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:max-width-1024px:1080w",
+          "label": "container picture <source> ((max-width: 1024px)) · 1080w"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:max-width-1024px:any",
+          "label": "container picture <source> ((max-width: 1024px)) · any size"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=3840&quality=75&auto=webp&crop=3:2",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=1920&quality=75&auto=webp&crop=3:2",
+          "strategy": "container-img-srcset:1920w",
+          "label": "container <img srcset> · 1920w"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=1920&quality=75&auto=webp&crop=3:2",
+          "strategy": "container-img-srcset:any",
+          "label": "container <img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/blt2a7514fb3936d733/6a29c2f30aceb60d942326cf/Photo_1_3000.jpg?branch=production&width=3840&quality=75&auto=webp&crop=3:2",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Marjane Satrapi Always Defied Convention",
@@ -34,9 +81,51 @@
       "category": "article",
       "pageSection": "Marjane Satrapi Always Defied Convention",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 7,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Marjane Satrapi Always Defied Convention",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:max-width-1024px:1080w",
+          "label": "container picture <source> ((max-width: 1024px)) · 1080w"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:max-width-1024px:any",
+          "label": "container picture <source> ((max-width: 1024px)) · any size"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=3840&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=1920&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-img-srcset:1920w",
+          "label": "container <img srcset> · 1920w"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=1920&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-img-srcset:any",
+          "label": "container <img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltf966662b0c33cea0/6a29a9e9806fae7c13a45041/marjane-satrapi.jpg?branch=production&width=3840&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Inside the Surprising Cast of 'Disclosure Day'",
@@ -48,9 +137,51 @@
       "category": "article",
       "pageSection": "Inside the Surprising Cast of 'Disclosure Day'",
       "pattern": "<article>",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 7,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Inside the Surprising Cast of 'Disclosure Day'",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:max-width-1024px:1080w",
+          "label": "container picture <source> ((max-width: 1024px)) · 1080w"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:max-width-1024px:any",
+          "label": "container picture <source> ((max-width: 1024px)) · any size"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=1080&quality=75&auto=webp&crop=4:5",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=3840&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=1920&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-img-srcset:1920w",
+          "label": "container <img srcset> · 1920w"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=1920&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-img-srcset:any",
+          "label": "container <img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://static.time.com/v3/assets/bltea6093859af6183b/bltdf58d257c4ff77c6/6a232cfb17355502206e8488/1_169_BASIC.00_04_37_06.Still002.png?branch=production&width=3840&quality=75&auto=webp&crop=1:1",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

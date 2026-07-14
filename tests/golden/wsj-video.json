@@ -20,9 +20,51 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 5,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Markets Rally After Fed Signals Two Rate Cuts in 2026",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        },
+        {
+          "value": "Markets Rally After Fed Signals Two Rate Cuts in 2026 Stocks soared as the Federal Reserve indicated it could cut rates twice this year pending inflation data. 4:51",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Federal Reserve Chair speaking at podium",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+          "strategy": "fallback",
+          "label": "fallback"
+        },
+        {
+          "value": "https://images.wsj.net/im-12345678?width=700&height=394",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        },
+        {
+          "value": "https://images.wsj.net/im-12345678?width=350&height=197",
+          "strategy": "img-data-srcset:350w",
+          "label": "<img data-srcset> · 350w"
+        },
+        {
+          "value": "https://images.wsj.net/im-12345678?width=700&height=394",
+          "strategy": "img-data-srcset:700w",
+          "label": "<img data-srcset> · 700w"
+        },
+        {
+          "value": "https://images.wsj.net/im-12345678?width=700&height=394",
+          "strategy": "img-data-srcset:any",
+          "label": "<img data-srcset> · any size (largest)"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "EV Market Faces Reckoning as Sales Growth Slows",
@@ -34,9 +76,36 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "EV Market Faces Reckoning as Sales Growth Slows",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        },
+        {
+          "value": "EV Market Faces Reckoning as Sales Growth Slows Electric vehicle manufacturers are reassessing their strategies amid softening consumer demand. 6:18",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Electric vehicle charging station at night",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+          "strategy": "fallback",
+          "label": "fallback"
+        },
+        {
+          "value": "https://images.wsj.net/im-23456789?width=700&height=394",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall",
@@ -48,9 +117,36 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        },
+        {
+          "value": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall 5:44",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Row of suburban houses with for-sale signs",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+          "strategy": "fallback",
+          "label": "fallback"
+        },
+        {
+          "value": "https://images.wsj.net/im-34567890?width=700&height=394",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

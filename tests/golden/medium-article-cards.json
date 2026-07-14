@@ -20,9 +20,46 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"ch ci\">",
-      "titleCandidateCount": 4,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Stop Using ChatGPT for Code. Do This Instead.",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "Stop Using ChatGPT for Code. Do This Instead. Seriously, there's a better way that most developers haven't tried yet",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Stop Using ChatGPT for Code. Do This Instead.",
+          "strategy": "container-heading",
+          "label": "container <h2>"
+        },
+        {
+          "value": "Illustration of code editor with AI panel",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*xKvkMbsS7L0Zp5hWKqX9AA.jpeg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*xKvkMbsS7L0Zp5hWKqX9AA.jpeg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*xKvkMbsS7L0Zp5hWKqX9AA.jpeg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "The One Design Principle Every Developer Ignores",
@@ -34,9 +71,46 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"ch ci\">",
-      "titleCandidateCount": 4,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "The One Design Principle Every Developer Ignores",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "The One Design Principle Every Developer Ignores And why it's making your apps worse than they need to be",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "The One Design Principle Every Developer Ignores",
+          "strategy": "container-heading",
+          "label": "container <h2>"
+        },
+        {
+          "value": "Clean UI design mockup",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*pQ8LkMrNbRe2_Yv7tJw0xA.jpeg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*pQ8LkMrNbRe2_Yv7tJw0xA.jpeg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*pQ8LkMrNbRe2_Yv7tJw0xA.jpeg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "TypeScript 5.4 Is a Game-Changer. Here's Why.",
@@ -48,9 +122,51 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"ch ci\">",
-      "titleCandidateCount": 5,
-      "thumbCandidateCount": 3,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "TypeScript 5.4 Is a Game-Changer. Here's Why.",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "TypeScript 5.4 Is a Game-Changer. Here's Why. NoInfer, improved narrowing, and what they mean for your codebase",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "TypeScript 5.4 Is a Game-Changer. Here's Why.",
+          "strategy": "container-heading",
+          "label": "container <h2>"
+        },
+        {
+          "value": "TypeScript 5.4 Is a Game-Changer",
+          "strategy": "anchor-aria-label",
+          "label": "aria-label"
+        },
+        {
+          "value": "TypeScript logo with code background",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*mR4NtPkWvFa3bCs2xYe1PQ.jpeg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:2/format:webp/1*mR4NtPkWvFa3bCs2xYe1PQ.jpeg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://miro.medium.com/v2/resize:fit:720/format:webp/1*mR4NtPkWvFa3bCs2xYe1PQ.jpeg",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }

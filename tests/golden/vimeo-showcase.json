@@ -20,9 +20,31 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "12:34",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "The Last Glacier — Short Film",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "The Last Glacier — Short Film",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.vimeocdn.com/video/1001234567_640x360.jpg?r=pad",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Glacier Films",
@@ -34,9 +56,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 0,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Glacier Films",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [],
+      "videoCandidates": []
     },
     {
       "title": "Urban Pulse — City Life Documentary",
@@ -48,9 +76,31 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "28:17",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Urban Pulse — City Life Documentary",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Urban Pulse — City Life Documentary",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.vimeocdn.com/video/1001234568_640x360.jpg?r=pad",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Urban Studio",
@@ -62,9 +112,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 0,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Urban Studio",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [],
+      "videoCandidates": []
     },
     {
       "title": "Neon Drift — Music Video",
@@ -76,9 +132,31 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "4:02",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Neon Drift — Music Video",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Neon Drift — Music Video",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.vimeocdn.com/video/1001234569_640x360.jpg?r=pad",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Neon Records",
@@ -90,9 +168,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 0,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Neon Records",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [],
+      "videoCandidates": []
     },
     {
       "title": "Brand Story — Craft Brewery",
@@ -104,9 +188,31 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 3,
-      "thumbCandidateCount": 1,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "3:45",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Brand Story — Craft Brewery",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Brand Story — Craft Brewery",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://i.vimeocdn.com/video/1001234570_640x360.jpg?r=pad",
+          "strategy": "img-src",
+          "label": "<img src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Craft Visuals",
@@ -118,9 +224,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
-      "titleCandidateCount": 1,
-      "thumbCandidateCount": 0,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "Craft Visuals",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [],
+      "videoCandidates": []
     }
   ]
 }

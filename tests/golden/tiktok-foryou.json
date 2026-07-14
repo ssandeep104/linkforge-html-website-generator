@@ -20,9 +20,31 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "4.2M",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "How bees make honey — 3D animation",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+          "strategy": "fallback",
+          "label": "fallback"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/osPfmAVlbIXfG3e7oLsBCpPDQBFRBAhc7ABDC?x-expires=1718500000&x-signature=abc123",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Why do we yawn? The real science",
@@ -34,9 +56,31 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "11.7M",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Why do we yawn? The real science",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+          "strategy": "fallback",
+          "label": "fallback"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/qrPgmBWmcJYgH4f8pMtCDqREhcAGBhd8ABEd?x-expires=1718500001&x-signature=def456",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     },
     {
       "title": "Space facts that will break your brain",
@@ -48,9 +92,31 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
-      "titleCandidateCount": 2,
-      "thumbCandidateCount": 2,
-      "videoCandidateCount": 0
+      "titleCandidates": [
+        {
+          "value": "8.9M",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        },
+        {
+          "value": "Space facts that will break your brain",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+          "strategy": "fallback",
+          "label": "fallback"
+        },
+        {
+          "value": "https://p16-sign-va.tiktokcdn.com/obj/tos-maliva-p-0068/sTQimCXncKZhI5g9rNuDErSFicBHCie9BCFe?x-expires=1718500002&x-signature=ghi789",
+          "strategy": "img-data-src",
+          "label": "<img data-src>"
+        }
+      ],
+      "videoCandidates": []
     }
   ]
 }
