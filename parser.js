@@ -241,6 +241,31 @@ function looksLikePlaceholder(url) {
   return false;
 }
 
+// Narrower than looksLikePlaceholder() above, and used for a different job:
+// deciding whether <img src> is a lazy-load stand-in that should lose to a
+// real lazy-load attribute (data-src, etc.) in pickImgSrc. This runs on the
+// DEFAULT-WINNER path for every image in the document, so a false positive
+// here silently swaps a legitimate thumbnail for something worse — a much
+// costlier mistake than a false negative, which just leaves the (long-
+// standing) placeholder-wins behavior unchanged for that one image.
+// Deliberately narrower than looksLikePlaceholder in two ways:
+//   1. Drops generic English words ("logo", "empty", "default", "loading")
+//      that show up in real content filenames (e.g. "acme-logo.png" as an
+//      actual photo, "empty-room-staging.jpg") — kept only words that are
+//      essentially always lazy-load/placeholder-specific.
+//   2. Anchors the tiny-dimension query check to the END of the value
+//      (`(?=$|[&#])`) so `?h=4a2b1c9d` (a hash that happens to start with
+//      "4") doesn't false-match "h=4" the way a plain `(\D|$)` lookahead
+//      would (`a` counts as "not a digit" too).
+function looksLikeLazyLoadPlaceholder(url) {
+  if (!url) return true;
+  const u = url.toLowerCase();
+  if (u.startsWith('data:')) return true; // base64 blank/spinner pixels — the dominant real-world case
+  if (/(^|[\/_\-])(placeholder|spacer|blank|transparent|noimage|no-image|1x1|2x2)([\/_\-\.]|$)/.test(u)) return true;
+  if (/[\?&](w|width|h|height)=(1|2|4|8|10)(?=$|[&#])/.test(u)) return true;
+  return false;
+}
+
 // Parse a srcset attribute robustly, respecting commas that appear inside
 // URLs (CDN transform syntax like Cloudinary's `f_auto,q_auto/...`, Imgix
 // param strings, data: URIs with base64, etc.).
@@ -492,7 +517,7 @@ function pickImgSrc(img) {
   // splitting. The picker exposes srcset/data-* values as alternates the
   // user can switch to manually.
   const src = img.getAttribute('src');
-  if (src && src.trim() && !looksLikePlaceholder(src.trim())) return src.trim();
+  if (src && src.trim() && !looksLikeLazyLoadPlaceholder(src.trim())) return src.trim();
   // src missing, empty, or placeholder-shaped — try lazy-load attributes.
   const fallbacks = [
     img.getAttribute('data-src'),
