@@ -68,6 +68,39 @@ test('does not mistake a hash-like query param starting with a small digit for a
   assert.equal(items[0].thumbnail, 'https://cdn.example.com/full/photo.jpg?h=4a2b1c9d');
 });
 
+test('does not mistake a real multi-word filename containing "blank"/"transparent" for a placeholder', () => {
+  // Found by a second independent review pass: narrowing the earlier
+  // keyword-SUBSTRING list still left "blank"/"transparent" matching inside
+  // real filenames like "blank-space-taylor-swift-cover.jpg" — the "-"
+  // delimiter the regex used as a word boundary is the same delimiter real
+  // multi-word slugs use. Fixed by switching to exact-basename matching
+  // instead of narrowing the keyword list further (see
+  // looksLikeLazyLoadPlaceholder / KNOWN_PLACEHOLDER_BASENAMES).
+  const html = `<html><body>
+    <a href="https://example.com/album/1989-taylors-version">
+      <img src="https://cdn.example.com/covers/blank-space-taylor-swift-cover.jpg" data-original="https://cdn.example.com/hover/alt-crop.jpg" alt="Blank Space cover art">
+    </a>
+    <a href="https://example.com/shop/tumbler-cup">
+      <img src="https://cdn.example.com/products/transparent-tumbler-cup.jpg" data-original="https://cdn.example.com/hover/alt-crop2.jpg" alt="Transparent tumbler cup">
+    </a>
+  </body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 2);
+  assert.equal(items[0].thumbnail, 'https://cdn.example.com/covers/blank-space-taylor-swift-cover.jpg');
+  assert.equal(items[1].thumbnail, 'https://cdn.example.com/products/transparent-tumbler-cup.jpg');
+});
+
+test('still catches a genuine placeholder whose filename IS exactly a known placeholder name', () => {
+  const html = `<html><body>
+    <a href="https://example.com/detail/photo-999">
+      <img src="https://cdn.example.com/img/blank.gif" data-src="https://cdn.example.com/full/999.jpg" alt="Real photo behind a blank.gif placeholder">
+    </a>
+  </body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.example.com/full/999.jpg');
+});
+
 test('a <figcaption> outranks the image alt text as the default title', () => {
   // Photography-portfolio pattern: <figure><a><img alt="..."></a><figcaption>
   // Real Title</figcaption></figure>. alt text describes the image for

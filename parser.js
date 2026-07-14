@@ -248,20 +248,32 @@ function looksLikePlaceholder(url) {
 // here silently swaps a legitimate thumbnail for something worse — a much
 // costlier mistake than a false negative, which just leaves the (long-
 // standing) placeholder-wins behavior unchanged for that one image.
-// Deliberately narrower than looksLikePlaceholder in two ways:
-//   1. Drops generic English words ("logo", "empty", "default", "loading")
-//      that show up in real content filenames (e.g. "acme-logo.png" as an
-//      actual photo, "empty-room-staging.jpg") — kept only words that are
-//      essentially always lazy-load/placeholder-specific.
-//   2. Anchors the tiny-dimension query check to the END of the value
-//      (`(?=$|[&#])`) so `?h=4a2b1c9d` (a hash that happens to start with
-//      "4") doesn't false-match "h=4" the way a plain `(\D|$)` lookahead
-//      would (`a` counts as "not a digit" too).
+//
+// Two rounds of review found real false positives in a keyword-SUBSTRING
+// approach: dropping "logo"/"empty"/"default"/"loading" still left "blank"/
+// "transparent" matching inside real multi-word filenames like
+// "blank-space-taylor-swift-cover.jpg" (delimited by the same "-" the regex
+// used as a word boundary). Any English word is at risk of this, so instead
+// of continuing to narrow a keyword list, this matches the URL's BASENAME
+// (path segment before the extension) EXACTLY against a small set of known
+// placeholder names. A real content photo is essentially never named
+// exactly "blank.gif" with nothing else in the filename — that's a
+// structurally different, much stronger signal than "contains the word
+// blank somewhere."
+const KNOWN_PLACEHOLDER_BASENAMES = new Set([
+  '1x1', '2x2', 'blank', 'spacer', 'placeholder', 'transparent',
+  'noimage', 'no-image', 'no_image', 'pixel',
+]);
 function looksLikeLazyLoadPlaceholder(url) {
   if (!url) return true;
   const u = url.toLowerCase();
   if (u.startsWith('data:')) return true; // base64 blank/spinner pixels — the dominant real-world case
-  if (/(^|[\/_\-])(placeholder|spacer|blank|transparent|noimage|no-image|1x1|2x2)([\/_\-\.]|$)/.test(u)) return true;
+  const path = u.split(/[?#]/)[0];
+  const basename = path.slice(path.lastIndexOf('/') + 1).replace(/\.[a-z0-9]+$/, '');
+  if (KNOWN_PLACEHOLDER_BASENAMES.has(basename)) return true;
+  // Tiny width/height query param — anchored to end-of-value with `(?=$|[&#])`
+  // so a hash-like suffix ("?h=4a2b1c9d") can't false-match "h=4" the way a
+  // plain "next char is not a digit" lookahead would ("a" also isn't a digit).
   if (/[\?&](w|width|h|height)=(1|2|4|8|10)(?=$|[&#])/.test(u)) return true;
   return false;
 }
