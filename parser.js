@@ -2307,4 +2307,4 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   return outItems.length > 0 ? outItems : null;
 }
 
-export { parseSource, parseSourceWithMeta };
+export { parseSource, parseSourceWithMeta, domainOf };

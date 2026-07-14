@@ -393,9 +393,10 @@
       would otherwise race ahead of the deferred module).
     -->
     <script type="module">
-      import { parseSource, parseSourceWithMeta } from './parser.js';
+      import { parseSource, parseSourceWithMeta, domainOf } from './parser.js';
       window.parseSource = parseSource;
       window.parseSourceWithMeta = parseSourceWithMeta;
+      window.domainOf = domainOf;
     </script>
     <script src="./templates.js" defer></script>
     <script src="./app.js" defer></script>
