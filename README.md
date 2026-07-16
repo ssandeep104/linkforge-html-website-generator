@@ -16,6 +16,8 @@ Paste raw HTML from creator feeds, research pages, photography sets, video hubs,
 
 The **Fire TV App** template doesn't export a website — it exports an Android app. The output is a lean-back, 10-foot UI (shelf rows per source, amber focus ring, built-in fullscreen video player) driven entirely by the Fire TV remote: D-pad browses, center opens/plays, Back closes the player, and the play/pause / rewind / fast-forward buttons work during playback. No mouse or ADB keyboard app required.
 
+Videos play **inside the app** instead of bouncing to the source website: direct MP4/WebM links use the native player (hardware decode), while YouTube, Vimeo, and Dailymotion links open in an in-app embedded player that the remote drives over each provider's postMessage API — so OK/seek/Back keep working even inside the embed. Only links with no recognizable video source open as pages.
+
 Downloading gives you a complete Android project (.zip) with the generated page bundled in `assets/`, a leanback WebView wrapper, and a GitHub Actions workflow — push the folder to a GitHub repo and the workflow builds the sideloadable `.apk` for you (or open it in Android Studio and press Build). The README inside the zip walks through building and sideloading on Fire TV step by step.
 
 Parser is fully client-side. There are no network calls — your HTML never leaves the browser.

@@ -379,7 +379,7 @@ const TEMPLATES = {
   },
   firetv: {
     name: 'Fire TV App',
-    desc: 'A lean-back TV experience exported as an Android app project — remote-first shelf rows, D-pad navigation, and a built-in fullscreen video player.',
+    desc: 'A lean-back TV experience exported as an Android app project — remote-first shelf rows, D-pad navigation, and in-app playback: direct videos, YouTube, Vimeo, and Dailymotion all play inside the app.',
     focus: 'TV app',
     fit: 'Export as an APK for Fire TV / Android TV — drives entirely with the standard remote',
     featured: true,
@@ -2446,29 +2446,58 @@ function buildMarquee(ctx) {
 // No external fonts or scripts: the page must work self-contained from
 // file:///android_asset/ with only the linked media loading over the network.
 // =====================================================
+// Map a watch-page URL from a known video host to an embeddable player URL.
+// These all speak a postMessage protocol, so the TV runtime can keep D-pad
+// focus on our page and still drive play/pause/seek inside the iframe.
+function tvEmbedFor(href) {
+  const h = String(href || '');
+  let m = h.match(/youtube\.com\/watch[^#]*[?&]v=([\w-]{6,20})/i)
+    || h.match(/(?:youtube\.com\/(?:shorts|live|embed)\/|youtu\.be\/)([\w-]{6,20})/i);
+  if (m) {
+    return {
+      provider: 'yt',
+      src: `https://www.youtube.com/embed/${m[1]}?autoplay=1&playsinline=1&enablejsapi=1&rel=0`,
+    };
+  }
+  m = h.match(/(?:player\.)?vimeo\.com\/(?:video\/|channels\/[\w-]+\/)?(\d+)(?:\/([a-f0-9]+))?/i);
+  if (m) {
+    return {
+      provider: 'vimeo',
+      src: `https://player.vimeo.com/video/${m[1]}?autoplay=1&api=1${m[2] ? `&h=${m[2]}` : ''}`,
+    };
+  }
+  m = h.match(/dailymotion\.com\/video\/([a-z0-9]+)/i);
+  if (m) {
+    return { provider: 'dm', src: `https://www.dailymotion.com/embed/video/${m[1]}?autoplay=1` };
+  }
+  return null;
+}
+
 function buildFireTv(ctx) {
-  // Broader shelf test than the web templates: a playable video (or a video
-  // poster) earns a media card even when the item has no thumbnail.
-  const tvPreview = (it) => hasPreview(it) || !!extractVideoSrc(it) || !!(it && it.video && it.video.poster);
+  // Broader shelf test than the web templates: anything playable in-app
+  // (direct file or embeddable host) or with a video poster earns a media
+  // card even when the item has no thumbnail.
+  const tvPreview = (it) => hasPreview(it) || !!extractVideoSrc(it) || !!tvEmbedFor(it && it.href) || !!(it && it.video && it.video.poster);
   const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups, tvPreview);
 
   const mediaCard = (item) => {
     const play = extractVideoSrc(item);
+    const embed = play ? null : tvEmbedFor(item.href);
     const kind = itemKind(item);
     const poster = item.thumbnail || (item.video && item.video.poster) || '';
     const mark = (item.domain || item.title || 'L').charAt(0).toUpperCase();
     return `<div class="tv-card" data-tv-card role="button" tabindex="-1"
-      data-href="${attr(item.href)}"${play ? ` data-play="${attr(play)}"${poster ? ` data-poster="${attr(poster)}"` : ''}` : ''}
+      data-href="${attr(item.href)}"${play ? ` data-play="${attr(play)}"${poster ? ` data-poster="${attr(poster)}"` : ''}` : ''}${embed ? ` data-embed="${attr(embed.src)}" data-provider="${attr(embed.provider)}"` : ''}
       data-title="${attr(item.title || item.href)}">
       <div class="tv-card__media">
         ${poster
           ? `<img src="${attr(poster)}" alt="" loading="lazy" onerror="this.remove()"/>`
           : `<span class="tv-card__mark">${esc(mark)}</span>`}
-        ${kind === 'video' ? `<span class="tv-card__badge${play ? ' tv-card__badge--play' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>` : ''}
+        ${kind === 'video' ? `<span class="tv-card__badge${play || embed ? ' tv-card__badge--play' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>` : ''}
       </div>
       <div class="tv-card__label">
         <span class="tv-card__title">${esc(item.title || item.href)}</span>
-        <span class="tv-card__meta">${esc(item.domain || '')}${play ? ' · plays here' : ''}</span>
+        <span class="tv-card__meta">${esc(item.domain || '')}${play || embed ? ' · plays in app' : ''}</span>
       </div>
     </div>`;
   };
@@ -2492,7 +2521,7 @@ function buildFireTv(ctx) {
     .join('');
 
   const playableCount = ctx.sourceGroups.reduce(
-    (n, g) => n + (g.items || []).filter((it) => extractVideoSrc(it)).length, 0);
+    (n, g) => n + (g.items || []).filter((it) => extractVideoSrc(it) || tvEmbedFor(it.href)).length, 0);
 
   const css = `<style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2571,6 +2600,7 @@ function buildFireTv(ctx) {
     }
     .tv-player.is-open { display: flex; }
     .tv-player video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+    .tv-player__embed { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
     .tv-player__osd {
       position: absolute; left: 0; right: 0; bottom: 0;
       padding: 3rem 3rem 1.6rem;
@@ -2668,7 +2698,19 @@ function buildFireTv(ctx) {
     else setFocus(r, cols[r] + dc);
   }
 
-  // ----- built-in player (direct MP4/WebM only) -----
+  // ----- built-in player -----
+  // Two flavors behind one overlay:
+  //   'file'  — direct MP4/WebM in the native <video> (hardware decode)
+  //   'embed' — YouTube / Vimeo / Dailymotion in an iframe. The iframe never
+  //             takes focus, so the D-pad stays on our document; playback is
+  //             driven through each provider's postMessage protocol instead.
+  var playerKind = null;      // 'file' | 'embed' while open
+  var embedFrame = null;
+  var embedProvider = null;   // 'yt' | 'vimeo' | 'dm'
+  var embedInfo = { playing: true, time: 0, duration: 0 };
+  var embedPoll = null;
+  var openHref = '';          // href of the item playing (for error fallback)
+
   function fmt(t) {
     if (!isFinite(t)) return '0:00';
     var m = Math.floor(t / 60), s = Math.floor(t % 60);
@@ -2679,54 +2721,167 @@ function buildFireTv(ctx) {
     if (osdTimer) clearTimeout(osdTimer);
     if (!sticky) osdTimer = setTimeout(function () { osd.classList.remove('is-visible'); }, 3000);
   }
-  function openPlayer(card) {
+  function setOsdProgress(time, duration) {
+    if (isFinite(duration) && duration > 0) {
+      osdFill.style.width = Math.max(0, Math.min(100, time / duration * 100)) + '%';
+      osdTime.textContent = fmt(time) + ' / ' + fmt(duration);
+    }
+  }
+  function openOverlay(card, kind) {
     mode = 'player';
+    playerKind = kind;
+    openHref = card.getAttribute('data-href') || '';
     osdTitle.textContent = card.getAttribute('data-title') || '';
+    osdFill.style.width = '0%';
+    osdTime.textContent = '0:00 / 0:00';
+    stateBadge.classList.remove('is-visible');
+    player.classList.add('is-open');
+    player.setAttribute('aria-hidden', 'false');
+    showOsd();
+  }
+  function openFile(card) {
+    openOverlay(card, 'file');
     var poster = card.getAttribute('data-poster');
     if (poster) video.setAttribute('poster', poster); else video.removeAttribute('poster');
     video.src = card.getAttribute('data-play');
-    player.classList.add('is-open');
-    player.setAttribute('aria-hidden', 'false');
-    stateBadge.classList.remove('is-visible');
     var p = video.play();
     if (p && p.catch) p.catch(function () { showOsd(true); });
-    showOsd();
+  }
+  function openEmbed(card) {
+    openOverlay(card, 'embed');
+    embedProvider = card.getAttribute('data-provider');
+    embedInfo = { playing: true, time: 0, duration: 0 };
+    video.style.display = 'none';
+    embedFrame = document.createElement('iframe');
+    embedFrame.className = 'tv-player__embed';
+    embedFrame.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
+    embedFrame.setAttribute('allowfullscreen', '');
+    embedFrame.setAttribute('tabindex', '-1');
+    embedFrame.src = card.getAttribute('data-embed');
+    player.insertBefore(embedFrame, player.firstChild);
+    // Handshake loop: YouTube starts streaming infoDelivery (time/state)
+    // once it hears "listening"; Vimeo needs event subscriptions. Re-sent on
+    // an interval because the iframe may not be ready for the first ones.
+    embedPoll = setInterval(function () {
+      if (embedProvider === 'yt') {
+        embedPost({ event: 'listening', id: 'lf' });
+      } else if (embedProvider === 'vimeo') {
+        embedPost({ method: 'addEventListener', value: 'playProgress' });
+        embedPost({ method: 'addEventListener', value: 'pause' });
+        embedPost({ method: 'addEventListener', value: 'play' });
+        embedPost({ method: 'addEventListener', value: 'finish' });
+      }
+    }, 600);
+  }
+  function embedPost(data) {
+    if (!embedFrame || !embedFrame.contentWindow) return;
+    try { embedFrame.contentWindow.postMessage(JSON.stringify(data), '*'); } catch (e) {}
   }
   function closePlayer() {
     mode = 'grid';
+    playerKind = null;
+    openHref = '';
+    if (embedPoll) { clearInterval(embedPoll); embedPoll = null; }
+    if (embedFrame) {
+      if (embedFrame.parentNode) embedFrame.parentNode.removeChild(embedFrame);
+      embedFrame = null;
+      embedProvider = null;
+    }
+    video.style.display = '';
     try { video.pause(); } catch (e) {}
     video.removeAttribute('src');
     video.load();
     player.classList.remove('is-open');
     player.setAttribute('aria-hidden', 'true');
   }
+  function setPausedBadge(paused) {
+    stateBadge.classList.toggle('is-visible', paused);
+  }
   function togglePlay() {
-    if (video.paused) { video.play(); stateBadge.classList.remove('is-visible'); }
-    else { video.pause(); stateBadge.classList.add('is-visible'); }
+    if (playerKind === 'embed') {
+      var playing = embedInfo.playing;
+      if (embedProvider === 'yt') embedPost({ event: 'command', func: playing ? 'pauseVideo' : 'playVideo', args: [] });
+      else if (embedProvider === 'vimeo') embedPost({ method: playing ? 'pause' : 'play' });
+      else embedPost({ command: playing ? 'pause' : 'play', parameters: [] });
+      embedInfo.playing = !playing;
+      setPausedBadge(!embedInfo.playing);
+    } else if (video.paused) {
+      video.play();
+      setPausedBadge(false);
+    } else {
+      video.pause();
+      setPausedBadge(true);
+    }
     showOsd();
   }
   function seek(delta) {
-    if (isFinite(video.duration)) {
+    if (playerKind === 'embed') {
+      var t = Math.max(0, embedInfo.time + delta);
+      if (embedInfo.duration) t = Math.min(embedInfo.duration, t);
+      if (embedProvider === 'yt') embedPost({ event: 'command', func: 'seekTo', args: [t, true] });
+      else if (embedProvider === 'vimeo') embedPost({ method: 'setCurrentTime', value: t });
+      else embedPost({ command: 'seek', parameters: [t] });
+      embedInfo.time = t;
+      setOsdProgress(embedInfo.time, embedInfo.duration);
+    } else if (isFinite(video.duration)) {
       video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + delta));
     }
     showOsd();
   }
   video.addEventListener('timeupdate', function () {
-    if (isFinite(video.duration) && video.duration > 0) {
-      osdFill.style.width = (video.currentTime / video.duration * 100) + '%';
-      osdTime.textContent = fmt(video.currentTime) + ' / ' + fmt(video.duration);
-    }
+    if (playerKind === 'file') setOsdProgress(video.currentTime, video.duration);
   });
-  video.addEventListener('ended', closePlayer);
+  video.addEventListener('ended', function () { if (playerKind === 'file') closePlayer(); });
   video.addEventListener('error', function () {
     // Direct playback failed (codec, CORS, dead link) — fall back to the page.
-    var card = current();
-    if (mode === 'player' && card) { closePlayer(); location.href = card.getAttribute('data-href'); }
+    if (mode === 'player' && playerKind === 'file' && openHref) {
+      var href = openHref;
+      closePlayer();
+      location.href = href;
+    }
+  });
+
+  // Status flowing back from embedded players (time, state, errors).
+  window.addEventListener('message', function (e) {
+    if (!embedFrame || e.source !== embedFrame.contentWindow) return;
+    var d = e.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (err) { return; } }
+    if (!d || typeof d !== 'object') return;
+    if (d.event === 'infoDelivery' && d.info) {              // YouTube
+      if (typeof d.info.currentTime === 'number') embedInfo.time = d.info.currentTime;
+      if (typeof d.info.duration === 'number' && d.info.duration > 0) embedInfo.duration = d.info.duration;
+      if (typeof d.info.playerState === 'number') {
+        if (d.info.playerState === 0) { closePlayer(); return; } // ended
+        embedInfo.playing = d.info.playerState === 1 || d.info.playerState === 3;
+        setPausedBadge(d.info.playerState === 2);
+      }
+      setOsdProgress(embedInfo.time, embedInfo.duration);
+    } else if (d.event === 'onError') {                      // YouTube: embed blocked etc.
+      if (mode === 'player' && playerKind === 'embed' && openHref) {
+        var href = openHref;
+        closePlayer();
+        location.href = href;
+      }
+    } else if (d.event === 'playProgress' && d.data) {       // Vimeo
+      if (typeof d.data.seconds === 'number') embedInfo.time = d.data.seconds;
+      if (typeof d.data.duration === 'number' && d.data.duration > 0) embedInfo.duration = d.data.duration;
+      embedInfo.playing = true;
+      setOsdProgress(embedInfo.time, embedInfo.duration);
+    } else if (d.event === 'pause') {                        // Vimeo
+      embedInfo.playing = false;
+      setPausedBadge(true);
+    } else if (d.event === 'play') {                         // Vimeo
+      embedInfo.playing = true;
+      setPausedBadge(false);
+    } else if (d.event === 'finish') {                       // Vimeo
+      closePlayer();
+    }
   });
 
   function activate(card) {
     if (!card) return;
-    if (card.getAttribute('data-play')) openPlayer(card);
+    if (card.getAttribute('data-play')) openFile(card);
+    else if (card.getAttribute('data-embed')) openEmbed(card);
     else location.href = card.getAttribute('data-href');
   }
 
@@ -2752,8 +2907,8 @@ function buildFireTv(ctx) {
     if (mode === 'player') {
       switch (key) {
         case 'Enter': case 'MediaPlayPause': togglePlay(); break;
-        case 'MediaPlay': video.play(); showOsd(); break;
-        case 'MediaPause': video.pause(); showOsd(); break;
+        case 'MediaPlay': if (playerKind === 'embed') { if (!embedInfo.playing) togglePlay(); } else video.play(); showOsd(); break;
+        case 'MediaPause': if (playerKind === 'embed') { if (embedInfo.playing) togglePlay(); } else video.pause(); showOsd(); break;
         case 'ArrowLeft': case 'MediaRewind': seek(-10); break;
         case 'ArrowRight': case 'MediaFastForward': seek(10); break;
         case 'ArrowUp': seek(60); break;

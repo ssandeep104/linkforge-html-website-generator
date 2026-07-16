@@ -405,10 +405,13 @@ fullscreen WebView tuned for the living room:
   the center button opens/plays, Back closes the player, and the
   play/pause / rewind / fast-forward buttons control playback.
   No mouse, no ADB keyboard app needed.
-- **Smooth playback** — direct video links (MP4/WebM) play in a built-in
-  fullscreen player using the device's hardware decoder.
-- Anything that isn't a direct video opens in-app; Back returns you to
-  your shelves.
+- **Videos play inside the app** — direct video links (MP4/WebM) play in a
+  built-in fullscreen player using the device's hardware decoder, and
+  YouTube / Vimeo / Dailymotion links open in an in-app embedded player
+  that the remote controls the same way (OK play/pause, ◀ ▶ seek,
+  Back to close). No jumping out to websites to watch something.
+- Only links with no recognizable video source open as pages in-app;
+  Back returns you to your shelves.
 
 ## Get the APK (pick whichever is easiest)
 
