@@ -367,7 +367,7 @@ function previewSvg(layout) {
 const TEMPLATES = {
   marquee: {
     name: 'Marquee',
-    desc: 'A high-performance, streaming-style showcase: big autoplaying source tiles that loop MP4 previews or thumbnail slideshows as you scroll.',
+    desc: 'A high-performance, streaming-style showcase: big autoplaying source tiles that loop MP4 previews or thumbnail slideshows — and videos (MP4, YouTube, Vimeo) play right on the page in a lightbox.',
     focus: 'Streaming',
     fit: 'Best when most of your picks are videos or rich thumbnails',
     featured: true,
@@ -1851,16 +1851,18 @@ function buildMarquee(ctx) {
       if (seenHref.has(it.href)) continue;
       seenHref.add(it.href);
       const vsrc = extractVideoSrc(it);
+      const emb = vsrc ? null : tvEmbedFor(it.href);
       const thumb = it.thumbnail || (it.video && it.video.poster) || null;
       const clean = {
         href: it.href,
         title: it.title || it.href,
         thumb: thumb || null,
         video: vsrc || null,
+        embed: emb ? emb.src : null,
         domain: it.domain || '',
         kind: itemKind(it),
       };
-      if (!vsrc && !thumb) {
+      if (!vsrc && !thumb && !emb) {
         linkItems.push(clean);
       } else {
         items.push(clean);
@@ -1909,24 +1911,24 @@ function buildMarquee(ctx) {
   }
   html, body { background: var(--mq-bg); color: var(--mq-text); font-family: var(--mq-sans); }
   body { min-height: 100vh; position: relative; overflow-x: hidden; }
+  /* Static layered aurora — replaces the old perpetually-rotating 80vmax
+     blur(120px) blob, which forced continuous compositing of a huge layer. */
   body::before {
     content: "";
-    position: fixed; inset: -40vmax -40vmax auto auto;
-    width: 80vmax; height: 80vmax; border-radius: 50%;
-    background: conic-gradient(from 210deg, rgba(249,112,102,0.22), rgba(251,146,60,0.08) 40%, rgba(56,189,248,0.16) 70%, rgba(249,112,102,0.22));
-    filter: blur(120px);
-    z-index: 0; pointer-events: none;
-    animation: mq-spin 46s linear infinite;
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(52vmax 42vmax at 88% -12%, rgba(249,112,102,0.17), transparent 62%),
+      radial-gradient(48vmax 40vmax at -14% 22%, rgba(56,189,248,0.10), transparent 65%),
+      radial-gradient(42vmax 38vmax at 62% 118%, rgba(251,146,60,0.11), transparent 60%);
   }
   body::after {
     content: "";
     position: fixed; inset: 0;
     background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
     background-size: 3px 3px;
-    opacity: 0.35; mix-blend-mode: overlay;
+    opacity: 0.28;
     z-index: 0; pointer-events: none;
   }
-  @keyframes mq-spin { to { transform: rotate(360deg); } }
 
   .mq-app { position: relative; z-index: 1; }
   .mq-nav {
@@ -1968,6 +1970,26 @@ function buildMarquee(ctx) {
   .mq-hero__stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 8px; font-family: var(--mq-mono); font-size: 11.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mq-faint); }
   .mq-hero__stats strong { color: var(--mq-text); font-weight: 600; margin-right: 6px; font-family: var(--mq-serif); font-size: 20px; letter-spacing: -0.02em; }
 
+  /* TICKER — a literal marquee strip of sources (transform-only, cheap) */
+  .mq-ticker {
+    overflow: hidden; margin: 0 0 clamp(36px, 5vw, 64px);
+    border-top: 1px solid var(--mq-border); border-bottom: 1px solid var(--mq-border);
+    padding: 12px 0;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .mq-ticker__track { display: flex; width: max-content; will-change: transform; animation: mq-ticker var(--mq-ticker-dur, 36s) linear infinite; }
+  .mq-ticker:hover .mq-ticker__track { animation-play-state: paused; }
+  .mq-ticker__half { display: inline-flex; align-items: baseline; gap: 40px; padding-right: 40px; white-space: nowrap; }
+  .mq-ticker__item { font-family: var(--mq-mono); font-size: 11.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--mq-muted); }
+  .mq-ticker__item b { color: var(--mq-accent); font-weight: 600; margin-left: 8px; }
+  .mq-ticker__sep { color: var(--mq-faint); font-size: 11px; }
+  @keyframes mq-ticker { to { transform: translateX(-50%); } }
+
+  /* Scroll reveal (transform/opacity only; neutralized for reduced motion) */
+  .mq-reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s var(--ease-out) var(--mq-d, 0ms), transform .6s var(--ease-out) var(--mq-d, 0ms); }
+  .mq-reveal.is-in { opacity: 1; transform: none; }
+
   /* SOURCE GRID (home) */
   .mq-grid {
     display: grid; gap: clamp(20px, 2.5vw, 32px);
@@ -1988,10 +2010,18 @@ function buildMarquee(ctx) {
     box-shadow: 0 30px 60px -20px rgba(249,112,102,0.28), 0 20px 40px -20px rgba(0,0,0,0.6);
     outline: none;
   }
+  .mq-card { content-visibility: auto; contain-intrinsic-size: 420px 380px; }
   .mq-tile {
     position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden;
     background: #0d0d10; isolation: isolate;
   }
+  /* shine sweep on hover — GPU transform only */
+  .mq-tile::before {
+    content: ""; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+    background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.09) 50%, transparent 58%);
+    transform: translateX(-130%);
+  }
+  .mq-card:hover .mq-tile::before { transition: transform .8s var(--ease-out); transform: translateX(130%); }
   .mq-tile__poster,
   .mq-tile__slides img,
   .mq-tile__video {
@@ -2082,6 +2112,7 @@ function buildMarquee(ctx) {
     padding: 12px; border-radius: 18px;
     background: var(--mq-surface); border: 1px solid var(--mq-border);
     text-decoration: none; color: inherit;
+    content-visibility: auto; contain-intrinsic-size: 320px 300px;
     transition: transform .3s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease;
   }
   .mq-item:hover {
@@ -2090,6 +2121,7 @@ function buildMarquee(ctx) {
     border-color: var(--mq-border-hi);
     box-shadow: 0 20px 40px -20px rgba(0,0,0,0.6);
   }
+  .mq-item--playable:hover { border-color: rgba(249,112,102,0.45); box-shadow: 0 20px 44px -18px rgba(249,112,102,0.3), 0 20px 40px -20px rgba(0,0,0,0.6); }
   .mq-item__thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #0d0d10; }
   .mq-item__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
   .mq-item:hover .mq-item__thumb img { transform: scale(1.04); }
@@ -2099,11 +2131,60 @@ function buildMarquee(ctx) {
   }
   .mq-item__play {
     position: absolute; right: 10px; bottom: 10px; z-index: 2;
-    width: 34px; height: 34px; border-radius: 999px;
-    display: grid; place-items: center;
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 30px; padding: 0 12px 0 9px; border-radius: 999px;
     background: var(--mq-accent); color: #fff;
+    font-family: var(--mq-mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    box-shadow: 0 6px 18px -6px rgba(249,112,102,0.65);
+    transition: transform .25s var(--ease-out);
   }
-  .mq-item__play svg { width: 14px; height: 14px; margin-left: 2px; }
+  .mq-item:hover .mq-item__play { transform: scale(1.06); }
+  .mq-item__play svg { width: 12px; height: 12px; }
+  .mq-item__ext {
+    position: absolute; right: 10px; bottom: 10px; z-index: 2;
+    width: 30px; height: 30px; border-radius: 999px;
+    display: grid; place-items: center;
+    background: rgba(8,8,11,0.72); border: 1px solid var(--mq-border);
+    color: var(--mq-muted);
+  }
+  .mq-item__ext svg { width: 12px; height: 12px; }
+
+  /* LIGHTBOX — in-page player (native <video> or provider embed) */
+  .mq-lightbox { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: clamp(14px, 4vw, 48px); }
+  .mq-lightbox.is-open { display: flex; }
+  .mq-lightbox__backdrop { position: absolute; inset: 0; background: rgba(5,5,9,0.84); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); }
+  .mq-lightbox__panel {
+    position: relative; z-index: 1; width: min(1080px, 100%); margin: 0;
+    border-radius: 20px; overflow: hidden; background: #000;
+    border: 1px solid var(--mq-border-hi);
+    box-shadow: 0 50px 140px -30px rgba(0,0,0,0.85), 0 0 80px -40px rgba(249,112,102,0.5);
+    animation: mq-pop .35s var(--ease-out);
+  }
+  @keyframes mq-pop { from { transform: translateY(18px) scale(.985); opacity: 0; } }
+  .mq-lightbox__stage { aspect-ratio: 16 / 9; background: #000; }
+  .mq-lightbox__stage video, .mq-lightbox__stage iframe { width: 100%; height: 100%; display: block; border: 0; background: #000; }
+  .mq-lightbox__err { height: 100%; display: grid; place-content: center; gap: 10px; text-align: center; color: var(--mq-muted); font-size: 15px; padding: 24px; }
+  .mq-lightbox__err a { color: var(--mq-accent); text-decoration: underline; }
+  .mq-lightbox__bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px 16px; background: rgba(12,12,16,0.96); border-top: 1px solid var(--mq-border);
+  }
+  .mq-lightbox__info { min-width: 0; display: grid; gap: 2px; }
+  .mq-lightbox__title { font-family: var(--mq-serif); font-size: 16px; letter-spacing: -0.01em; color: var(--mq-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mq-lightbox__domain { font-family: var(--mq-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mq-faint); }
+  .mq-lightbox__actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .mq-lightbox__ext, .mq-lightbox__close {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 13px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--mq-border); background: var(--mq-surface);
+    color: var(--mq-muted); font-family: var(--mq-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    transition: color .25s, border-color .25s, background .25s;
+  }
+  .mq-lightbox__ext:hover, .mq-lightbox__close:hover { color: var(--mq-text); border-color: var(--mq-border-hi); background: var(--mq-surface-hi); }
+  @media (max-width: 640px) {
+    .mq-lightbox__bar { flex-direction: column; align-items: stretch; }
+    .mq-lightbox__actions { justify-content: flex-end; }
+  }
   .mq-item__title { padding: 0 4px 8px; font-family: var(--mq-serif); font-size: 17px; line-height: 1.28; letter-spacing: -0.015em; color: var(--mq-text); }
   .mq-item__domain { padding: 0 4px 4px; font-family: var(--mq-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mq-faint); }
 
@@ -2134,9 +2215,10 @@ function buildMarquee(ctx) {
     .mq-hero__stats { gap: 14px; }
     .mq-card { padding: 10px; border-radius: 18px; }
   }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .28s; }
   @media (prefers-reduced-motion: reduce) {
-    body::before { animation: none; }
     .mq-tile__slides img, .mq-tile__video, .mq-tile__poster { transition: none; }
+    .mq-reveal { opacity: 1; transform: none; transition: none; }
     * { animation: none !important; }
   }
   `;
@@ -2228,11 +2310,12 @@ function buildMarquee(ctx) {
     } else if (images.length > 1) {
       var slides = tile.querySelectorAll('.mq-tile__slides img');
       if (slides.length < 2) return;
-      // Preload
-      images.forEach(function(src){ var i = new Image(); i.src = src; });
+      // Preload only the upcoming slide (eagerly fetching the whole set
+      // front-loaded dozens of image requests per tile).
       var slot = 0;
       var i = 0;
       slides[0].src = images[0]; slides[0].classList.add('is-visible');
+      var warm = new Image(); warm.src = images[1];
       var interval = null;
       function tick() {
         i = (i + 1) % images.length;
@@ -2242,6 +2325,7 @@ function buildMarquee(ctx) {
         incoming.src = images[i];
         incoming.classList.add('is-visible');
         outgoing.classList.remove('is-visible');
+        warm.src = images[(i + 1) % images.length];
       }
       function startSlideshow() { tile.classList.add('is-playing'); interval = setInterval(tick, SLIDESHOW_STEP_MS); }
       function stopSlideshow() { tile.classList.remove('is-playing'); if (interval) { clearInterval(interval); interval = null; } }
@@ -2264,6 +2348,7 @@ function buildMarquee(ctx) {
   }
 
   var observer = null;
+  var revealObserver = null;
   function setupObserver(root) {
     if (observer) observer.disconnect();
     observer = new IntersectionObserver(function(entries){
@@ -2284,26 +2369,164 @@ function buildMarquee(ctx) {
         btn.setAttribute('aria-label', playing ? 'Pause preview' : 'Play preview');
       });
     });
+    // Scroll reveal: fade cards in as they enter, with a slight stagger.
+    if (revealObserver) revealObserver.disconnect();
+    var revealEls = root.querySelectorAll('.mq-reveal');
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      revealEls.forEach(function(el){ el.classList.add('is-in'); });
+    } else {
+      revealObserver = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-in');
+          revealObserver.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -5% 0px', threshold: 0.05 });
+      revealEls.forEach(function(el){ revealObserver.observe(el); });
+    }
   }
 
+  // ---- Lightbox: play videos on the page instead of navigating away ----
+  var lb = document.createElement('div');
+  lb.className = 'mq-lightbox';
+  lb.setAttribute('aria-hidden', 'true');
+  lb.innerHTML =
+    '<div class="mq-lightbox__backdrop"></div>' +
+    '<figure class="mq-lightbox__panel" role="dialog" aria-modal="true" aria-label="Video player">' +
+      '<div class="mq-lightbox__stage"></div>' +
+      '<figcaption class="mq-lightbox__bar">' +
+        '<div class="mq-lightbox__info">' +
+          '<span class="mq-lightbox__title"></span>' +
+          '<span class="mq-lightbox__domain"></span>' +
+        '</div>' +
+        '<div class="mq-lightbox__actions">' +
+          '<a class="mq-lightbox__ext" target="_blank" rel="noopener">Open original ↗</a>' +
+          '<button type="button" class="mq-lightbox__close">Close · Esc</button>' +
+        '</div>' +
+      '</figcaption>' +
+    '</figure>';
+  document.body.appendChild(lb);
+  var lbStage = lb.querySelector('.mq-lightbox__stage');
+  var lbOpener = null;
+  var pausedTiles = [];
+
+  function pauseTiles() {
+    document.querySelectorAll('.mq-tile.is-playing').forEach(function(t){
+      if (t.__togglePause) { t.__togglePause(); pausedTiles.push(t); }
+    });
+  }
+  function resumeTiles() {
+    pausedTiles.forEach(function(t){
+      if (t.__togglePause && !t.classList.contains('is-playing') && document.contains(t)) t.__togglePause();
+    });
+    pausedTiles = [];
+  }
+  function openLightbox(item, opener) {
+    lbOpener = opener || null;
+    pauseTiles();
+    lbStage.innerHTML = '';
+    if (item.video) {
+      var v = document.createElement('video');
+      v.controls = true; v.autoplay = true; v.playsInline = true; v.preload = 'metadata';
+      if (item.thumb) v.poster = item.thumb;
+      v.src = item.video;
+      v.addEventListener('error', function(){
+        lbStage.innerHTML = '<div class="mq-lightbox__err"><span>This video couldn\\u2019t be played here.</span>' +
+          '<a href="' + attr(item.href) + '" target="_blank" rel="noopener">Open the original instead \\u2197</a></div>';
+      });
+      lbStage.appendChild(v);
+      var p = v.play(); if (p && p.catch) p.catch(function(){});
+    } else if (item.embed) {
+      var f = document.createElement('iframe');
+      f.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
+      f.setAttribute('allowfullscreen', '');
+      f.src = item.embed;
+      lbStage.appendChild(f);
+    } else {
+      return;
+    }
+    lb.querySelector('.mq-lightbox__title').textContent = item.title || '';
+    lb.querySelector('.mq-lightbox__domain').textContent = item.domain || '';
+    lb.querySelector('.mq-lightbox__ext').href = item.href;
+    lb.classList.add('is-open');
+    lb.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    lb.querySelector('.mq-lightbox__close').focus();
+  }
+  function closeLightbox() {
+    if (!lb.classList.contains('is-open')) return;
+    var v = lbStage.querySelector('video');
+    if (v) { try { v.pause(); } catch(e){} }
+    lbStage.innerHTML = '';
+    lb.classList.remove('is-open');
+    lb.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    resumeTiles();
+    if (lbOpener && lbOpener.focus) { try { lbOpener.focus(); } catch(e){} }
+    lbOpener = null;
+  }
+  lb.querySelector('.mq-lightbox__backdrop').addEventListener('click', closeLightbox);
+  lb.querySelector('.mq-lightbox__close').addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeLightbox(); });
+  document.addEventListener('click', function(e){
+    var el = e.target.closest ? e.target.closest('.mq-item--playable') : null;
+    if (!el) return;
+    var s = findSource(el.getAttribute('data-src'));
+    var item = s && s.items && s.items[+el.getAttribute('data-i')];
+    if (!item || (!item.video && !item.embed)) return;
+    e.preventDefault();
+    openLightbox(item, el);
+  });
+
   // ---- Views ----
+  function heroTitleHtml(t) {
+    // Italic serif accent on the last word (skip one-word titles).
+    var words = String(t || '').trim().split(/\\s+/);
+    if (words.length < 2) return esc(t);
+    var last = words.pop();
+    return esc(words.join(' ')) + ' <em>' + esc(last) + '</em>';
+  }
+
+  function playableCount() {
+    return data.sources.reduce(function(a, s){
+      return a + (s.items || []).filter(function(it){ return it.video || it.embed; }).length;
+    }, 0);
+  }
+
+  function tickerHtml() {
+    if (!data.sources.length) return '';
+    var seq = data.sources.map(function(s){
+      return '<span class="mq-ticker__item">' + esc(s.name) + '<b>' + s.count + '</b></span>';
+    }).join('<span class="mq-ticker__sep">\\u2726</span>');
+    // Repeat until each half is comfortably wider than any viewport, then
+    // duplicate the half — translateX(-50%) loops seamlessly.
+    var reps = Math.max(1, Math.ceil(10 / data.sources.length));
+    var parts = [];
+    for (var i = 0; i < reps; i++) parts.push(seq);
+    var half = '<span class="mq-ticker__half">' + parts.join('<span class="mq-ticker__sep">\\u2726</span>') + '</span>';
+    var dur = Math.min(90, Math.max(24, reps * data.sources.length * 6));
+    return '<div class="mq-ticker" aria-hidden="true"><div class="mq-ticker__track" style="--mq-ticker-dur:' + dur + 's">' + half + half + '</div></div>';
+  }
+
   function renderHome() {
     if (crumbsEl) crumbsEl.innerHTML = '<span>Home</span>';
+    var playable = playableCount();
     var stats =
       '<div class="mq-hero__stats">' +
         '<span><strong>' + data.sources.length + '</strong>Sources</span>' +
         '<span><strong>' + data.sources.reduce(function(a,s){return a+s.count;},0) + '</strong>Items</span>' +
+        (playable ? '<span><strong>' + playable + '</strong>Play in page</span>' : '') +
         (data.today ? '<span>' + esc(data.today) + '</span>' : '') +
       '</div>';
     var hero =
       '<header class="mq-hero">' +
         '<span class="mq-hero__kicker">Now Playing</span>' +
-        '<h1 class="mq-hero__title">' + esc(data.title) + '</h1>' +
+        '<h1 class="mq-hero__title">' + heroTitleHtml(data.title) + '</h1>' +
         (data.tagline ? '<p class="mq-hero__tag">' + esc(data.tagline) + '</p>' : '') +
         stats +
       '</header>';
 
-    var cards = data.sources.map(function(s){
+    var cards = data.sources.map(function(s, sIdx){
       var videos = s.videos || [];
       var images = s.images || [];
       var tile =
@@ -2320,18 +2543,21 @@ function buildMarquee(ctx) {
             '</button>'
           ) : '') +
         '</div>';
-      return '<a class="mq-card" href="#/s/' + attr(s.slug) + '">' +
+      var playHere = (s.items || []).filter(function(it){ return it.video || it.embed; }).length;
+      return '<a class="mq-card mq-reveal" style="--mq-d:' + ((sIdx % 6) * 45) + 'ms" href="#/s/' + attr(s.slug) + '">' +
         tile +
         '<div class="mq-card__meta">' +
           '<div class="mq-card__title">' + esc(s.name) + '</div>' +
-          '<div class="mq-card__sub"><span>' + s.count + ' picks</span></div>' +
+          '<div class="mq-card__sub"><span>' + s.count + ' picks</span>' +
+            (playHere ? '<span class="type">' + playHere + ' play in page</span>' : '') +
+            '<span style="margin-left:auto">Explore \\u2192</span></div>' +
         '</div>' +
       '</a>';
     }).join('');
     var grid = data.sources.length
       ? '<section class="mq-grid">' + cards + '</section>'
       : '<div class="mq-empty">No sources to show.</div>';
-    app.innerHTML = '<div class="mq-view">' + hero + grid + '</div>';
+    app.innerHTML = '<div class="mq-view">' + hero + tickerHtml() + grid + '</div>';
     window.scrollTo(0, 0);
     setupObserver(app);
   }
@@ -2340,15 +2566,24 @@ function buildMarquee(ctx) {
     var s = findSource(slug);
     if (!s) { location.hash = '#/'; return; }
     if (crumbsEl) crumbsEl.innerHTML = '<a href="#/">Home</a><span class="sep">/</span><span>' + esc(s.name) + '</span>';
-    var items = (s.items || []).map(function(it){
-      var isVideo = !!it.video;
+    var items = (s.items || []).map(function(it, i){
+      var playable = !!(it.video || it.embed);
       var thumbHtml = it.thumb
-        ? '<img src="' + attr(it.thumb) + '" alt="" loading="lazy"/>'
+        ? '<img src="' + attr(it.thumb) + '" alt="" loading="lazy" decoding="async"/>'
         : '<div class="mq-item__no-thumb"><span>' + esc(it.domain || 'video') + '</span></div>';
-      return '<a class="mq-item" href="' + attr(it.href) + '" target="_blank" rel="noopener">' +
+      var badge = playable
+        ? '<span class="mq-item__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Play</span>'
+        : (it.kind === 'video'
+          ? '<span class="mq-item__ext" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M9 7h8v8"/></svg></span>'
+          : '');
+      // Playable items open the in-page lightbox (click intercepted via the
+      // .mq-item--playable delegate); everything else opens the page.
+      return '<a class="mq-item mq-reveal' + (playable ? ' mq-item--playable' : '') + '" style="--mq-d:' + ((i % 8) * 40) + 'ms"' +
+        ' href="' + attr(it.href) + '"' +
+        (playable ? ' data-src="' + attr(s.slug) + '" data-i="' + i + '" aria-haspopup="dialog"' : ' target="_blank" rel="noopener"') + '>' +
         '<div class="mq-item__thumb">' +
           thumbHtml +
-          (isVideo ? '<span class="mq-item__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : '') +
+          badge +
         '</div>' +
         '<div class="mq-item__title">' + esc(it.title) + '</div>' +
         (it.domain ? '<div class="mq-item__domain">' + esc(it.domain) + '</div>' : '') +
@@ -2378,7 +2613,8 @@ function buildMarquee(ctx) {
           '<h1 class="mq-detail__title">' + esc(s.name) + '</h1>' +
           '<div class="mq-detail__meta">' +
             '<span>' + s.count + ' items</span>' +
-            (s.videos.length ? '<span>' + s.videos.length + ' videos</span>' : '') +
+            (function(){ var p = (s.items || []).filter(function(it){ return it.video || it.embed; }).length;
+              return p ? '<span>' + p + ' play in page</span>' : ''; })() +
             (s.images.length ? '<span>' + s.images.length + ' images</span>' : '') +
           '</div>' +
         '</header>' +
@@ -2387,13 +2623,22 @@ function buildMarquee(ctx) {
       '</div>';
     app.innerHTML = body;
     window.scrollTo(0, 0);
+    setupObserver(app);
   }
 
+  var routedOnce = false;
   function route(targetHash) {
     var h = targetHash || location.hash || '#/';
     var m = h.match(/^#\\/s\\/(.+)$/);
-    if (m) renderSource(decodeURIComponent(m[1]));
-    else renderHome();
+    closeLightbox();
+    var render = m
+      ? function(){ renderSource(decodeURIComponent(m[1])); }
+      : renderHome;
+    // Cross-fade between views where the browser supports it (but render the
+    // very first view synchronously — nothing to transition from yet).
+    if (routedOnce && document.startViewTransition && !reduceMotion) document.startViewTransition(render);
+    else render();
+    routedOnce = true;
   }
 
   document.addEventListener('click', function(e) {
