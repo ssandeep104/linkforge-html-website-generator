@@ -1180,6 +1180,10 @@ const TEMPLATE_DEFAULTS = {
     title: 'Marquee Showcase',
     tagline: 'A curated marquee spotlight of streaming video highlights and media cards.'
   },
+  firetv: {
+    title: 'My TV Collection',
+    tagline: 'A lean-back collection built for the big screen — browse and play with just the remote.'
+  },
   youtube: {
     title: DEFAULT_SITE_TITLE,
     tagline: DEFAULT_SITE_TAGLINE
@@ -1854,16 +1858,42 @@ function gotoOutput() {
   const iframe = $('#preview-frame');
   iframe.srcdoc = html;
   iframe._html = html;
+
+  // The Fire TV template downloads as an Android app project, not a bare
+  // HTML file — reflect that on the output screen.
+  const isTvApp = state.site.template === 'firetv';
+  const label = $('#btn-download-label');
+  if (label) label.textContent = isTvApp ? 'Download Fire TV App' : 'Download HTML';
+  const note = $('#tv-export-note');
+  if (note) note.hidden = !isTvApp;
+
   showScreen('step-output');
+}
+
+function siteSlug() {
+  return (state.site.title || 'site').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'site';
 }
 
 function downloadHtml() {
   const html = $('#preview-frame')._html || buildGeneratedSite();
+
+  if (state.site.template === 'firetv' && window.LINKFORGE_APK) {
+    // Fire TV export: a ready-to-build Android app project (.zip). The APK
+    // itself needs the Android SDK — the bundled GitHub Actions workflow or
+    // Android Studio produces it from this project (see README inside).
+    window.LINKFORGE_APK.downloadProject({ html, title: state.site.title, slug: siteSlug() })
+      .then((name) => showToast(`Downloaded ${name} — README inside shows how to get the .apk`))
+      .catch((err) => {
+        console.error(err);
+        showToast('Could not package the Fire TV app project.');
+      });
+    return;
+  }
+
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const slug = (state.site.title || 'site').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${slug || 'site'}.html`;
+  a.download = `${siteSlug()}.html`;
   document.body.appendChild(a);
   a.click();
   a.remove();

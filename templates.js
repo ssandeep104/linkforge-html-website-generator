@@ -181,12 +181,12 @@ function splitItems(items) {
 //      "More links" — even if a thinner duplicate of the same href exists
 //      in another source group.
 //   3. "More links" itself is href-deduped across groups.
-function partitionGroups(sourceGroups) {
+function partitionGroups(sourceGroups, isPreview = hasPreview) {
   // Pass 1 — collect every href that will render as a preview card.
   const previewHrefs = new Set();
   for (const g of sourceGroups || []) {
     for (const it of g.items || []) {
-      if (hasPreview(it)) previewHrefs.add(it.href);
+      if (isPreview(it)) previewHrefs.add(it.href);
     }
   }
   // Pass 2 — build the two buckets, deduping each by href globally.
@@ -200,7 +200,7 @@ function partitionGroups(sourceGroups) {
     const withPreview = [];
     const linkOnly = [];
     for (const it of g.items || []) {
-      if (hasPreview(it)) {
+      if (isPreview(it)) {
         if (seenPreview.has(it.href)) continue;
         seenPreview.add(it.href);
         withPreview.push(it);
@@ -358,6 +358,7 @@ function previewSvg(layout) {
     broadsheet: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#fbfaf5"/><rect x="8" y="8" width="144" height="6" rx="1" fill="#111827"/><rect x="8" y="20" width="68" height="44" rx="2" fill="#d6d3d1"/><rect x="82" y="20" width="70" height="5" rx="1" fill="#111827"/><rect x="82" y="30" width="70" height="3" rx="1" fill="#6b7280"/><rect x="82" y="38" width="70" height="3" rx="1" fill="#9ca3af"/><rect x="82" y="46" width="70" height="3" rx="1" fill="#9ca3af"/><line x1="8" y1="72" x2="152" y2="72" stroke="#111827" stroke-width="1"/><rect x="8" y="78" width="40" height="3" rx="1" fill="#111827"/><rect x="56" y="78" width="40" height="3" rx="1" fill="#111827"/><rect x="104" y="78" width="40" height="3" rx="1" fill="#111827"/></svg>`,
     signal: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#09111f"/><rect x="8" y="8" width="34" height="84" rx="6" fill="#0f1c34"/><rect x="50" y="8" width="102" height="20" rx="6" fill="#16233d"/><rect x="56" y="14" width="34" height="4" rx="1" fill="#f1f5f9"/><rect x="50" y="34" width="102" height="24" rx="6" fill="#16233d"/><rect x="50" y="64" width="102" height="24" rx="6" fill="#16233d"/><circle cx="64" cy="46" r="4" fill="#38bdf8"/><circle cx="64" cy="76" r="4" fill="#f97316"/><rect x="74" y="43" width="52" height="3" rx="1" fill="#f1f5f9"/><rect x="74" y="73" width="52" height="3" rx="1" fill="#f1f5f9"/></svg>`,
     marquee: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="mqg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f97066"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs><rect width="160" height="100" fill="#08080b"/><circle cx="150" cy="10" r="42" fill="url(#mqg)" opacity="0.55"/><rect x="10" y="10" width="60" height="4" rx="1" fill="#f4f4f5"/><rect x="10" y="20" width="80" height="34" rx="4" fill="#18181b" stroke="#3f3f46"/><polygon points="46,32 46,42 56,37" fill="#f97066"/><rect x="94" y="20" width="56" height="34" rx="4" fill="#18181b" stroke="#3f3f46"/><rect x="104" y="30" width="36" height="4" rx="1" fill="#f4f4f5"/><rect x="104" y="40" width="24" height="3" rx="1" fill="#71717a"/><rect x="10" y="60" width="66" height="30" rx="4" fill="#18181b" stroke="#3f3f46"/><rect x="80" y="60" width="70" height="30" rx="4" fill="#18181b" stroke="#3f3f46"/><rect x="16" y="66" width="30" height="4" rx="1" fill="#f4f4f5"/><rect x="16" y="74" width="20" height="3" rx="1" fill="#f97066"/><rect x="86" y="66" width="30" height="4" rx="1" fill="#f4f4f5"/><rect x="86" y="74" width="20" height="3" rx="1" fill="#38bdf8"/></svg>`,
+    firetv: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#0a0c10"/><rect x="10" y="8" width="44" height="5" rx="1" fill="#f4f4f5"/><rect x="10" y="17" width="26" height="3" rx="1" fill="#71717a"/><rect x="10" y="28" width="26" height="3" rx="1" fill="#fbbf24"/><rect x="9" y="35" width="40" height="26" rx="3" fill="#1c222d" stroke="#fbbf24" stroke-width="2.5"/><polygon points="25,43 25,53 34,48" fill="#fbbf24"/><rect x="55" y="36" width="38" height="24" rx="3" fill="#171b22"/><rect x="99" y="36" width="38" height="24" rx="3" fill="#171b22"/><rect x="143" y="36" width="14" height="24" rx="3" fill="#171b22"/><rect x="10" y="68" width="26" height="3" rx="1" fill="#71717a"/><rect x="10" y="76" width="38" height="18" rx="3" fill="#171b22"/><rect x="52" y="76" width="38" height="18" rx="3" fill="#171b22"/><rect x="94" y="76" width="38" height="18" rx="3" fill="#171b22"/><rect x="136" y="76" width="21" height="18" rx="3" fill="#171b22"/><circle cx="146" cy="14" r="7" fill="none" stroke="#3f3f46" stroke-width="1.5"/><circle cx="146" cy="14" r="2.5" fill="#fbbf24"/></svg>`,
   };
   return layouts[layout] || layouts.stream;
 }
@@ -366,7 +367,7 @@ function previewSvg(layout) {
 const TEMPLATES = {
   marquee: {
     name: 'Marquee',
-    desc: 'A high-performance, streaming-style showcase: big autoplaying source tiles that loop MP4 previews or thumbnail slideshows as you scroll.',
+    desc: 'A high-performance, streaming-style showcase: big autoplaying source tiles that loop MP4 previews or thumbnail slideshows — and videos (MP4, YouTube, Vimeo) play right on the page in a lightbox.',
     focus: 'Streaming',
     fit: 'Best when most of your picks are videos or rich thumbnails',
     featured: true,
@@ -375,6 +376,17 @@ const TEMPLATES = {
     preview: () => previewSvg('marquee'),
     validate: (ctx) => marqueeValidate(ctx),
     build: (ctx) => buildMarquee(normalize(ctx)),
+  },
+  firetv: {
+    name: 'Fire TV App',
+    desc: 'A lean-back TV experience exported as an Android app project — remote-first shelf rows, D-pad navigation, and in-app playback: direct videos, YouTube, Vimeo, and Dailymotion all play inside the app.',
+    focus: 'TV app',
+    fit: 'Export as an APK for Fire TV / Android TV — drives entirely with the standard remote',
+    featured: true,
+    featuredLabel: 'New · Fire TV',
+    export: 'apk',
+    preview: () => previewSvg('firetv'),
+    build: (ctx) => buildFireTv(normalize(ctx)),
   },
   youtube: {
     name: 'Creator Grid',
@@ -1839,16 +1851,18 @@ function buildMarquee(ctx) {
       if (seenHref.has(it.href)) continue;
       seenHref.add(it.href);
       const vsrc = extractVideoSrc(it);
+      const emb = vsrc ? null : tvEmbedFor(it.href);
       const thumb = it.thumbnail || (it.video && it.video.poster) || null;
       const clean = {
         href: it.href,
         title: it.title || it.href,
         thumb: thumb || null,
         video: vsrc || null,
+        embed: emb ? emb.src : null,
         domain: it.domain || '',
         kind: itemKind(it),
       };
-      if (!vsrc && !thumb) {
+      if (!vsrc && !thumb && !emb) {
         linkItems.push(clean);
       } else {
         items.push(clean);
@@ -1897,24 +1911,24 @@ function buildMarquee(ctx) {
   }
   html, body { background: var(--mq-bg); color: var(--mq-text); font-family: var(--mq-sans); }
   body { min-height: 100vh; position: relative; overflow-x: hidden; }
+  /* Static layered aurora — replaces the old perpetually-rotating 80vmax
+     blur(120px) blob, which forced continuous compositing of a huge layer. */
   body::before {
     content: "";
-    position: fixed; inset: -40vmax -40vmax auto auto;
-    width: 80vmax; height: 80vmax; border-radius: 50%;
-    background: conic-gradient(from 210deg, rgba(249,112,102,0.22), rgba(251,146,60,0.08) 40%, rgba(56,189,248,0.16) 70%, rgba(249,112,102,0.22));
-    filter: blur(120px);
-    z-index: 0; pointer-events: none;
-    animation: mq-spin 46s linear infinite;
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(52vmax 42vmax at 88% -12%, rgba(249,112,102,0.17), transparent 62%),
+      radial-gradient(48vmax 40vmax at -14% 22%, rgba(56,189,248,0.10), transparent 65%),
+      radial-gradient(42vmax 38vmax at 62% 118%, rgba(251,146,60,0.11), transparent 60%);
   }
   body::after {
     content: "";
     position: fixed; inset: 0;
     background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
     background-size: 3px 3px;
-    opacity: 0.35; mix-blend-mode: overlay;
+    opacity: 0.28;
     z-index: 0; pointer-events: none;
   }
-  @keyframes mq-spin { to { transform: rotate(360deg); } }
 
   .mq-app { position: relative; z-index: 1; }
   .mq-nav {
@@ -1956,6 +1970,26 @@ function buildMarquee(ctx) {
   .mq-hero__stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 8px; font-family: var(--mq-mono); font-size: 11.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mq-faint); }
   .mq-hero__stats strong { color: var(--mq-text); font-weight: 600; margin-right: 6px; font-family: var(--mq-serif); font-size: 20px; letter-spacing: -0.02em; }
 
+  /* TICKER — a literal marquee strip of sources (transform-only, cheap) */
+  .mq-ticker {
+    overflow: hidden; margin: 0 0 clamp(36px, 5vw, 64px);
+    border-top: 1px solid var(--mq-border); border-bottom: 1px solid var(--mq-border);
+    padding: 12px 0;
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .mq-ticker__track { display: flex; width: max-content; will-change: transform; animation: mq-ticker var(--mq-ticker-dur, 36s) linear infinite; }
+  .mq-ticker:hover .mq-ticker__track { animation-play-state: paused; }
+  .mq-ticker__half { display: inline-flex; align-items: baseline; gap: 40px; padding-right: 40px; white-space: nowrap; }
+  .mq-ticker__item { font-family: var(--mq-mono); font-size: 11.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--mq-muted); }
+  .mq-ticker__item b { color: var(--mq-accent); font-weight: 600; margin-left: 8px; }
+  .mq-ticker__sep { color: var(--mq-faint); font-size: 11px; }
+  @keyframes mq-ticker { to { transform: translateX(-50%); } }
+
+  /* Scroll reveal (transform/opacity only; neutralized for reduced motion) */
+  .mq-reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s var(--ease-out) var(--mq-d, 0ms), transform .6s var(--ease-out) var(--mq-d, 0ms); }
+  .mq-reveal.is-in { opacity: 1; transform: none; }
+
   /* SOURCE GRID (home) */
   .mq-grid {
     display: grid; gap: clamp(20px, 2.5vw, 32px);
@@ -1976,10 +2010,18 @@ function buildMarquee(ctx) {
     box-shadow: 0 30px 60px -20px rgba(249,112,102,0.28), 0 20px 40px -20px rgba(0,0,0,0.6);
     outline: none;
   }
+  .mq-card { content-visibility: auto; contain-intrinsic-size: 420px 380px; }
   .mq-tile {
     position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden;
     background: #0d0d10; isolation: isolate;
   }
+  /* shine sweep on hover — GPU transform only */
+  .mq-tile::before {
+    content: ""; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+    background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.09) 50%, transparent 58%);
+    transform: translateX(-130%);
+  }
+  .mq-card:hover .mq-tile::before { transition: transform .8s var(--ease-out); transform: translateX(130%); }
   .mq-tile__poster,
   .mq-tile__slides img,
   .mq-tile__video {
@@ -2070,6 +2112,7 @@ function buildMarquee(ctx) {
     padding: 12px; border-radius: 18px;
     background: var(--mq-surface); border: 1px solid var(--mq-border);
     text-decoration: none; color: inherit;
+    content-visibility: auto; contain-intrinsic-size: 320px 300px;
     transition: transform .3s ease, border-color .3s ease, background .3s ease, box-shadow .3s ease;
   }
   .mq-item:hover {
@@ -2078,6 +2121,7 @@ function buildMarquee(ctx) {
     border-color: var(--mq-border-hi);
     box-shadow: 0 20px 40px -20px rgba(0,0,0,0.6);
   }
+  .mq-item--playable:hover { border-color: rgba(249,112,102,0.45); box-shadow: 0 20px 44px -18px rgba(249,112,102,0.3), 0 20px 40px -20px rgba(0,0,0,0.6); }
   .mq-item__thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #0d0d10; }
   .mq-item__thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
   .mq-item:hover .mq-item__thumb img { transform: scale(1.04); }
@@ -2087,11 +2131,60 @@ function buildMarquee(ctx) {
   }
   .mq-item__play {
     position: absolute; right: 10px; bottom: 10px; z-index: 2;
-    width: 34px; height: 34px; border-radius: 999px;
-    display: grid; place-items: center;
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 30px; padding: 0 12px 0 9px; border-radius: 999px;
     background: var(--mq-accent); color: #fff;
+    font-family: var(--mq-mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    box-shadow: 0 6px 18px -6px rgba(249,112,102,0.65);
+    transition: transform .25s var(--ease-out);
   }
-  .mq-item__play svg { width: 14px; height: 14px; margin-left: 2px; }
+  .mq-item:hover .mq-item__play { transform: scale(1.06); }
+  .mq-item__play svg { width: 12px; height: 12px; }
+  .mq-item__ext {
+    position: absolute; right: 10px; bottom: 10px; z-index: 2;
+    width: 30px; height: 30px; border-radius: 999px;
+    display: grid; place-items: center;
+    background: rgba(8,8,11,0.72); border: 1px solid var(--mq-border);
+    color: var(--mq-muted);
+  }
+  .mq-item__ext svg { width: 12px; height: 12px; }
+
+  /* LIGHTBOX — in-page player (native <video> or provider embed) */
+  .mq-lightbox { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: clamp(14px, 4vw, 48px); }
+  .mq-lightbox.is-open { display: flex; }
+  .mq-lightbox__backdrop { position: absolute; inset: 0; background: rgba(5,5,9,0.84); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); }
+  .mq-lightbox__panel {
+    position: relative; z-index: 1; width: min(1080px, 100%); margin: 0;
+    border-radius: 20px; overflow: hidden; background: #000;
+    border: 1px solid var(--mq-border-hi);
+    box-shadow: 0 50px 140px -30px rgba(0,0,0,0.85), 0 0 80px -40px rgba(249,112,102,0.5);
+    animation: mq-pop .35s var(--ease-out);
+  }
+  @keyframes mq-pop { from { transform: translateY(18px) scale(.985); opacity: 0; } }
+  .mq-lightbox__stage { aspect-ratio: 16 / 9; background: #000; }
+  .mq-lightbox__stage video, .mq-lightbox__stage iframe { width: 100%; height: 100%; display: block; border: 0; background: #000; }
+  .mq-lightbox__err { height: 100%; display: grid; place-content: center; gap: 10px; text-align: center; color: var(--mq-muted); font-size: 15px; padding: 24px; }
+  .mq-lightbox__err a { color: var(--mq-accent); text-decoration: underline; }
+  .mq-lightbox__bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px 16px; background: rgba(12,12,16,0.96); border-top: 1px solid var(--mq-border);
+  }
+  .mq-lightbox__info { min-width: 0; display: grid; gap: 2px; }
+  .mq-lightbox__title { font-family: var(--mq-serif); font-size: 16px; letter-spacing: -0.01em; color: var(--mq-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mq-lightbox__domain { font-family: var(--mq-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mq-faint); }
+  .mq-lightbox__actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .mq-lightbox__ext, .mq-lightbox__close {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 13px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--mq-border); background: var(--mq-surface);
+    color: var(--mq-muted); font-family: var(--mq-mono); font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    transition: color .25s, border-color .25s, background .25s;
+  }
+  .mq-lightbox__ext:hover, .mq-lightbox__close:hover { color: var(--mq-text); border-color: var(--mq-border-hi); background: var(--mq-surface-hi); }
+  @media (max-width: 640px) {
+    .mq-lightbox__bar { flex-direction: column; align-items: stretch; }
+    .mq-lightbox__actions { justify-content: flex-end; }
+  }
   .mq-item__title { padding: 0 4px 8px; font-family: var(--mq-serif); font-size: 17px; line-height: 1.28; letter-spacing: -0.015em; color: var(--mq-text); }
   .mq-item__domain { padding: 0 4px 4px; font-family: var(--mq-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mq-faint); }
 
@@ -2122,9 +2215,10 @@ function buildMarquee(ctx) {
     .mq-hero__stats { gap: 14px; }
     .mq-card { padding: 10px; border-radius: 18px; }
   }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .28s; }
   @media (prefers-reduced-motion: reduce) {
-    body::before { animation: none; }
     .mq-tile__slides img, .mq-tile__video, .mq-tile__poster { transition: none; }
+    .mq-reveal { opacity: 1; transform: none; transition: none; }
     * { animation: none !important; }
   }
   `;
@@ -2216,11 +2310,12 @@ function buildMarquee(ctx) {
     } else if (images.length > 1) {
       var slides = tile.querySelectorAll('.mq-tile__slides img');
       if (slides.length < 2) return;
-      // Preload
-      images.forEach(function(src){ var i = new Image(); i.src = src; });
+      // Preload only the upcoming slide (eagerly fetching the whole set
+      // front-loaded dozens of image requests per tile).
       var slot = 0;
       var i = 0;
       slides[0].src = images[0]; slides[0].classList.add('is-visible');
+      var warm = new Image(); warm.src = images[1];
       var interval = null;
       function tick() {
         i = (i + 1) % images.length;
@@ -2230,6 +2325,7 @@ function buildMarquee(ctx) {
         incoming.src = images[i];
         incoming.classList.add('is-visible');
         outgoing.classList.remove('is-visible');
+        warm.src = images[(i + 1) % images.length];
       }
       function startSlideshow() { tile.classList.add('is-playing'); interval = setInterval(tick, SLIDESHOW_STEP_MS); }
       function stopSlideshow() { tile.classList.remove('is-playing'); if (interval) { clearInterval(interval); interval = null; } }
@@ -2252,6 +2348,7 @@ function buildMarquee(ctx) {
   }
 
   var observer = null;
+  var revealObserver = null;
   function setupObserver(root) {
     if (observer) observer.disconnect();
     observer = new IntersectionObserver(function(entries){
@@ -2272,26 +2369,164 @@ function buildMarquee(ctx) {
         btn.setAttribute('aria-label', playing ? 'Pause preview' : 'Play preview');
       });
     });
+    // Scroll reveal: fade cards in as they enter, with a slight stagger.
+    if (revealObserver) revealObserver.disconnect();
+    var revealEls = root.querySelectorAll('.mq-reveal');
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      revealEls.forEach(function(el){ el.classList.add('is-in'); });
+    } else {
+      revealObserver = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-in');
+          revealObserver.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -5% 0px', threshold: 0.05 });
+      revealEls.forEach(function(el){ revealObserver.observe(el); });
+    }
   }
 
+  // ---- Lightbox: play videos on the page instead of navigating away ----
+  var lb = document.createElement('div');
+  lb.className = 'mq-lightbox';
+  lb.setAttribute('aria-hidden', 'true');
+  lb.innerHTML =
+    '<div class="mq-lightbox__backdrop"></div>' +
+    '<figure class="mq-lightbox__panel" role="dialog" aria-modal="true" aria-label="Video player">' +
+      '<div class="mq-lightbox__stage"></div>' +
+      '<figcaption class="mq-lightbox__bar">' +
+        '<div class="mq-lightbox__info">' +
+          '<span class="mq-lightbox__title"></span>' +
+          '<span class="mq-lightbox__domain"></span>' +
+        '</div>' +
+        '<div class="mq-lightbox__actions">' +
+          '<a class="mq-lightbox__ext" target="_blank" rel="noopener">Open original ↗</a>' +
+          '<button type="button" class="mq-lightbox__close">Close · Esc</button>' +
+        '</div>' +
+      '</figcaption>' +
+    '</figure>';
+  document.body.appendChild(lb);
+  var lbStage = lb.querySelector('.mq-lightbox__stage');
+  var lbOpener = null;
+  var pausedTiles = [];
+
+  function pauseTiles() {
+    document.querySelectorAll('.mq-tile.is-playing').forEach(function(t){
+      if (t.__togglePause) { t.__togglePause(); pausedTiles.push(t); }
+    });
+  }
+  function resumeTiles() {
+    pausedTiles.forEach(function(t){
+      if (t.__togglePause && !t.classList.contains('is-playing') && document.contains(t)) t.__togglePause();
+    });
+    pausedTiles = [];
+  }
+  function openLightbox(item, opener) {
+    lbOpener = opener || null;
+    pauseTiles();
+    lbStage.innerHTML = '';
+    if (item.video) {
+      var v = document.createElement('video');
+      v.controls = true; v.autoplay = true; v.playsInline = true; v.preload = 'metadata';
+      if (item.thumb) v.poster = item.thumb;
+      v.src = item.video;
+      v.addEventListener('error', function(){
+        lbStage.innerHTML = '<div class="mq-lightbox__err"><span>This video couldn\\u2019t be played here.</span>' +
+          '<a href="' + attr(item.href) + '" target="_blank" rel="noopener">Open the original instead \\u2197</a></div>';
+      });
+      lbStage.appendChild(v);
+      var p = v.play(); if (p && p.catch) p.catch(function(){});
+    } else if (item.embed) {
+      var f = document.createElement('iframe');
+      f.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
+      f.setAttribute('allowfullscreen', '');
+      f.src = item.embed;
+      lbStage.appendChild(f);
+    } else {
+      return;
+    }
+    lb.querySelector('.mq-lightbox__title').textContent = item.title || '';
+    lb.querySelector('.mq-lightbox__domain').textContent = item.domain || '';
+    lb.querySelector('.mq-lightbox__ext').href = item.href;
+    lb.classList.add('is-open');
+    lb.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    lb.querySelector('.mq-lightbox__close').focus();
+  }
+  function closeLightbox() {
+    if (!lb.classList.contains('is-open')) return;
+    var v = lbStage.querySelector('video');
+    if (v) { try { v.pause(); } catch(e){} }
+    lbStage.innerHTML = '';
+    lb.classList.remove('is-open');
+    lb.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    resumeTiles();
+    if (lbOpener && lbOpener.focus) { try { lbOpener.focus(); } catch(e){} }
+    lbOpener = null;
+  }
+  lb.querySelector('.mq-lightbox__backdrop').addEventListener('click', closeLightbox);
+  lb.querySelector('.mq-lightbox__close').addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeLightbox(); });
+  document.addEventListener('click', function(e){
+    var el = e.target.closest ? e.target.closest('.mq-item--playable') : null;
+    if (!el) return;
+    var s = findSource(el.getAttribute('data-src'));
+    var item = s && s.items && s.items[+el.getAttribute('data-i')];
+    if (!item || (!item.video && !item.embed)) return;
+    e.preventDefault();
+    openLightbox(item, el);
+  });
+
   // ---- Views ----
+  function heroTitleHtml(t) {
+    // Italic serif accent on the last word (skip one-word titles).
+    var words = String(t || '').trim().split(/\\s+/);
+    if (words.length < 2) return esc(t);
+    var last = words.pop();
+    return esc(words.join(' ')) + ' <em>' + esc(last) + '</em>';
+  }
+
+  function playableCount() {
+    return data.sources.reduce(function(a, s){
+      return a + (s.items || []).filter(function(it){ return it.video || it.embed; }).length;
+    }, 0);
+  }
+
+  function tickerHtml() {
+    if (!data.sources.length) return '';
+    var seq = data.sources.map(function(s){
+      return '<span class="mq-ticker__item">' + esc(s.name) + '<b>' + s.count + '</b></span>';
+    }).join('<span class="mq-ticker__sep">\\u2726</span>');
+    // Repeat until each half is comfortably wider than any viewport, then
+    // duplicate the half — translateX(-50%) loops seamlessly.
+    var reps = Math.max(1, Math.ceil(10 / data.sources.length));
+    var parts = [];
+    for (var i = 0; i < reps; i++) parts.push(seq);
+    var half = '<span class="mq-ticker__half">' + parts.join('<span class="mq-ticker__sep">\\u2726</span>') + '</span>';
+    var dur = Math.min(90, Math.max(24, reps * data.sources.length * 6));
+    return '<div class="mq-ticker" aria-hidden="true"><div class="mq-ticker__track" style="--mq-ticker-dur:' + dur + 's">' + half + half + '</div></div>';
+  }
+
   function renderHome() {
     if (crumbsEl) crumbsEl.innerHTML = '<span>Home</span>';
+    var playable = playableCount();
     var stats =
       '<div class="mq-hero__stats">' +
         '<span><strong>' + data.sources.length + '</strong>Sources</span>' +
         '<span><strong>' + data.sources.reduce(function(a,s){return a+s.count;},0) + '</strong>Items</span>' +
+        (playable ? '<span><strong>' + playable + '</strong>Play in page</span>' : '') +
         (data.today ? '<span>' + esc(data.today) + '</span>' : '') +
       '</div>';
     var hero =
       '<header class="mq-hero">' +
         '<span class="mq-hero__kicker">Now Playing</span>' +
-        '<h1 class="mq-hero__title">' + esc(data.title) + '</h1>' +
+        '<h1 class="mq-hero__title">' + heroTitleHtml(data.title) + '</h1>' +
         (data.tagline ? '<p class="mq-hero__tag">' + esc(data.tagline) + '</p>' : '') +
         stats +
       '</header>';
 
-    var cards = data.sources.map(function(s){
+    var cards = data.sources.map(function(s, sIdx){
       var videos = s.videos || [];
       var images = s.images || [];
       var tile =
@@ -2308,18 +2543,21 @@ function buildMarquee(ctx) {
             '</button>'
           ) : '') +
         '</div>';
-      return '<a class="mq-card" href="#/s/' + attr(s.slug) + '">' +
+      var playHere = (s.items || []).filter(function(it){ return it.video || it.embed; }).length;
+      return '<a class="mq-card mq-reveal" style="--mq-d:' + ((sIdx % 6) * 45) + 'ms" href="#/s/' + attr(s.slug) + '">' +
         tile +
         '<div class="mq-card__meta">' +
           '<div class="mq-card__title">' + esc(s.name) + '</div>' +
-          '<div class="mq-card__sub"><span>' + s.count + ' picks</span></div>' +
+          '<div class="mq-card__sub"><span>' + s.count + ' picks</span>' +
+            (playHere ? '<span class="type">' + playHere + ' play in page</span>' : '') +
+            '<span style="margin-left:auto">Explore \\u2192</span></div>' +
         '</div>' +
       '</a>';
     }).join('');
     var grid = data.sources.length
       ? '<section class="mq-grid">' + cards + '</section>'
       : '<div class="mq-empty">No sources to show.</div>';
-    app.innerHTML = '<div class="mq-view">' + hero + grid + '</div>';
+    app.innerHTML = '<div class="mq-view">' + hero + tickerHtml() + grid + '</div>';
     window.scrollTo(0, 0);
     setupObserver(app);
   }
@@ -2328,15 +2566,24 @@ function buildMarquee(ctx) {
     var s = findSource(slug);
     if (!s) { location.hash = '#/'; return; }
     if (crumbsEl) crumbsEl.innerHTML = '<a href="#/">Home</a><span class="sep">/</span><span>' + esc(s.name) + '</span>';
-    var items = (s.items || []).map(function(it){
-      var isVideo = !!it.video;
+    var items = (s.items || []).map(function(it, i){
+      var playable = !!(it.video || it.embed);
       var thumbHtml = it.thumb
-        ? '<img src="' + attr(it.thumb) + '" alt="" loading="lazy"/>'
+        ? '<img src="' + attr(it.thumb) + '" alt="" loading="lazy" decoding="async"/>'
         : '<div class="mq-item__no-thumb"><span>' + esc(it.domain || 'video') + '</span></div>';
-      return '<a class="mq-item" href="' + attr(it.href) + '" target="_blank" rel="noopener">' +
+      var badge = playable
+        ? '<span class="mq-item__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Play</span>'
+        : (it.kind === 'video'
+          ? '<span class="mq-item__ext" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M9 7h8v8"/></svg></span>'
+          : '');
+      // Playable items open the in-page lightbox (click intercepted via the
+      // .mq-item--playable delegate); everything else opens the page.
+      return '<a class="mq-item mq-reveal' + (playable ? ' mq-item--playable' : '') + '" style="--mq-d:' + ((i % 8) * 40) + 'ms"' +
+        ' href="' + attr(it.href) + '"' +
+        (playable ? ' data-src="' + attr(s.slug) + '" data-i="' + i + '" aria-haspopup="dialog"' : ' target="_blank" rel="noopener"') + '>' +
         '<div class="mq-item__thumb">' +
           thumbHtml +
-          (isVideo ? '<span class="mq-item__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : '') +
+          badge +
         '</div>' +
         '<div class="mq-item__title">' + esc(it.title) + '</div>' +
         (it.domain ? '<div class="mq-item__domain">' + esc(it.domain) + '</div>' : '') +
@@ -2366,7 +2613,8 @@ function buildMarquee(ctx) {
           '<h1 class="mq-detail__title">' + esc(s.name) + '</h1>' +
           '<div class="mq-detail__meta">' +
             '<span>' + s.count + ' items</span>' +
-            (s.videos.length ? '<span>' + s.videos.length + ' videos</span>' : '') +
+            (function(){ var p = (s.items || []).filter(function(it){ return it.video || it.embed; }).length;
+              return p ? '<span>' + p + ' play in page</span>' : ''; })() +
             (s.images.length ? '<span>' + s.images.length + ' images</span>' : '') +
           '</div>' +
         '</header>' +
@@ -2375,13 +2623,22 @@ function buildMarquee(ctx) {
       '</div>';
     app.innerHTML = body;
     window.scrollTo(0, 0);
+    setupObserver(app);
   }
 
+  var routedOnce = false;
   function route(targetHash) {
     var h = targetHash || location.hash || '#/';
     var m = h.match(/^#\\/s\\/(.+)$/);
-    if (m) renderSource(decodeURIComponent(m[1]));
-    else renderHome();
+    closeLightbox();
+    var render = m
+      ? function(){ renderSource(decodeURIComponent(m[1])); }
+      : renderHome;
+    // Cross-fade between views where the browser supports it (but render the
+    // very first view synchronously — nothing to transition from yet).
+    if (routedOnce && document.startViewTransition && !reduceMotion) document.startViewTransition(render);
+    else render();
+    routedOnce = true;
   }
 
   document.addEventListener('click', function(e) {
@@ -2421,6 +2678,540 @@ function buildMarquee(ctx) {
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'marquee-theme' });
 }
 
+// =====================================================
+// 11) FIRE TV — lean-back TV app template
+// Exported as the HTML payload of an Android/Fire TV WebView app
+// (see apk-export.js). Everything is driven by the remote:
+//   - D-pad arrows move a focus ring across shelf rows
+//   - OK/center opens the item: direct MP4/WebM plays in a built-in
+//     fullscreen player; anything else navigates the WebView to the link
+//   - Back closes the player / returns focus home (the Android wrapper
+//     calls window.lfBack() before falling back to WebView history)
+//   - Play/Pause, Rewind and Fast-Forward media keys work in the player
+// No external fonts or scripts: the page must work self-contained from
+// file:///android_asset/ with only the linked media loading over the network.
+// =====================================================
+// Map a watch-page URL from a known video host to an embeddable player URL.
+// These all speak a postMessage protocol, so the TV runtime can keep D-pad
+// focus on our page and still drive play/pause/seek inside the iframe.
+function tvEmbedFor(href) {
+  const h = String(href || '');
+  let m = h.match(/youtube\.com\/watch[^#]*[?&]v=([\w-]{6,20})/i)
+    || h.match(/(?:youtube\.com\/(?:shorts|live|embed)\/|youtu\.be\/)([\w-]{6,20})/i);
+  if (m) {
+    return {
+      provider: 'yt',
+      src: `https://www.youtube.com/embed/${m[1]}?autoplay=1&playsinline=1&enablejsapi=1&rel=0`,
+    };
+  }
+  m = h.match(/(?:player\.)?vimeo\.com\/(?:video\/|channels\/[\w-]+\/)?(\d+)(?:\/([a-f0-9]+))?/i);
+  if (m) {
+    return {
+      provider: 'vimeo',
+      src: `https://player.vimeo.com/video/${m[1]}?autoplay=1&api=1${m[2] ? `&h=${m[2]}` : ''}`,
+    };
+  }
+  m = h.match(/dailymotion\.com\/video\/([a-z0-9]+)/i);
+  if (m) {
+    return { provider: 'dm', src: `https://www.dailymotion.com/embed/video/${m[1]}?autoplay=1` };
+  }
+  return null;
+}
+
+function buildFireTv(ctx) {
+  // Broader shelf test than the web templates: anything playable in-app
+  // (direct file or embeddable host) or with a video poster earns a media
+  // card even when the item has no thumbnail.
+  const tvPreview = (it) => hasPreview(it) || !!extractVideoSrc(it) || !!tvEmbedFor(it && it.href) || !!(it && it.video && it.video.poster);
+  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups, tvPreview);
+
+  const mediaCard = (item) => {
+    const play = extractVideoSrc(item);
+    const embed = play ? null : tvEmbedFor(item.href);
+    const kind = itemKind(item);
+    const poster = item.thumbnail || (item.video && item.video.poster) || '';
+    const mark = (item.domain || item.title || 'L').charAt(0).toUpperCase();
+    return `<div class="tv-card" data-tv-card role="button" tabindex="-1"
+      data-href="${attr(item.href)}"${play ? ` data-play="${attr(play)}"${poster ? ` data-poster="${attr(poster)}"` : ''}` : ''}${embed ? ` data-embed="${attr(embed.src)}" data-provider="${attr(embed.provider)}"` : ''}
+      data-title="${attr(item.title || item.href)}">
+      <div class="tv-card__media">
+        ${poster
+          ? `<img src="${attr(poster)}" alt="" loading="lazy" onerror="this.remove()"/>`
+          : `<span class="tv-card__mark">${esc(mark)}</span>`}
+        ${kind === 'video' ? `<span class="tv-card__badge${play || embed ? ' tv-card__badge--play' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>` : ''}
+      </div>
+      <div class="tv-card__label">
+        <span class="tv-card__title">${esc(item.title || item.href)}</span>
+        <span class="tv-card__meta">${esc(item.domain || '')}${play || embed ? ' · plays in app' : ''}</span>
+      </div>
+    </div>`;
+  };
+
+  const linkCard = (item) => `<div class="tv-card tv-card--link" data-tv-card role="button" tabindex="-1"
+      data-href="${attr(item.href)}" data-title="${attr(item.title || item.href)}">
+      <span class="tv-card__link-title">${esc(item.title || item.href)}</span>
+      <span class="tv-card__meta">${esc(item.domain || '')}</span>
+    </div>`;
+
+  const row = (label, meta, cardsHtml) => `<section class="tv-row" data-tv-row>
+      <h2 class="tv-row__label">${esc(label)} <span class="tv-row__meta">${esc(meta)}</span></h2>
+      <div class="tv-row__track">${cardsHtml}</div>
+    </section>`;
+
+  const mediaRows = previewGroups
+    .map((g) => row(srcLabel(g), `${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}`, g.items.map(mediaCard).join('')))
+    .join('');
+  const linkRows = linkGroups
+    .map((g) => row(`${srcLabel(g)} — links`, `${g.items.length} ${g.items.length === 1 ? 'link' : 'links'}`, g.items.map(linkCard).join('')))
+    .join('');
+
+  const playableCount = ctx.sourceGroups.reduce(
+    (n, g) => n + (g.items || []).filter((it) => extractVideoSrc(it) || tvEmbedFor(it.href)).length, 0);
+
+  const css = `<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: clamp(14px, 1.55vw, 22px); }
+    body {
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      background: #0a0c10; color: #e7e9ee;
+      overflow-x: hidden;
+      /* overscan-safe gutters for TV panels */
+      padding: 2.5rem 3rem 5rem;
+    }
+    img { display: block; }
+    .tv-head { margin-bottom: 2rem; }
+    .tv-head__kicker {
+      font-size: .62rem; letter-spacing: .28em; text-transform: uppercase;
+      color: #fbbf24; margin-bottom: .5rem;
+    }
+    .tv-head__title { font-size: 2.1rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+    .tv-head__tagline { font-size: .85rem; color: #9aa1ad; margin-top: .55rem; max-width: 40em; }
+    .tv-head__date { font-size: .68rem; color: #5c6470; margin-top: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+    .tv-row { margin-bottom: 2.2rem; }
+    .tv-row__label { font-size: .95rem; font-weight: 600; margin-bottom: .8rem; letter-spacing: .01em; }
+    .tv-row__meta { font-size: .62rem; font-weight: 500; color: #5c6470; letter-spacing: .12em; text-transform: uppercase; margin-left: .6em; }
+    .tv-row__track {
+      display: flex; gap: 1rem; overflow-x: auto; scrollbar-width: none;
+      padding: .55rem .4rem .7rem; margin: -.55rem -.4rem -.7rem;
+    }
+    .tv-row__track::-webkit-scrollbar { display: none; }
+    .tv-card {
+      flex: 0 0 auto; width: 14.5rem; cursor: pointer;
+      border-radius: .45rem; outline: none;
+      transition: transform .18s ease;
+    }
+    .tv-card__media {
+      position: relative; aspect-ratio: 16/9; border-radius: .45rem; overflow: hidden;
+      background: #171b22; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 0 3px transparent; transition: box-shadow .18s ease;
+    }
+    .tv-card__media img { width: 100%; height: 100%; object-fit: cover; }
+    .tv-card__mark { font-size: 2.4rem; font-weight: 700; color: #39404d; }
+    .tv-card__badge {
+      position: absolute; right: .5rem; bottom: .5rem; width: 1.6rem; height: 1.6rem;
+      border-radius: 50%; background: rgba(10,12,16,.78); color: #e7e9ee;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tv-card__badge--play { background: #fbbf24; color: #0a0c10; }
+    .tv-card__badge svg { width: 60%; height: 60%; }
+    .tv-card__label { padding: .55rem .15rem 0; }
+    .tv-card__title {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      font-size: .74rem; line-height: 1.35; color: #c9cdd6;
+    }
+    .tv-card__meta { display: block; font-size: .58rem; color: #5c6470; margin-top: .3rem; letter-spacing: .06em; text-transform: uppercase; }
+    .tv-card--link {
+      width: 17rem; background: #12151c; border-radius: .45rem; padding: .9rem 1rem;
+      box-shadow: 0 0 0 3px transparent; transition: box-shadow .18s ease, transform .18s ease;
+    }
+    .tv-card--link .tv-card__link-title {
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+      font-size: .74rem; line-height: 1.4; color: #c9cdd6;
+    }
+    .tv-card.is-focused { transform: scale(1.06); }
+    .tv-card.is-focused .tv-card__media, .tv-card--link.is-focused { box-shadow: 0 0 0 3px #fbbf24, 0 10px 30px rgba(0,0,0,.5); }
+    .tv-card.is-focused .tv-card__title, .tv-card.is-focused .tv-card__link-title { color: #fff; }
+    .tv-hints {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+      display: flex; gap: 1.6rem; justify-content: center;
+      padding: .55rem 1rem .7rem; font-size: .6rem; color: #8b92a0;
+      background: linear-gradient(transparent, rgba(10,12,16,.92) 45%);
+      letter-spacing: .05em; pointer-events: none;
+    }
+    .tv-hints b { color: #e7e9ee; font-weight: 600; }
+    .tv-player {
+      position: fixed; inset: 0; z-index: 100; background: #000;
+      display: none; align-items: center; justify-content: center;
+    }
+    .tv-player.is-open { display: flex; }
+    .tv-player video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+    .tv-player__embed { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+    .tv-player__osd {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 3rem 3rem 1.6rem;
+      background: linear-gradient(transparent, rgba(0,0,0,.85));
+      opacity: 0; transition: opacity .25s ease; pointer-events: none;
+    }
+    .tv-player__osd.is-visible { opacity: 1; }
+    .tv-player__title { font-size: 1rem; font-weight: 600; margin-bottom: .8rem; }
+    .tv-player__bar { height: .28rem; border-radius: .2rem; background: rgba(255,255,255,.25); overflow: hidden; }
+    .tv-player__fill { height: 100%; width: 0%; background: #fbbf24; border-radius: .2rem; }
+    .tv-player__foot { display: flex; justify-content: space-between; margin-top: .55rem; font-size: .62rem; color: #b9bfca; }
+    .tv-player__state {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      width: 4.2rem; height: 4.2rem; border-radius: 50%;
+      background: rgba(10,12,16,.75); color: #fff;
+      display: none; align-items: center; justify-content: center;
+    }
+    .tv-player__state.is-visible { display: flex; }
+    .tv-player__state svg { width: 46%; height: 46%; }
+  </style>`;
+
+  const body = `
+  <header class="tv-head">
+    <div class="tv-head__kicker">Linkforge · TV Edition</div>
+    <h1 class="tv-head__title">${esc(ctx.title)}</h1>
+    ${ctx.tagline ? `<p class="tv-head__tagline">${esc(ctx.tagline)}</p>` : ''}
+    <div class="tv-head__date">${esc(ctx.today || '')}${playableCount ? ` · ${playableCount} playable video${playableCount === 1 ? '' : 's'}` : ''}</div>
+  </header>
+  <main>
+    ${mediaRows}
+    ${linkRows}
+  </main>
+  <footer class="tv-hints" aria-hidden="true">
+    <span><b>◀ ▲ ▼ ▶</b> browse</span>
+    <span><b>OK</b> open / play</span>
+    <span><b>⏪ ⏯ ⏩</b> in player</span>
+    <span><b>Back</b> close / return</span>
+  </footer>
+  <div class="tv-player" id="tv-player" aria-hidden="true">
+    <video id="tv-video" preload="metadata" playsinline></video>
+    <div class="tv-player__osd" id="tv-osd">
+      <div class="tv-player__title" id="tv-player-title"></div>
+      <div class="tv-player__bar"><div class="tv-player__fill" id="tv-player-fill"></div></div>
+      <div class="tv-player__foot">
+        <span id="tv-player-time">0:00 / 0:00</span>
+        <span>OK play/pause · ◀ ▶ ±10s · Back close</span>
+      </div>
+    </div>
+    <div class="tv-player__state" id="tv-player-state">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    </div>
+  </div>`;
+
+  const runtime = `<script>
+(function () {
+  'use strict';
+  // ----- collect the grid -----
+  var rows = [];
+  var rowEls = document.querySelectorAll('[data-tv-row]');
+  for (var i = 0; i < rowEls.length; i++) {
+    var cards = rowEls[i].querySelectorAll('[data-tv-card]');
+    if (cards.length) rows.push(Array.prototype.slice.call(cards));
+  }
+  var r = 0;                       // focused row
+  var cols = rows.map(function () { return 0; }); // remembered column per row
+  var mode = 'grid';               // 'grid' | 'player'
+
+  var player = document.getElementById('tv-player');
+  var video = document.getElementById('tv-video');
+  var osd = document.getElementById('tv-osd');
+  var osdTitle = document.getElementById('tv-player-title');
+  var osdFill = document.getElementById('tv-player-fill');
+  var osdTime = document.getElementById('tv-player-time');
+  var stateBadge = document.getElementById('tv-player-state');
+  var osdTimer = null;
+
+  function current() { return rows.length ? rows[r][cols[r]] : null; }
+
+  function setFocus(nr, nc, instant) {
+    if (!rows.length) return;
+    var prev = current();
+    if (prev) prev.classList.remove('is-focused');
+    r = Math.max(0, Math.min(rows.length - 1, nr));
+    cols[r] = Math.max(0, Math.min(rows[r].length - 1, nc));
+    var el = current();
+    el.classList.add('is-focused');
+    try {
+      el.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', block: 'center', inline: 'center' });
+    } catch (e) { el.scrollIntoView(); }
+  }
+
+  function move(dr, dc) {
+    if (mode !== 'grid' || !rows.length) return;
+    if (dr) setFocus(r + dr, cols[Math.max(0, Math.min(rows.length - 1, r + dr))]);
+    else setFocus(r, cols[r] + dc);
+  }
+
+  // ----- built-in player -----
+  // Two flavors behind one overlay:
+  //   'file'  — direct MP4/WebM in the native <video> (hardware decode)
+  //   'embed' — YouTube / Vimeo / Dailymotion in an iframe. The iframe never
+  //             takes focus, so the D-pad stays on our document; playback is
+  //             driven through each provider's postMessage protocol instead.
+  var playerKind = null;      // 'file' | 'embed' while open
+  var embedFrame = null;
+  var embedProvider = null;   // 'yt' | 'vimeo' | 'dm'
+  var embedInfo = { playing: true, time: 0, duration: 0 };
+  var embedPoll = null;
+  var openHref = '';          // href of the item playing (for error fallback)
+
+  function fmt(t) {
+    if (!isFinite(t)) return '0:00';
+    var m = Math.floor(t / 60), s = Math.floor(t % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  function showOsd(sticky) {
+    osd.classList.add('is-visible');
+    if (osdTimer) clearTimeout(osdTimer);
+    if (!sticky) osdTimer = setTimeout(function () { osd.classList.remove('is-visible'); }, 3000);
+  }
+  function setOsdProgress(time, duration) {
+    if (isFinite(duration) && duration > 0) {
+      osdFill.style.width = Math.max(0, Math.min(100, time / duration * 100)) + '%';
+      osdTime.textContent = fmt(time) + ' / ' + fmt(duration);
+    }
+  }
+  function openOverlay(card, kind) {
+    mode = 'player';
+    playerKind = kind;
+    openHref = card.getAttribute('data-href') || '';
+    osdTitle.textContent = card.getAttribute('data-title') || '';
+    osdFill.style.width = '0%';
+    osdTime.textContent = '0:00 / 0:00';
+    stateBadge.classList.remove('is-visible');
+    player.classList.add('is-open');
+    player.setAttribute('aria-hidden', 'false');
+    showOsd();
+  }
+  function openFile(card) {
+    openOverlay(card, 'file');
+    var poster = card.getAttribute('data-poster');
+    if (poster) video.setAttribute('poster', poster); else video.removeAttribute('poster');
+    video.src = card.getAttribute('data-play');
+    var p = video.play();
+    if (p && p.catch) p.catch(function () { showOsd(true); });
+  }
+  function openEmbed(card) {
+    openOverlay(card, 'embed');
+    embedProvider = card.getAttribute('data-provider');
+    embedInfo = { playing: true, time: 0, duration: 0 };
+    video.style.display = 'none';
+    embedFrame = document.createElement('iframe');
+    embedFrame.className = 'tv-player__embed';
+    embedFrame.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
+    embedFrame.setAttribute('allowfullscreen', '');
+    embedFrame.setAttribute('tabindex', '-1');
+    embedFrame.src = card.getAttribute('data-embed');
+    player.insertBefore(embedFrame, player.firstChild);
+    // Handshake loop: YouTube starts streaming infoDelivery (time/state)
+    // once it hears "listening"; Vimeo needs event subscriptions. Re-sent on
+    // an interval because the iframe may not be ready for the first ones.
+    embedPoll = setInterval(function () {
+      if (embedProvider === 'yt') {
+        embedPost({ event: 'listening', id: 'lf' });
+      } else if (embedProvider === 'vimeo') {
+        embedPost({ method: 'addEventListener', value: 'playProgress' });
+        embedPost({ method: 'addEventListener', value: 'pause' });
+        embedPost({ method: 'addEventListener', value: 'play' });
+        embedPost({ method: 'addEventListener', value: 'finish' });
+      }
+    }, 600);
+  }
+  function embedPost(data) {
+    if (!embedFrame || !embedFrame.contentWindow) return;
+    try { embedFrame.contentWindow.postMessage(JSON.stringify(data), '*'); } catch (e) {}
+  }
+  function closePlayer() {
+    mode = 'grid';
+    playerKind = null;
+    openHref = '';
+    if (embedPoll) { clearInterval(embedPoll); embedPoll = null; }
+    if (embedFrame) {
+      if (embedFrame.parentNode) embedFrame.parentNode.removeChild(embedFrame);
+      embedFrame = null;
+      embedProvider = null;
+    }
+    video.style.display = '';
+    try { video.pause(); } catch (e) {}
+    video.removeAttribute('src');
+    video.load();
+    player.classList.remove('is-open');
+    player.setAttribute('aria-hidden', 'true');
+  }
+  function setPausedBadge(paused) {
+    stateBadge.classList.toggle('is-visible', paused);
+  }
+  function togglePlay() {
+    if (playerKind === 'embed') {
+      var playing = embedInfo.playing;
+      if (embedProvider === 'yt') embedPost({ event: 'command', func: playing ? 'pauseVideo' : 'playVideo', args: [] });
+      else if (embedProvider === 'vimeo') embedPost({ method: playing ? 'pause' : 'play' });
+      else embedPost({ command: playing ? 'pause' : 'play', parameters: [] });
+      embedInfo.playing = !playing;
+      setPausedBadge(!embedInfo.playing);
+    } else if (video.paused) {
+      video.play();
+      setPausedBadge(false);
+    } else {
+      video.pause();
+      setPausedBadge(true);
+    }
+    showOsd();
+  }
+  function seek(delta) {
+    if (playerKind === 'embed') {
+      var t = Math.max(0, embedInfo.time + delta);
+      if (embedInfo.duration) t = Math.min(embedInfo.duration, t);
+      if (embedProvider === 'yt') embedPost({ event: 'command', func: 'seekTo', args: [t, true] });
+      else if (embedProvider === 'vimeo') embedPost({ method: 'setCurrentTime', value: t });
+      else embedPost({ command: 'seek', parameters: [t] });
+      embedInfo.time = t;
+      setOsdProgress(embedInfo.time, embedInfo.duration);
+    } else if (isFinite(video.duration)) {
+      video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + delta));
+    }
+    showOsd();
+  }
+  video.addEventListener('timeupdate', function () {
+    if (playerKind === 'file') setOsdProgress(video.currentTime, video.duration);
+  });
+  video.addEventListener('ended', function () { if (playerKind === 'file') closePlayer(); });
+  video.addEventListener('error', function () {
+    // Direct playback failed (codec, CORS, dead link) — fall back to the page.
+    if (mode === 'player' && playerKind === 'file' && openHref) {
+      var href = openHref;
+      closePlayer();
+      location.href = href;
+    }
+  });
+
+  // Status flowing back from embedded players (time, state, errors).
+  window.addEventListener('message', function (e) {
+    if (!embedFrame || e.source !== embedFrame.contentWindow) return;
+    var d = e.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (err) { return; } }
+    if (!d || typeof d !== 'object') return;
+    if (d.event === 'infoDelivery' && d.info) {              // YouTube
+      if (typeof d.info.currentTime === 'number') embedInfo.time = d.info.currentTime;
+      if (typeof d.info.duration === 'number' && d.info.duration > 0) embedInfo.duration = d.info.duration;
+      if (typeof d.info.playerState === 'number') {
+        if (d.info.playerState === 0) { closePlayer(); return; } // ended
+        embedInfo.playing = d.info.playerState === 1 || d.info.playerState === 3;
+        setPausedBadge(d.info.playerState === 2);
+      }
+      setOsdProgress(embedInfo.time, embedInfo.duration);
+    } else if (d.event === 'onError') {                      // YouTube: embed blocked etc.
+      if (mode === 'player' && playerKind === 'embed' && openHref) {
+        var href = openHref;
+        closePlayer();
+        location.href = href;
+      }
+    } else if (d.event === 'playProgress' && d.data) {       // Vimeo
+      if (typeof d.data.seconds === 'number') embedInfo.time = d.data.seconds;
+      if (typeof d.data.duration === 'number' && d.data.duration > 0) embedInfo.duration = d.data.duration;
+      embedInfo.playing = true;
+      setOsdProgress(embedInfo.time, embedInfo.duration);
+    } else if (d.event === 'pause') {                        // Vimeo
+      embedInfo.playing = false;
+      setPausedBadge(true);
+    } else if (d.event === 'play') {                         // Vimeo
+      embedInfo.playing = true;
+      setPausedBadge(false);
+    } else if (d.event === 'finish') {                       // Vimeo
+      closePlayer();
+    }
+  });
+
+  function activate(card) {
+    if (!card) return;
+    if (card.getAttribute('data-play')) openFile(card);
+    else if (card.getAttribute('data-embed')) openEmbed(card);
+    else location.href = card.getAttribute('data-href');
+  }
+
+  // The Android wrapper calls this before using WebView history for BACK.
+  // Return true when the page consumed the press.
+  window.lfBack = function () {
+    if (mode === 'player') { closePlayer(); return true; }
+    if (r !== 0 || cols[0] !== 0) { setFocus(0, 0); return true; }
+    return false;
+  };
+
+  // ----- remote / keyboard input -----
+  // Fire TV WebViews deliver the D-pad as arrow keys and center as Enter;
+  // media buttons arrive as Media* keys (with legacy keyCodes as fallback).
+  var CODE = { 37:'ArrowLeft', 38:'ArrowUp', 39:'ArrowRight', 40:'ArrowDown', 13:'Enter',
+               27:'Escape', 8:'Backspace', 179:'MediaPlayPause', 85:'MediaPlayPause',
+               415:'MediaPlay', 19:'MediaPause', 227:'MediaRewind', 228:'MediaFastForward',
+               412:'MediaRewind', 417:'MediaFastForward', 461:'GoBack', 10009:'GoBack' };
+  document.addEventListener('keydown', function (e) {
+    var key = e.key && e.key !== 'Unidentified' ? e.key : CODE[e.keyCode];
+    if (!key) return;
+    var handled = true;
+    if (mode === 'player') {
+      switch (key) {
+        case 'Enter': case 'MediaPlayPause': togglePlay(); break;
+        case 'MediaPlay': if (playerKind === 'embed') { if (!embedInfo.playing) togglePlay(); } else video.play(); showOsd(); break;
+        case 'MediaPause': if (playerKind === 'embed') { if (embedInfo.playing) togglePlay(); } else video.pause(); showOsd(); break;
+        case 'ArrowLeft': case 'MediaRewind': seek(-10); break;
+        case 'ArrowRight': case 'MediaFastForward': seek(10); break;
+        case 'ArrowUp': seek(60); break;
+        case 'ArrowDown': seek(-60); break;
+        case 'Escape': case 'Backspace': case 'GoBack': closePlayer(); break;
+        default: handled = false; showOsd();
+      }
+    } else {
+      switch (key) {
+        case 'ArrowLeft': move(0, -1); break;
+        case 'ArrowRight': move(0, 1); break;
+        case 'ArrowUp': move(-1, 0); break;
+        case 'ArrowDown': move(1, 0); break;
+        case 'Enter': activate(current()); break;
+        case 'Escape': case 'Backspace': case 'GoBack':
+          if (!window.lfBack()) handled = false;
+          break;
+        default: handled = false;
+      }
+    }
+    if (handled) e.preventDefault();
+  });
+
+  // Pointer support so the page also works in a normal browser preview.
+  document.addEventListener('click', function (e) {
+    if (mode === 'player') {
+      if (!osd.contains(e.target)) togglePlay();
+      return;
+    }
+    var card = e.target.closest ? e.target.closest('[data-tv-card]') : null;
+    if (!card) return;
+    for (var i = 0; i < rows.length; i++) {
+      var c = rows[i].indexOf(card);
+      if (c !== -1) { setFocus(i, c); break; }
+    }
+    activate(card);
+  });
+
+  if (rows.length) setFocus(0, 0, true);
+})();
+</script>`;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${esc(ctx.title)}</title>
+  ${ctx.tagline ? `<meta name="description" content="${attr(ctx.tagline)}" />` : ''}
+  ${css}
+</head>
+<body class="lf-template lf-tv">
+${body}
+${runtime}
+</body>
+</html>`;
+}
+
 // ---------- expose ----------
 if (typeof window !== 'undefined') {
   window.LINKFORGE_TEMPLATES = TEMPLATES;
@@ -2429,5 +3220,5 @@ if (typeof window !== 'undefined') {
   window.LINKFORGE_MARQUEE_VALIDATE = marqueeValidate;
 }
 if (typeof module !== 'undefined') {
-  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups, marqueeValidate };
+  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups, marqueeValidate, buildFireTv };
 }

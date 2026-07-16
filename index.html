@@ -360,7 +360,7 @@
             >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
             </svg>
-            Download HTML
+            <span id="btn-download-label">Download HTML</span>
           </button>
           <button
             class="icon-btn"
@@ -371,6 +371,13 @@
         </div>
       </header>
 
+      <div class="tv-export-note" id="tv-export-note" hidden>
+        <strong>📺 Fire TV preview</strong> — arrow keys act like the remote's
+        D-pad, Enter is the center button (click the preview first to give it
+        focus). “Download Fire TV App” gives you a ready-to-build Android
+        project (.zip); the README inside shows three ways to get the .apk
+        and sideload it on your Fire TV.
+      </div>
       <div class="preview-frame-wrap">
         <iframe
           id="preview-frame"
@@ -399,6 +406,7 @@
       window.domainOf = domainOf;
     </script>
     <script src="./templates.js" defer></script>
+    <script src="./apk-export.js" defer></script>
     <script src="./app.js" defer></script>
   </body>
 </html>
