@@ -2722,27 +2722,37 @@ function buildFireTv(ctx) {
   // Broader shelf test than the web templates: anything playable in-app
   // (direct file or embeddable host) or with a video poster earns a media
   // card even when the item has no thumbnail.
-  const tvPreview = (it) => hasPreview(it) || !!extractVideoSrc(it) || !!tvEmbedFor(it && it.href) || !!(it && it.video && it.video.poster);
+  // Anything the scraper captured as an <iframe> embed (TikTok, Instagram,
+  // and most other embeddable players, not just the named providers above)
+  // gets a generic in-app iframe instead of falling back to leaving the app.
+  const tvGenericEmbed = (item) => {
+    const src = item && item.video && typeof item.video === 'object' ? item.video.src || item.video.url : null;
+    return src && !extractVideoSrc(item) ? src : null;
+  };
+  const tvPreview = (it) => hasPreview(it) || !!extractVideoSrc(it) || !!tvEmbedFor(it && it.href) || !!tvGenericEmbed(it) || !!(it && it.video && it.video.poster);
   const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups, tvPreview);
 
   const mediaCard = (item) => {
     const play = extractVideoSrc(item);
-    const embed = play ? null : tvEmbedFor(item.href);
+    const namedEmbed = play ? null : tvEmbedFor(item.href);
+    const genericEmbedSrc = play || namedEmbed ? null : tvGenericEmbed(item);
+    const embedSrc = namedEmbed ? namedEmbed.src : genericEmbedSrc;
+    const embedProvider = namedEmbed ? namedEmbed.provider : (genericEmbedSrc ? 'generic' : null);
     const kind = itemKind(item);
     const poster = item.thumbnail || (item.video && item.video.poster) || '';
     const mark = (item.domain || item.title || 'L').charAt(0).toUpperCase();
     return `<div class="tv-card" data-tv-card role="button" tabindex="-1"
-      data-href="${attr(item.href)}"${play ? ` data-play="${attr(play)}"${poster ? ` data-poster="${attr(poster)}"` : ''}` : ''}${embed ? ` data-embed="${attr(embed.src)}" data-provider="${attr(embed.provider)}"` : ''}
+      data-href="${attr(item.href)}"${play ? ` data-play="${attr(play)}"${poster ? ` data-poster="${attr(poster)}"` : ''}` : ''}${embedSrc ? ` data-embed="${attr(embedSrc)}" data-provider="${attr(embedProvider)}"` : ''}
       data-title="${attr(item.title || item.href)}">
       <div class="tv-card__media">
         ${poster
           ? `<img src="${attr(poster)}" alt="" loading="lazy" onerror="this.remove()"/>`
           : `<span class="tv-card__mark">${esc(mark)}</span>`}
-        ${kind === 'video' ? `<span class="tv-card__badge${play || embed ? ' tv-card__badge--play' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>` : ''}
+        ${kind === 'video' ? `<span class="tv-card__badge${play || embedSrc ? ' tv-card__badge--play' : ''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>` : ''}
       </div>
       <div class="tv-card__label">
         <span class="tv-card__title">${esc(item.title || item.href)}</span>
-        <span class="tv-card__meta">${esc(item.domain || '')}${play || embed ? ' · plays in app' : ''}</span>
+        <span class="tv-card__meta">${esc(item.domain || '')}${play || embedSrc ? ' · plays in app' : ''}</span>
       </div>
     </div>`;
   };
@@ -2766,7 +2776,7 @@ function buildFireTv(ctx) {
     .join('');
 
   const playableCount = ctx.sourceGroups.reduce(
-    (n, g) => n + (g.items || []).filter((it) => extractVideoSrc(it) || tvEmbedFor(it.href)).length, 0);
+    (n, g) => n + (g.items || []).filter((it) => extractVideoSrc(it) || tvEmbedFor(it.href) || tvGenericEmbed(it)).length, 0);
 
   const css = `<style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -3003,6 +3013,18 @@ function buildFireTv(ctx) {
     embedFrame.setAttribute('allowfullscreen', '');
     embedFrame.setAttribute('tabindex', '-1');
     embedFrame.src = card.getAttribute('data-embed');
+    if (embedProvider === 'generic') {
+      // No postMessage protocol for arbitrary embeds, so we can't detect a
+      // blocked/broken iframe directly. onerror rarely fires for cross-origin
+      // frames, but it's a free safety net when it does.
+      embedFrame.onerror = function () {
+        if (mode === 'player' && playerKind === 'embed' && openHref) {
+          var href = openHref;
+          closePlayer();
+          location.href = href;
+        }
+      };
+    }
     player.insertBefore(embedFrame, player.firstChild);
     // Handshake loop: YouTube starts streaming infoDelivery (time/state)
     // once it hears "listening"; Vimeo needs event subscriptions. Re-sent on

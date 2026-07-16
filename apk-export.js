@@ -240,8 +240,19 @@ public class MainActivity extends Activity {
             }
         });
 
-        webView.requestFocus();
+        webView.setFocusable(true);
+        webView.setFocusableInTouchMode(true);
         webView.loadUrl("file:///android_asset/index.html");
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        // Requesting focus in onCreate is too early: the Activity's window
+        // doesn't reliably hold input focus yet on Fire TV, so D-pad key
+        // events can miss the WebView. Doing it here, once the window
+        // actually has focus, is what makes remote input land reliably.
+        if (hasFocus) webView.requestFocus();
     }
 
     private void exitFullscreen() {
