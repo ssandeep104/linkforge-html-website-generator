@@ -10,7 +10,13 @@ Paste raw HTML from creator feeds, research pages, photography sets, video hubs,
 
 1. **Sources** — paste HTML or upload `.html` files (drag-and-drop supported). Add as many sources as you want.
 2. **Review** — Linkforge parses every anchor, image, and video into three buckets: links with image, links with video preview, and plain links. Pick what makes the cut with dropdowns + checkboxes.
-3. **Output** — generates a styled standalone HTML page. Seven templates: Marquee, Creator Grid, Stream Catalog, Photo Wall, Spotlight Bento, Signal Board, and Story Deck. The default experience now leans toward streaming, gallery, and mixed-media outputs while still preserving source grouping and readable fallback links. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
+3. **Output** — generates a styled standalone HTML page. Eight templates: Marquee, Fire TV App, Creator Grid, Stream Catalog, Photo Wall, Spotlight Bento, Signal Board, and Story Deck. The default experience now leans toward streaming, gallery, and mixed-media outputs while still preserving source grouping and readable fallback links. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
+
+### Fire TV App export
+
+The **Fire TV App** template doesn't export a website — it exports an Android app. The output is a lean-back, 10-foot UI (shelf rows per source, amber focus ring, built-in fullscreen video player) driven entirely by the Fire TV remote: D-pad browses, center opens/plays, Back closes the player, and the play/pause / rewind / fast-forward buttons work during playback. No mouse or ADB keyboard app required.
+
+Downloading gives you a complete Android project (.zip) with the generated page bundled in `assets/`, a leanback WebView wrapper, and a GitHub Actions workflow — push the folder to a GitHub repo and the workflow builds the sideloadable `.apk` for you (or open it in Android Studio and press Build). The README inside the zip walks through building and sideloading on Fire TV step by step.
 
 Parser is fully client-side. There are no network calls — your HTML never leaves the browser.
 
