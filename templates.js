@@ -1795,6 +1795,16 @@ function extractVideoSrc(item) {
   return null;
 }
 
+// Anything the scraper captured as an <iframe> embed (TikTok, Instagram,
+// Twitch, Wistia, and other allowlisted hosts in parser.js — not just the
+// named providers in tvEmbedFor) gets played in a generic iframe instead of
+// leaving the item as a plain link.
+function genericEmbedSrc(item) {
+  if (!item || extractVideoSrc(item)) return null;
+  const src = item.video && typeof item.video === 'object' ? item.video.src || item.video.url : null;
+  return src || null;
+}
+
 // Count how many items across all sources have a thumbnail or a playable video.
 // Used to (a) disable the Marquee card in the picker when there's nothing to
 // show, and (b) hard-reject at build time with an actionable message.
@@ -1851,18 +1861,19 @@ function buildMarquee(ctx) {
       if (seenHref.has(it.href)) continue;
       seenHref.add(it.href);
       const vsrc = extractVideoSrc(it);
-      const emb = vsrc ? null : tvEmbedFor(it.href);
+      const namedEmb = vsrc ? null : tvEmbedFor(it.href);
+      const embSrc = namedEmb ? namedEmb.src : (vsrc ? null : genericEmbedSrc(it));
       const thumb = it.thumbnail || (it.video && it.video.poster) || null;
       const clean = {
         href: it.href,
         title: it.title || it.href,
         thumb: thumb || null,
         video: vsrc || null,
-        embed: emb ? emb.src : null,
+        embed: embSrc || null,
         domain: it.domain || '',
         kind: itemKind(it),
       };
-      if (!vsrc && !thumb && !emb) {
+      if (!vsrc && !thumb && !embSrc) {
         linkItems.push(clean);
       } else {
         items.push(clean);
@@ -2722,22 +2733,15 @@ function buildFireTv(ctx) {
   // Broader shelf test than the web templates: anything playable in-app
   // (direct file or embeddable host) or with a video poster earns a media
   // card even when the item has no thumbnail.
-  // Anything the scraper captured as an <iframe> embed (TikTok, Instagram,
-  // and most other embeddable players, not just the named providers above)
-  // gets a generic in-app iframe instead of falling back to leaving the app.
-  const tvGenericEmbed = (item) => {
-    const src = item && item.video && typeof item.video === 'object' ? item.video.src || item.video.url : null;
-    return src && !extractVideoSrc(item) ? src : null;
-  };
-  const tvPreview = (it) => hasPreview(it) || !!extractVideoSrc(it) || !!tvEmbedFor(it && it.href) || !!tvGenericEmbed(it) || !!(it && it.video && it.video.poster);
+  const tvPreview = (it) => hasPreview(it) || !!extractVideoSrc(it) || !!tvEmbedFor(it && it.href) || !!genericEmbedSrc(it) || !!(it && it.video && it.video.poster);
   const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups, tvPreview);
 
   const mediaCard = (item) => {
     const play = extractVideoSrc(item);
     const namedEmbed = play ? null : tvEmbedFor(item.href);
-    const genericEmbedSrc = play || namedEmbed ? null : tvGenericEmbed(item);
-    const embedSrc = namedEmbed ? namedEmbed.src : genericEmbedSrc;
-    const embedProvider = namedEmbed ? namedEmbed.provider : (genericEmbedSrc ? 'generic' : null);
+    const genEmbed = play || namedEmbed ? null : genericEmbedSrc(item);
+    const embedSrc = namedEmbed ? namedEmbed.src : genEmbed;
+    const embedProvider = namedEmbed ? namedEmbed.provider : (genEmbed ? 'generic' : null);
     const kind = itemKind(item);
     const poster = item.thumbnail || (item.video && item.video.poster) || '';
     const mark = (item.domain || item.title || 'L').charAt(0).toUpperCase();
@@ -2776,7 +2780,7 @@ function buildFireTv(ctx) {
     .join('');
 
   const playableCount = ctx.sourceGroups.reduce(
-    (n, g) => n + (g.items || []).filter((it) => extractVideoSrc(it) || tvEmbedFor(it.href) || tvGenericEmbed(it)).length, 0);
+    (n, g) => n + (g.items || []).filter((it) => extractVideoSrc(it) || tvEmbedFor(it.href) || genericEmbedSrc(it)).length, 0);
 
   const css = `<style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
