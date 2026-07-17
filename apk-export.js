@@ -178,7 +178,11 @@
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -186,45 +190,73 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Fullscreen WebView wrapper around the Linkforge-generated TV page.
  *
- * Remote support comes for free: Fire TV delivers the D-pad to the WebView
- * as arrow-key events and the center button as Enter, which the bundled
- * page's spatial-navigation script consumes. Only BACK needs plumbing —
- * Android routes it to the Activity, so we offer it to the page first
- * (window.lfBack() closes the video player / resets focus) and fall back
- * to WebView history, then to leaving the app.
+ * Remote support comes for free on our own generated page: Fire TV delivers
+ * the D-pad to the WebView as arrow-key events and the center button as
+ * Enter, which the bundled page's spatial-navigation script consumes. Only
+ * BACK needs plumbing — Android routes it to the Activity, so we offer it
+ * to the page first (window.lfBack() closes the video player / resets
+ * focus) and fall back to WebView history, then to leaving the app.
  *
  * Links that aren't playable in-app (see tvEmbedFor / genericEmbedSrc in the
- * generated page) navigate the WebView to the real, external site — which
- * has no idea it's being driven by a D-pad. lf-cursor.js gives those pages a
- * remote-controlled pointer (move + "click" wherever it lands) so they're
- * still usable without a touchscreen or mouse.
+ * generated page) navigate the WebView to the real, external site, which has
+ * no D-pad-aware navigation of its own and is usually built for touch. While
+ * on one of those pages this Activity switches to "pointer mode": D-pad keys
+ * never reach the page at all (dispatchKeyEvent swallows them outright, so
+ * the page can't tab through links or scroll on its own), and instead move a
+ * native cursor overlay drawn on top of the WebView; OK synthesizes a real
+ * touch tap at the cursor's position. Intercepting at the Activity level —
+ * rather than injecting JS into the page — means the cursor can't be wiped
+ * out by client-side navigation and never has to race the page's own load.
  */
 public class MainActivity extends Activity {
     private static final String ASSET_PREFIX = "file:///android_asset/";
     private static final String DESKTOP_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                     + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+    private static final float CURSOR_DP = 20f;
+    private static final float BASE_STEP_DP = 9f;
+    private static final float MAX_STEP_DP = 22f;
+    private static final float ACCEL_DP = 0.9f;
+    private static final float EDGE_DP = 56f;
 
     private WebView webView;
     private FrameLayout root;
+    private View cursorView;
     private View fullscreenView;
     private WebChromeClient.CustomViewCallback fullscreenCallback;
+    private boolean pointerMode = false;
+    private float cursorX, cursorY;
+    private float baseStepPx, maxStepPx, accelPx, edgePx;
+    private int cursorSizePx;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        float density = getResources().getDisplayMetrics().density;
+        cursorSizePx = Math.round(CURSOR_DP * density);
+        baseStepPx = BASE_STEP_DP * density;
+        maxStepPx = MAX_STEP_DP * density;
+        accelPx = ACCEL_DP * density;
+        edgePx = EDGE_DP * density;
+
         root = new FrameLayout(this);
         webView = new WebView(this);
         root.addView(webView);
+
+        cursorView = new View(this);
+        GradientDrawable dot = new GradientDrawable();
+        dot.setShape(GradientDrawable.OVAL);
+        dot.setColor(0xFFFBBF24);
+        dot.setStroke(Math.max(1, Math.round(2 * density)), 0xFF0A0C10);
+        cursorView.setBackground(dot);
+        cursorView.setVisibility(View.GONE);
+        root.addView(cursorView, new FrameLayout.LayoutParams(cursorSizePx, cursorSizePx));
+
         setContentView(root);
 
         WebSettings s = webView.getSettings();
@@ -243,10 +275,9 @@ public class MainActivity extends Activity {
         webView.setBackgroundColor(0xFF0A0C10);
         webView.setWebViewClient(new WebViewClient() {
             @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if (url == null || url.startsWith(ASSET_PREFIX)) return;
-                view.evaluateJavascript(loadAsset("lf-cursor.js"), null);
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                setPointerMode(url == null || !url.startsWith(ASSET_PREFIX));
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -282,16 +313,86 @@ public class MainActivity extends Activity {
         if (hasFocus) webView.requestFocus();
     }
 
-    private String loadAsset(String name) {
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader r = new BufferedReader(
-                new InputStreamReader(getAssets().open(name), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = r.readLine()) != null) sb.append(line).append('\n');
-        } catch (IOException e) {
-            return "";
+    private void setPointerMode(boolean on) {
+        if (pointerMode == on) return;
+        pointerMode = on;
+        cursorView.setVisibility(on ? View.VISIBLE : View.GONE);
+        if (on) {
+            cursorX = webView.getWidth() / 2f;
+            cursorY = webView.getHeight() / 2f;
+            placeCursor();
         }
-        return sb.toString();
+    }
+
+    private void placeCursor() {
+        cursorView.setTranslationX(cursorX - cursorSizePx / 2f);
+        cursorView.setTranslationY(cursorY - cursorSizePx / 2f);
+    }
+
+    // Swallows D-pad input outright while in pointer mode, before it ever
+    // reaches the WebView — the external page never sees a key event, so it
+    // can neither tab-focus its own links nor trigger its own arrow-key
+    // scrolling. This is the only path that moves the cursor / taps.
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (pointerMode && isDpadKey(event.getKeyCode())) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) handleDpadKey(event);
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    private boolean isDpadKey(int keyCode) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_DPAD_UP:
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void handleDpadKey(KeyEvent event) {
+        int code = event.getKeyCode();
+        if (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER) {
+            tapAtCursor();
+            return;
+        }
+        float step = Math.min(maxStepPx, baseStepPx + event.getRepeatCount() * accelPx);
+        int w = webView.getWidth(), h = webView.getHeight();
+        switch (code) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                cursorX = Math.max(0, cursorX - step);
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                cursorX = Math.min(w, cursorX + step);
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                cursorY = Math.max(0, cursorY - step);
+                if (cursorY <= edgePx) webView.scrollBy(0, -Math.round(step));
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                cursorY = Math.min(h, cursorY + step);
+                if (cursorY >= h - edgePx) webView.scrollBy(0, Math.round(step));
+                break;
+            default:
+                return;
+        }
+        placeCursor();
+    }
+
+    private void tapAtCursor() {
+        long t = SystemClock.uptimeMillis();
+        MotionEvent down = MotionEvent.obtain(t, t, MotionEvent.ACTION_DOWN, cursorX, cursorY, 0);
+        MotionEvent up = MotionEvent.obtain(t, t + 60, MotionEvent.ACTION_UP, cursorX, cursorY, 0);
+        webView.dispatchTouchEvent(down);
+        webView.dispatchTouchEvent(up);
+        down.recycle();
+        up.recycle();
     }
 
     private void exitFullscreen() {
@@ -382,103 +483,6 @@ public class MainActivity extends Activity {
 `;
   }
 
-  // Injected into every external page the WebView navigates to (see
-  // MainActivity.onPageFinished). Draws a remote-controlled pointer and
-  // turns D-pad arrows + OK into cursor movement + a synthesized click,
-  // since the external site has no idea it's being driven by a TV remote.
-  function cursorJs() {
-    return `(function () {
-  if (window.__lfCursorInit) return;
-  window.__lfCursorInit = true;
-
-  var SIZE = 30;
-  var cursor = document.createElement('div');
-  cursor.id = '__lf_cursor';
-  cursor.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;' +
-    'top:0;left:0;width:' + SIZE + 'px;height:' + SIZE + 'px;margin:-2px 0 0 -2px;' +
-    'filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));';
-  cursor.innerHTML = '<svg width="' + SIZE + '" height="' + SIZE + '" viewBox="0 0 24 24">' +
-    '<path d="M4 2l16 8.2-6.9 1.6L11 19.5z" fill="#fbbf24" stroke="#0a0c10" stroke-width="1.4" stroke-linejoin="round"/></svg>';
-
-  function mount() { document.documentElement.appendChild(cursor); place(); }
-  if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
-
-  var x = Math.round(window.innerWidth / 2);
-  var y = Math.round(window.innerHeight / 2);
-  var held = Object.create(null);
-  var BASE_SPEED = 16, MAX_SPEED = 46, ACCEL = 2.4, EDGE = 64;
-  var speed = BASE_SPEED, raf = null, hoverEl = null;
-
-  function place() { cursor.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
-
-  function fireMouse(el, type) {
-    try {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }));
-    } catch (e) {}
-  }
-
-  function updateHover() {
-    var el = document.elementFromPoint(x, y);
-    if (el === hoverEl) return;
-    if (hoverEl) { fireMouse(hoverEl, 'mouseout'); fireMouse(hoverEl, 'mouseleave'); }
-    hoverEl = el;
-    if (hoverEl) { fireMouse(hoverEl, 'mouseover'); fireMouse(hoverEl, 'mouseenter'); fireMouse(hoverEl, 'mousemove'); }
-  }
-
-  function step() {
-    var dx = 0, dy = 0;
-    if (held.ArrowLeft) dx -= speed;
-    if (held.ArrowRight) dx += speed;
-    if (held.ArrowUp) dy -= speed;
-    if (held.ArrowDown) dy += speed;
-    if (!dx && !dy) { speed = BASE_SPEED; raf = null; return; }
-    speed = Math.min(MAX_SPEED, speed + ACCEL);
-    x = Math.max(2, Math.min(window.innerWidth - 2, x + dx));
-    y = Math.max(2, Math.min(window.innerHeight - 2, y + dy));
-    place();
-    if (y < EDGE) window.scrollBy(0, -20);
-    else if (y > window.innerHeight - EDGE) window.scrollBy(0, 20);
-    updateHover();
-    raf = requestAnimationFrame(step);
-  }
-
-  function clickAtCursor() {
-    var el = document.elementFromPoint(x, y);
-    if (!el) return;
-    var opts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: 0 };
-    try { el.dispatchEvent(new PointerEvent('pointerdown', opts)); } catch (e) {}
-    fireMouse(el, 'mousedown');
-    try { el.dispatchEvent(new PointerEvent('pointerup', opts)); } catch (e) {}
-    fireMouse(el, 'mouseup');
-    fireMouse(el, 'click');
-    if (typeof el.focus === 'function') { try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch (e2) {} } }
-  }
-
-  var CODE = { 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown', 13: 'Enter' };
-  document.addEventListener('keydown', function (e) {
-    var key = e.key && e.key !== 'Unidentified' ? e.key : CODE[e.keyCode];
-    if (!key) return;
-    if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown') {
-      if (!held[key]) { held[key] = true; if (!raf) raf = requestAnimationFrame(step); }
-      e.preventDefault();
-    } else if (key === 'Enter') {
-      clickAtCursor();
-      e.preventDefault();
-    }
-  }, true);
-  document.addEventListener('keyup', function (e) {
-    var key = e.key && e.key !== 'Unidentified' ? e.key : CODE[e.keyCode];
-    if (key && held[key]) { held[key] = false; e.preventDefault(); }
-  }, true);
-  window.addEventListener('resize', function () {
-    x = Math.min(x, window.innerWidth - 2);
-    y = Math.min(y, window.innerHeight - 2);
-    place();
-  });
-})();
-`;
-  }
-
   function appGradle(slug) {
     return `plugins {
     id 'com.android.application'
@@ -557,12 +561,13 @@ fullscreen WebView tuned for the living room:
   YouTube / Vimeo / Dailymotion links open in an in-app embedded player
   that the remote controls the same way (OK play/pause, ◀ ▶ seek,
   Back to close). No jumping out to websites to watch something.
-- **Plain links get a remote-controlled pointer** — links that aren't
-  playable in-app open the real external site, and since that site has no
-  idea it's being driven by a D-pad, this app gives it a visible cursor:
-  arrows move it, OK clicks whatever it's over. Pages also load with a
-  desktop user agent so external sites give you real (mouse-friendly)
-  layouts instead of a cramped touch-only mobile view. Back returns you to
+- **Plain links switch to a remote-controlled pointer, nothing else** —
+  links that aren't playable in-app open the real external site. Those pages
+  have no D-pad navigation of their own, so the app takes the arrow keys away
+  from them entirely and turns the remote into a mouse instead: arrows move a
+  visible cursor, OK taps wherever it's sitting. External pages also load
+  with a desktop user agent so they render mouse-friendly layouts instead of
+  a cramped touch-only mobile view. Back returns you to
   your shelves.
 
 ## Get the APK (pick whichever is easiest)
@@ -681,7 +686,6 @@ local.properties
       t('app/src/main/java/com/linkforge/tvapp/MainActivity.java', MAIN_ACTIVITY),
       t('app/src/main/res/values/strings.xml', stringsXml(title)),
       t('app/src/main/assets/index.html', html),
-      t('app/src/main/assets/lf-cursor.js', cursorJs()),
       { name: dir + 'app/src/main/res/drawable/banner.png', data: banner },
       { name: dir + 'app/src/main/res/mipmap-xxhdpi/ic_launcher.png', data: icon },
     ];
