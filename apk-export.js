@@ -186,6 +186,10 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Fullscreen WebView wrapper around the Linkforge-generated TV page.
@@ -196,8 +200,19 @@ import android.widget.FrameLayout;
  * Android routes it to the Activity, so we offer it to the page first
  * (window.lfBack() closes the video player / resets focus) and fall back
  * to WebView history, then to leaving the app.
+ *
+ * Links that aren't playable in-app (see tvEmbedFor / genericEmbedSrc in the
+ * generated page) navigate the WebView to the real, external site — which
+ * has no idea it's being driven by a D-pad. lf-cursor.js gives those pages a
+ * remote-controlled pointer (move + "click" wherever it lands) so they're
+ * still usable without a touchscreen or mouse.
  */
 public class MainActivity extends Activity {
+    private static final String ASSET_PREFIX = "file:///android_asset/";
+    private static final String DESKTOP_UA =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                    + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
     private WebView webView;
     private FrameLayout root;
     private View fullscreenView;
@@ -219,9 +234,21 @@ public class MainActivity extends Activity {
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        // External sites get a desktop UA: their mobile layouts assume touch
+        // (hamburger menus, tiny tap targets) and often redirect to an
+        // m.-subdomain based on user agent. Desktop layouts are friendlier
+        // to the remote-driven pointer and this app's screen is plenty wide.
+        s.setUserAgentString(DESKTOP_UA);
 
         webView.setBackgroundColor(0xFF0A0C10);
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if (url == null || url.startsWith(ASSET_PREFIX)) return;
+                view.evaluateJavascript(loadAsset("lf-cursor.js"), null);
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onShowCustomView(View view, CustomViewCallback callback) {
@@ -253,6 +280,18 @@ public class MainActivity extends Activity {
         // events can miss the WebView. Doing it here, once the window
         // actually has focus, is what makes remote input land reliably.
         if (hasFocus) webView.requestFocus();
+    }
+
+    private String loadAsset(String name) {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader r = new BufferedReader(
+                new InputStreamReader(getAssets().open(name), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = r.readLine()) != null) sb.append(line).append('\n');
+        } catch (IOException e) {
+            return "";
+        }
+        return sb.toString();
     }
 
     private void exitFullscreen() {
@@ -343,6 +382,103 @@ public class MainActivity extends Activity {
 `;
   }
 
+  // Injected into every external page the WebView navigates to (see
+  // MainActivity.onPageFinished). Draws a remote-controlled pointer and
+  // turns D-pad arrows + OK into cursor movement + a synthesized click,
+  // since the external site has no idea it's being driven by a TV remote.
+  function cursorJs() {
+    return `(function () {
+  if (window.__lfCursorInit) return;
+  window.__lfCursorInit = true;
+
+  var SIZE = 30;
+  var cursor = document.createElement('div');
+  cursor.id = '__lf_cursor';
+  cursor.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;' +
+    'top:0;left:0;width:' + SIZE + 'px;height:' + SIZE + 'px;margin:-2px 0 0 -2px;' +
+    'filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));';
+  cursor.innerHTML = '<svg width="' + SIZE + '" height="' + SIZE + '" viewBox="0 0 24 24">' +
+    '<path d="M4 2l16 8.2-6.9 1.6L11 19.5z" fill="#fbbf24" stroke="#0a0c10" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+
+  function mount() { document.documentElement.appendChild(cursor); place(); }
+  if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+
+  var x = Math.round(window.innerWidth / 2);
+  var y = Math.round(window.innerHeight / 2);
+  var held = Object.create(null);
+  var BASE_SPEED = 16, MAX_SPEED = 46, ACCEL = 2.4, EDGE = 64;
+  var speed = BASE_SPEED, raf = null, hoverEl = null;
+
+  function place() { cursor.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
+
+  function fireMouse(el, type) {
+    try {
+      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }));
+    } catch (e) {}
+  }
+
+  function updateHover() {
+    var el = document.elementFromPoint(x, y);
+    if (el === hoverEl) return;
+    if (hoverEl) { fireMouse(hoverEl, 'mouseout'); fireMouse(hoverEl, 'mouseleave'); }
+    hoverEl = el;
+    if (hoverEl) { fireMouse(hoverEl, 'mouseover'); fireMouse(hoverEl, 'mouseenter'); fireMouse(hoverEl, 'mousemove'); }
+  }
+
+  function step() {
+    var dx = 0, dy = 0;
+    if (held.ArrowLeft) dx -= speed;
+    if (held.ArrowRight) dx += speed;
+    if (held.ArrowUp) dy -= speed;
+    if (held.ArrowDown) dy += speed;
+    if (!dx && !dy) { speed = BASE_SPEED; raf = null; return; }
+    speed = Math.min(MAX_SPEED, speed + ACCEL);
+    x = Math.max(2, Math.min(window.innerWidth - 2, x + dx));
+    y = Math.max(2, Math.min(window.innerHeight - 2, y + dy));
+    place();
+    if (y < EDGE) window.scrollBy(0, -20);
+    else if (y > window.innerHeight - EDGE) window.scrollBy(0, 20);
+    updateHover();
+    raf = requestAnimationFrame(step);
+  }
+
+  function clickAtCursor() {
+    var el = document.elementFromPoint(x, y);
+    if (!el) return;
+    var opts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: 0 };
+    try { el.dispatchEvent(new PointerEvent('pointerdown', opts)); } catch (e) {}
+    fireMouse(el, 'mousedown');
+    try { el.dispatchEvent(new PointerEvent('pointerup', opts)); } catch (e) {}
+    fireMouse(el, 'mouseup');
+    fireMouse(el, 'click');
+    if (typeof el.focus === 'function') { try { el.focus({ preventScroll: true }); } catch (e) { try { el.focus(); } catch (e2) {} } }
+  }
+
+  var CODE = { 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown', 13: 'Enter' };
+  document.addEventListener('keydown', function (e) {
+    var key = e.key && e.key !== 'Unidentified' ? e.key : CODE[e.keyCode];
+    if (!key) return;
+    if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'ArrowUp' || key === 'ArrowDown') {
+      if (!held[key]) { held[key] = true; if (!raf) raf = requestAnimationFrame(step); }
+      e.preventDefault();
+    } else if (key === 'Enter') {
+      clickAtCursor();
+      e.preventDefault();
+    }
+  }, true);
+  document.addEventListener('keyup', function (e) {
+    var key = e.key && e.key !== 'Unidentified' ? e.key : CODE[e.keyCode];
+    if (key && held[key]) { held[key] = false; e.preventDefault(); }
+  }, true);
+  window.addEventListener('resize', function () {
+    x = Math.min(x, window.innerWidth - 2);
+    y = Math.min(y, window.innerHeight - 2);
+    place();
+  });
+})();
+`;
+  }
+
   function appGradle(slug) {
     return `plugins {
     id 'com.android.application'
@@ -421,8 +557,13 @@ fullscreen WebView tuned for the living room:
   YouTube / Vimeo / Dailymotion links open in an in-app embedded player
   that the remote controls the same way (OK play/pause, ◀ ▶ seek,
   Back to close). No jumping out to websites to watch something.
-- Only links with no recognizable video source open as pages in-app;
-  Back returns you to your shelves.
+- **Plain links get a remote-controlled pointer** — links that aren't
+  playable in-app open the real external site, and since that site has no
+  idea it's being driven by a D-pad, this app gives it a visible cursor:
+  arrows move it, OK clicks whatever it's over. Pages also load with a
+  desktop user agent so external sites give you real (mouse-friendly)
+  layouts instead of a cramped touch-only mobile view. Back returns you to
+  your shelves.
 
 ## Get the APK (pick whichever is easiest)
 
@@ -540,6 +681,7 @@ local.properties
       t('app/src/main/java/com/linkforge/tvapp/MainActivity.java', MAIN_ACTIVITY),
       t('app/src/main/res/values/strings.xml', stringsXml(title)),
       t('app/src/main/assets/index.html', html),
+      t('app/src/main/assets/lf-cursor.js', cursorJs()),
       { name: dir + 'app/src/main/res/drawable/banner.png', data: banner },
       { name: dir + 'app/src/main/res/mipmap-xxhdpi/ic_launcher.png', data: icon },
     ];
