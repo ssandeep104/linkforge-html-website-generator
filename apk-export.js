@@ -218,10 +218,21 @@ public class MainActivity extends Activity {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                     + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
     private static final float CURSOR_DP = 20f;
-    private static final float BASE_STEP_DP = 9f;
-    private static final float MAX_STEP_DP = 22f;
-    private static final float ACCEL_DP = 0.9f;
+    private static final float BASE_STEP_DP = 11f;
+    private static final float MAX_STEP_DP = 26f;
+    private static final float ACCEL_DP = 1.1f;
     private static final float EDGE_DP = 56f;
+    // Re-applied after every external page load: some sites decide "mobile"
+    // purely from viewport width (ignoring the desktop UA above), so this
+    // widens the CSS viewport to match the WebView's actual pixel width.
+    private static final String FORCE_DESKTOP_VIEWPORT_JS =
+            "(function(){try{var w=Math.max(window.innerWidth,1280);"
+                    + "var m=document.querySelector('meta[name=viewport]');"
+                    + "if(!m){m=document.createElement('meta');"
+                    + "m.setAttribute('name','viewport');"
+                    + "document.head&&document.head.appendChild(m);}"
+                    + "m.setAttribute('content','width='+w+', initial-scale=1');"
+                    + "}catch(e){}})();";
 
     private WebView webView;
     private FrameLayout root;
@@ -279,6 +290,14 @@ public class MainActivity extends Activity {
                 super.onPageStarted(view, url, favicon);
                 setPointerMode(url == null || !url.startsWith(ASSET_PREFIX));
             }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if (url != null && !url.startsWith(ASSET_PREFIX)) {
+                    view.evaluateJavascript(FORCE_DESKTOP_VIEWPORT_JS, null);
+                }
+            }
         });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -287,9 +306,18 @@ public class MainActivity extends Activity {
                 fullscreenView = view;
                 fullscreenCallback = callback;
                 webView.setVisibility(View.GONE);
+                // Many external sites' <video> tags skip playsinline, so
+                // Android drops them into this native fullscreen surface
+                // automatically (not just on an explicit "fullscreen" tap).
+                // Our cursor overlay was drawn under it either way, and
+                // swallowing D-pad for a now-invisible cursor is exactly what
+                // was blocking that surface's own seek/rewind/play handling
+                // — so pointer mode stands down for as long as this is up.
+                cursorView.setVisibility(View.GONE);
                 root.addView(view, new FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.MATCH_PARENT));
+                view.requestLayout();
             }
 
             @Override
@@ -333,9 +361,15 @@ public class MainActivity extends Activity {
     // reaches the WebView — the external page never sees a key event, so it
     // can neither tab-focus its own links nor trigger its own arrow-key
     // scrolling. This is the only path that moves the cursor / taps.
+    //
+    // While a native fullscreen video surface is up (fullscreenView != null)
+    // this stands down instead: our cursor is hidden and useless there, and
+    // letting the key event through gives that surface's own D-pad-aware
+    // seek/rewind/play controls (which Chromium's built-in fullscreen video
+    // UI supports) an actual chance to receive it.
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (pointerMode && isDpadKey(event.getKeyCode())) {
+        if (pointerMode && fullscreenView == null && isDpadKey(event.getKeyCode())) {
             if (event.getAction() == KeyEvent.ACTION_DOWN) handleDpadKey(event);
             return true;
         }
@@ -402,6 +436,10 @@ public class MainActivity extends Activity {
         if (fullscreenCallback != null) fullscreenCallback.onCustomViewHidden();
         fullscreenCallback = null;
         webView.setVisibility(View.VISIBLE);
+        if (pointerMode) {
+            cursorView.setVisibility(View.VISIBLE);
+            placeCursor();
+        }
     }
 
     @Override
