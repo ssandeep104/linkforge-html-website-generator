@@ -222,17 +222,27 @@ public class MainActivity extends Activity {
     private static final float MAX_STEP_DP = 26f;
     private static final float ACCEL_DP = 1.1f;
     private static final float EDGE_DP = 56f;
-    // Re-applied after every external page load: some sites decide "mobile"
+    // Re-applied on every external page load: some sites decide "mobile"
     // purely from viewport width (ignoring the desktop UA above), so this
-    // widens the CSS viewport to match the WebView's actual pixel width.
-    private static final String FORCE_DESKTOP_VIEWPORT_JS =
-            "(function(){try{var w=Math.max(window.innerWidth,1280);"
-                    + "var m=document.querySelector('meta[name=viewport]');"
-                    + "if(!m){m=document.createElement('meta');"
-                    + "m.setAttribute('name','viewport');"
-                    + "document.head&&document.head.appendChild(m);}"
-                    + "m.setAttribute('content','width='+w+', initial-scale=1');"
-                    + "}catch(e){}})();";
+    // widens the CSS viewport to a desktop width — and then scales the page
+    // down so that full width fits the screen. The scale must be pinned via
+    // minimum/maximum-scale: a bare initial-scale is ignored when the meta
+    // tag is edited after the page's own viewport was already parsed, and
+    // forcing scale 1 on a viewport wider than the screen zooms the page in
+    // so only part of it is visible.
+    private String forceDesktopViewportJs() {
+        int screenCssWidth = Math.max(1, Math.round(
+                webView.getWidth() / getResources().getDisplayMetrics().density));
+        return "(function(){try{var w=Math.max(window.innerWidth,1280);"
+                + "var s=Math.min(1," + screenCssWidth + "/w);"
+                + "var m=document.querySelector('meta[name=viewport]');"
+                + "if(!m){m=document.createElement('meta');"
+                + "m.setAttribute('name','viewport');"
+                + "document.head&&document.head.appendChild(m);}"
+                + "m.setAttribute('content','width='+w+', initial-scale='+s"
+                + "+', minimum-scale='+s+', maximum-scale='+s);"
+                + "}catch(e){}})();";
+    }
 
     private WebView webView;
     private FrameLayout root;
@@ -291,11 +301,24 @@ public class MainActivity extends Activity {
                 setPointerMode(url == null || !url.startsWith(ASSET_PREFIX));
             }
 
+            // Applied twice per external load: as soon as the first frame is
+            // drawn (so the page doesn't sit over-zoomed while slow resources
+            // finish loading; never fires on API < 23, where onPageFinished
+            // still covers it) and again at load end, in case the page's own
+            // late-parsed viewport meta overrode the first injection.
+            @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                super.onPageCommitVisible(view, url);
+                if (url != null && !url.startsWith(ASSET_PREFIX)) {
+                    view.evaluateJavascript(forceDesktopViewportJs(), null);
+                }
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 if (url != null && !url.startsWith(ASSET_PREFIX)) {
-                    view.evaluateJavascript(FORCE_DESKTOP_VIEWPORT_JS, null);
+                    view.evaluateJavascript(forceDesktopViewportJs(), null);
                 }
             }
         });
@@ -605,8 +628,8 @@ fullscreen WebView tuned for the living room:
   from them entirely and turns the remote into a mouse instead: arrows move a
   visible cursor, OK taps wherever it's sitting. External pages also load
   with a desktop user agent so they render mouse-friendly layouts instead of
-  a cramped touch-only mobile view. Back returns you to
-  your shelves.
+  a cramped touch-only mobile view, zoomed so the full page width fits the
+  TV screen. Back returns you to your shelves.
 
 ## Get the APK (pick whichever is easiest)
 
