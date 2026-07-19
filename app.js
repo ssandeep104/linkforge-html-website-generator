@@ -1882,7 +1882,7 @@ function downloadHtml() {
     // itself needs the Android SDK — the bundled GitHub Actions workflow or
     // Android Studio produces it from this project (see README inside).
     window.LINKFORGE_APK.downloadProject({ html, title: state.site.title, slug: siteSlug() })
-      .then((name) => showToast(`Downloaded ${name} — README inside shows how to get the .apk`))
+      .then((name) => showToast(`Downloaded ${name} — push it to a GitHub repo and the bundled workflow builds the .apk for you (README inside)`))
       .catch((err) => {
         console.error(err);
         showToast('Could not package the Fire TV app project.');

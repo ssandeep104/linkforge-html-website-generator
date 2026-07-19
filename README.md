@@ -18,6 +18,8 @@ The **Fire TV App** template doesn't export a website — it exports an Android 
 
 Videos play **inside the app** instead of bouncing to the source website: direct MP4/WebM links use the native player (hardware decode), while YouTube, Vimeo, and Dailymotion links open in an in-app embedded player that the remote drives over each provider's postMessage API — so OK/seek/Back keep working even inside the embed. Only links with no recognizable video source open as pages.
 
+Links that do open as pages load in full desktop disguise (desktop user agent, desktop client hints, spoofed JS fingerprint, viewport fitted to the TV screen), with the remote acting as a mouse pointer. Video on those pages stays remote-controllable too — play/pause / rewind / fast-forward work everywhere, and in fullscreen the D-pad becomes seek/play transport control.
+
 Downloading gives you a complete Android project (.zip) with the generated page bundled in `assets/`, a leanback WebView wrapper, and a GitHub Actions workflow — push the folder to a GitHub repo and the workflow builds the sideloadable `.apk` for you (or open it in Android Studio and press Build). The README inside the zip walks through building and sideloading on Fire TV step by step.
 
 Parser is fully client-side. There are no network calls — your HTML never leaves the browser.
