@@ -184,12 +184,21 @@ import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+
+import androidx.webkit.UserAgentMetadata;
+import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+
+import java.util.Arrays;
+import java.util.HashSet;
 
 /**
  * Fullscreen WebView wrapper around the Linkforge-generated TV page.
@@ -211,6 +220,14 @@ import android.widget.FrameLayout;
  * touch tap at the cursor's position. Intercepting at the Activity level —
  * rather than injecting JS into the page — means the cursor can't be wiped
  * out by client-side navigation and never has to race the page's own load.
+ *
+ * The remote's dedicated media buttons (play/pause, rewind, fast-forward)
+ * always control the page's video directly through evaluateJavascript. That
+ * channel is deliberate: while a native fullscreen video surface is up the
+ * WebView is hidden and cannot hold focus, so a real key event can never
+ * reach the page — JS injection is the only input path that keeps working.
+ * In fullscreen the D-pad joins in as transport control (left/right seek,
+ * up/down long seek, OK play/pause) instead of moving the cursor.
  */
 public class MainActivity extends Activity {
     private static final String ASSET_PREFIX = "file:///android_asset/";
@@ -222,27 +239,69 @@ public class MainActivity extends Activity {
     private static final float MAX_STEP_DP = 26f;
     private static final float ACCEL_DP = 1.1f;
     private static final float EDGE_DP = 56f;
-    // Re-applied on every external page load: some sites decide "mobile"
-    // purely from viewport width (ignoring the desktop UA above), so this
-    // widens the CSS viewport to a desktop width — and then scales the page
-    // down so that full width fits the screen. The scale must be pinned via
+    // Applied to every external page: some sites decide "mobile" purely
+    // from viewport width (ignoring the desktop UA above), so this widens
+    // the CSS viewport to a desktop width — and then scales the page down
+    // so that full width fits the screen. The scale must be pinned via
     // minimum/maximum-scale: a bare initial-scale is ignored when the meta
     // tag is edited after the page's own viewport was already parsed, and
     // forcing scale 1 on a viewport wider than the screen zooms the page in
     // so only part of it is visible.
-    private String forceDesktopViewportJs() {
-        int screenCssWidth = Math.max(1, Math.round(
-                webView.getWidth() / getResources().getDisplayMetrics().density));
-        return "(function(){try{var w=Math.max(window.innerWidth,1280);"
+    private String fitViewportBody(int screenCssWidth) {
+        return "var w=Math.max(window.innerWidth,1280);"
                 + "var s=Math.min(1," + screenCssWidth + "/w);"
                 + "var m=document.querySelector('meta[name=viewport]');"
                 + "if(!m){m=document.createElement('meta');"
                 + "m.setAttribute('name','viewport');"
                 + "document.head&&document.head.appendChild(m);}"
                 + "m.setAttribute('content','width='+w+', initial-scale='+s"
-                + "+', minimum-scale='+s+', maximum-scale='+s);"
+                + "+', minimum-scale='+s+', maximum-scale='+s);";
+    }
+
+    private String forceDesktopViewportJs() {
+        int screenCssWidth = Math.max(1, Math.round(
+                webView.getWidth() / getResources().getDisplayMetrics().density));
+        return "(function(){try{" + fitViewportBody(screenCssWidth) + "}catch(e){}})();";
+    }
+
+    // Runs at document start in every http(s) frame (WebView permitting):
+    // sites sniff "mobile" from JS long before any onPageCommitVisible
+    // injection can land, so the desktop disguise has to be in place before
+    // the page's first script executes. Also fits the viewport the moment
+    // the DOM is ready instead of waiting for the first painted frame.
+    // file:// (the bundled page) never matches the http(s) origin rules.
+    private String desktopSpoofJs() {
+        android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
+        int sw = Math.max(1, Math.round(dm.widthPixels / dm.density));
+        return "(function(){try{"
+                + "var def=function(o,k,v){try{Object.defineProperty(o,k,"
+                + "{get:function(){return v},configurable:true});}catch(e){}};"
+                + "def(navigator,'platform','Win32');"
+                + "def(navigator,'maxTouchPoints',0);"
+                + "if(navigator.userAgentData){var b=navigator.userAgentData.brands||[];"
+                + "def(navigator,'userAgentData',{brands:b,mobile:false,platform:'Windows',"
+                + "getHighEntropyValues:function(){return Promise.resolve({brands:b,"
+                + "fullVersionList:b,mobile:false,platform:'Windows',"
+                + "platformVersion:'10.0.0',architecture:'x86',bitness:'64',"
+                + "model:'',uaFullVersion:''});},"
+                + "toJSON:function(){return{brands:b,mobile:false,platform:'Windows'};}});}"
+                + "var fit=function(){try{" + fitViewportBody(sw) + "}catch(e){}};"
+                + "if(document.readyState==='loading'){"
+                + "document.addEventListener('DOMContentLoaded',fit);}else{fit();}"
                 + "}catch(e){}})();";
     }
+
+    // While a native fullscreen surface is up, the layout viewport must
+    // match the screen 1:1 — the fullscreen layer inherits the page scale,
+    // and leaving the desktop viewport pinned below 1 is exactly what
+    // rendered fullscreen video at three-quarter size with black around it.
+    private static final String FULLSCREEN_VIEWPORT_JS =
+            "(function(){try{var m=document.querySelector('meta[name=viewport]');"
+                    + "if(!m){m=document.createElement('meta');"
+                    + "m.setAttribute('name','viewport');"
+                    + "document.head&&document.head.appendChild(m);}"
+                    + "m.setAttribute('content','width=device-width, initial-scale=1, "
+                    + "minimum-scale=1, maximum-scale=1');}catch(e){}})();";
 
     private WebView webView;
     private FrameLayout root;
@@ -292,6 +351,29 @@ public class MainActivity extends Activity {
         // m.-subdomain based on user agent. Desktop layouts are friendlier
         // to the remote-driven pointer and this app's screen is plenty wide.
         s.setUserAgentString(DESKTOP_UA);
+        // The UA string alone stopped being enough: modern WebViews also
+        // send client hints (Sec-CH-UA-Mobile: ?1, Sec-CH-UA-Platform:
+        // Android), and major sites trust those over the UA when choosing a
+        // layout — which is why many pages still came back mobile.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) {
+            try {
+                WebSettingsCompat.setUserAgentMetadata(s, new UserAgentMetadata.Builder()
+                        .setMobile(false)
+                        .setPlatform("Windows")
+                        .setPlatformVersion("10.0.0")
+                        .setArchitecture("x86")
+                        .setBitness(64)
+                        .setModel("")
+                        .setWow64(false)
+                        .build());
+            } catch (RuntimeException ignored) { }
+        }
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            try {
+                WebViewCompat.addDocumentStartJavaScript(webView, desktopSpoofJs(),
+                        new HashSet<String>(Arrays.asList("http://*", "https://*")));
+            } catch (RuntimeException ignored) { }
+        }
 
         webView.setBackgroundColor(0xFF0A0C10);
         webView.setWebViewClient(new WebViewClient() {
@@ -328,15 +410,19 @@ public class MainActivity extends Activity {
                 if (fullscreenView != null) { callback.onCustomViewHidden(); return; }
                 fullscreenView = view;
                 fullscreenCallback = callback;
-                webView.setVisibility(View.GONE);
                 // Many external sites' <video> tags skip playsinline, so
                 // Android drops them into this native fullscreen surface
                 // automatically (not just on an explicit "fullscreen" tap).
-                // Our cursor overlay was drawn under it either way, and
-                // swallowing D-pad for a now-invisible cursor is exactly what
-                // was blocking that surface's own seek/rewind/play handling
-                // — so pointer mode stands down for as long as this is up.
+                // The cursor is useless over it — the D-pad becomes transport
+                // control instead (see handleFullscreenKey), driven through
+                // evaluateJavascript because the hidden WebView can no longer
+                // receive real key events.
+                if (!isOnAssetPage()) {
+                    webView.evaluateJavascript(FULLSCREEN_VIEWPORT_JS, null);
+                }
+                webView.setVisibility(View.GONE);
                 cursorView.setVisibility(View.GONE);
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 root.addView(view, new FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.MATCH_PARENT));
@@ -361,7 +447,24 @@ public class MainActivity extends Activity {
         // doesn't reliably hold input focus yet on Fire TV, so D-pad key
         // events can miss the WebView. Doing it here, once the window
         // actually has focus, is what makes remote input land reliably.
-        if (hasFocus) webView.requestFocus();
+        if (hasFocus) {
+            applyImmersive();
+            webView.requestFocus();
+        }
+    }
+
+    // Belt and braces on top of the fullscreen theme: some Fire OS builds
+    // (and phones/tablets, where this app also installs) still overlay
+    // system bars, which shrinks the usable surface and leaves dead black
+    // strips at the edges.
+    private void applyImmersive() {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
     }
 
     private void setPointerMode(boolean on) {
@@ -380,20 +483,31 @@ public class MainActivity extends Activity {
         cursorView.setTranslationY(cursorY - cursorSizePx / 2f);
     }
 
-    // Swallows D-pad input outright while in pointer mode, before it ever
-    // reaches the WebView — the external page never sees a key event, so it
-    // can neither tab-focus its own links nor trigger its own arrow-key
-    // scrolling. This is the only path that moves the cursor / taps.
+    // All remote input funnels through here.
     //
-    // While a native fullscreen video surface is up (fullscreenView != null)
-    // this stands down instead: our cursor is hidden and useless there, and
-    // letting the key event through gives that surface's own D-pad-aware
-    // seek/rewind/play controls (which Chromium's built-in fullscreen video
-    // UI supports) an actual chance to receive it.
+    // - Native fullscreen up: the WebView is hidden and cannot hold focus,
+    //   so no real key event can ever reach the page (this was the "nothing
+    //   works in fullscreen" dead end). Every D-pad/media key becomes a
+    //   transport command delivered via JS instead.
+    // - Pointer mode (external page, windowed): D-pad moves the cursor and
+    //   never reaches the page; media buttons drive the page's video by JS,
+    //   since touch-oriented sites don't listen for Media* keys anyway.
+    // - Bundled page: everything passes through as real key events, which
+    //   its spatial-navigation script consumes.
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (pointerMode && fullscreenView == null && isDpadKey(event.getKeyCode())) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) handleDpadKey(event);
+        int code = event.getKeyCode();
+        boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        if (fullscreenView != null && (isDpadKey(code) || isMediaKey(code))) {
+            if (down) handleFullscreenKey(code);
+            return true;
+        }
+        if (pointerMode && isMediaKey(code)) {
+            if (down) handleMediaKey(code);
+            return true;
+        }
+        if (pointerMode && isDpadKey(code)) {
+            if (down) handleDpadKey(event);
             return true;
         }
         return super.dispatchKeyEvent(event);
@@ -411,6 +525,140 @@ public class MainActivity extends Activity {
             default:
                 return false;
         }
+    }
+
+    private boolean isMediaKey(int keyCode) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+            case KeyEvent.KEYCODE_MEDIA_PLAY:
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:
+            case KeyEvent.KEYCODE_MEDIA_REWIND:
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void handleFullscreenKey(int code) {
+        if (isOnAssetPage()) {
+            // The bundled page (and its embedded YouTube/Vimeo players, via
+            // its postMessage bridge) already knows what every key means —
+            // re-deliver the key as a synthetic DOM event, since the hidden
+            // WebView can no longer receive real ones.
+            String key = domKeyFor(code);
+            if (key != null) sendKeyToPage(key);
+            return;
+        }
+        switch (code) {
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                togglePlay();
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY:
+                mediaAction("v.play();");
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                mediaAction("v.pause();");
+                break;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_MEDIA_REWIND:
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                seekBy(-10);
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+                seekBy(10);
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                seekBy(60);
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                seekBy(-60);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void handleMediaKey(int code) {
+        switch (code) {
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+                togglePlay();
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PLAY:
+                mediaAction("v.play();");
+                break;
+            case KeyEvent.KEYCODE_MEDIA_PAUSE:
+                mediaAction("v.pause();");
+                break;
+            case KeyEvent.KEYCODE_MEDIA_REWIND:
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                seekBy(-10);
+                break;
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
+            case KeyEvent.KEYCODE_MEDIA_NEXT:
+                seekBy(10);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private String domKeyFor(int code) {
+        switch (code) {
+            case KeyEvent.KEYCODE_DPAD_LEFT: return "ArrowLeft";
+            case KeyEvent.KEYCODE_DPAD_RIGHT: return "ArrowRight";
+            case KeyEvent.KEYCODE_DPAD_UP: return "ArrowUp";
+            case KeyEvent.KEYCODE_DPAD_DOWN: return "ArrowDown";
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER: return "Enter";
+            case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: return "MediaPlayPause";
+            case KeyEvent.KEYCODE_MEDIA_PLAY: return "MediaPlay";
+            case KeyEvent.KEYCODE_MEDIA_PAUSE: return "MediaPause";
+            case KeyEvent.KEYCODE_MEDIA_REWIND:
+            case KeyEvent.KEYCODE_MEDIA_PREVIOUS: return "MediaRewind";
+            case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
+            case KeyEvent.KEYCODE_MEDIA_NEXT: return "MediaFastForward";
+            default: return null;
+        }
+    }
+
+    private void sendKeyToPage(String key) {
+        webView.evaluateJavascript(
+                "(function(){try{document.dispatchEvent(new KeyboardEvent('keydown',"
+                        + "{key:'" + key + "',bubbles:true,cancelable:true}));}catch(e){}})();",
+                null);
+    }
+
+    // Finds the page's video — the fullscreen one if any, else the one
+    // that's actually playing, else the first — and runs the given action
+    // on it (bound to v). Cross-origin iframe players can't be reached this
+    // way; those are rare on desktop layouts, where players are inline.
+    private void mediaAction(String action) {
+        webView.evaluateJavascript(
+                "(function(){try{var v=document.fullscreenElement;"
+                        + "if(v&&v.tagName!=='VIDEO'){v=v.querySelector('video');}"
+                        + "if(!v){var l=document.querySelectorAll('video');"
+                        + "for(var i=0;i<l.length;i++){"
+                        + "if(!l[i].paused&&l[i].readyState>0){v=l[i];break;}}"
+                        + "if(!v&&l.length){v=l[0];}}"
+                        + "if(!v){return;}" + action + "}catch(e){}})();",
+                null);
+    }
+
+    private void togglePlay() {
+        mediaAction("if(v.paused){v.play();}else{v.pause();}");
+    }
+
+    private void seekBy(int seconds) {
+        mediaAction("var t=v.currentTime+(" + seconds + ");"
+                + "if(t<0){t=0;}if(v.duration&&t>v.duration){t=v.duration;}"
+                + "v.currentTime=t;");
     }
 
     private void handleDpadKey(KeyEvent event) {
@@ -458,11 +706,22 @@ public class MainActivity extends Activity {
         fullscreenView = null;
         if (fullscreenCallback != null) fullscreenCallback.onCustomViewHidden();
         fullscreenCallback = null;
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         webView.setVisibility(View.VISIBLE);
+        // Undo the 1:1 fullscreen viewport and go back to desktop layout.
+        if (!isOnAssetPage()) {
+            webView.evaluateJavascript(forceDesktopViewportJs(), null);
+        }
         if (pointerMode) {
             cursorView.setVisibility(View.VISIBLE);
             placeCursor();
         }
+        applyImmersive();
+    }
+
+    private boolean isOnAssetPage() {
+        String url = webView.getUrl();
+        return url == null || url.startsWith(ASSET_PREFIX);
     }
 
     @Override
@@ -567,6 +826,12 @@ android {
         }
     }
 }
+
+dependencies {
+    // Desktop-mode client hints + document-start scripts (feature-gated at
+    // runtime, so old WebViews degrade gracefully instead of crashing).
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
 `;
   }
 
@@ -610,6 +875,12 @@ jobs:
 
 This folder is a complete Android app project generated by
 [Linkforge](https://github.com/ssandeep104/linkforge-html-website-generator).
+
+> **No Android tools needed.** Push this folder to a GitHub repository and
+> the bundled workflow builds the sideloadable \`.apk\` for you — see
+> **Option A** below. Android Studio and a local Gradle build are optional
+> alternatives, not requirements.
+
 It wraps your generated TV page (\`app/src/main/assets/index.html\`) in a
 fullscreen WebView tuned for the living room:
 
@@ -626,10 +897,16 @@ fullscreen WebView tuned for the living room:
   links that aren't playable in-app open the real external site. Those pages
   have no D-pad navigation of their own, so the app takes the arrow keys away
   from them entirely and turns the remote into a mouse instead: arrows move a
-  visible cursor, OK taps wherever it's sitting. External pages also load
-  with a desktop user agent so they render mouse-friendly layouts instead of
-  a cramped touch-only mobile view, zoomed so the full page width fits the
-  TV screen. Back returns you to your shelves.
+  visible cursor, OK taps wherever it's sitting. External pages load in full
+  desktop disguise — desktop user agent, desktop client hints, and spoofed
+  JS fingerprint — so sites serve their mouse-friendly desktop layout
+  instead of a cramped touch-only mobile view, zoomed so the full page
+  width fits the TV screen. Back returns you to your shelves.
+- **Video on external sites stays remote-controllable** — when a video on
+  an external page goes fullscreen, the remote becomes a transport control:
+  OK toggles play/pause, ◀ ▶ seek 10s, ▲ ▼ seek a minute, and the dedicated
+  play/pause / rewind / fast-forward buttons work everywhere (fullscreen or
+  not). Back leaves fullscreen.
 
 ## Get the APK (pick whichever is easiest)
 
