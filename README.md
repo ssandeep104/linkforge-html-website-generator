@@ -20,6 +20,8 @@ Videos play **inside the app** instead of bouncing to the source website: direct
 
 Links that do open as pages load in full desktop disguise (desktop user agent, desktop client hints, spoofed JS fingerprint, viewport fitted to the TV screen), with the remote acting as a mouse pointer. Video on those pages stays remote-controllable too — play/pause / rewind / fast-forward work everywhere, in fullscreen the D-pad becomes seek/play transport control, and the remote's menu (≡) button snaps any playing video to fullscreen directly, no hunting for the player's own fullscreen button.
 
+Ad blocking is built in and always on: the app has no tabs, so an ad popunder or redirect would hijack the only view there is. Requests to major ad networks are dropped, gestureless popups are swallowed, app-store/intent redirects are blocked, and holding Back always jumps straight home to the shelves.
+
 Downloading gives you a complete Android project (.zip) with the generated page bundled in `assets/`, a leanback WebView wrapper, and a GitHub Actions workflow — push the folder to a GitHub repo and the workflow builds the sideloadable `.apk` for you (or open it in Android Studio and press Build). The README inside the zip walks through building and sideloading on Fire TV step by step.
 
 Parser is fully client-side. There are no network calls — your HTML never leaves the browser.
