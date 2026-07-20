@@ -181,7 +181,9 @@ import android.app.Activity;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Message;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -191,6 +193,8 @@ import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -201,8 +205,10 @@ import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
 
+import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Fullscreen WebView wrapper around the Linkforge-generated TV page.
@@ -239,6 +245,13 @@ import java.util.HashSet;
  * seconds, which made the real fullscreen button nearly impossible to hit
  * with a cursor — and a mis-click on the faded control bar would seek the
  * video instead. Cinema mode skips that whole interaction.
+ *
+ * Ad blocking is built in and always on, because this app has no tabs: an
+ * ad that opens a window or redirects doesn't go "somewhere else", it
+ * hijacks the only WebView there is. Requests to major ad/popunder
+ * networks are dropped, gestureless popups are swallowed (gestured
+ * target=_blank links fold into the main view), non-web schemes are
+ * blocked, and long-pressing Back always returns to the shelves.
  */
 public class MainActivity extends Activity {
     private static final String ASSET_PREFIX = "file:///android_asset/";
@@ -320,6 +333,52 @@ public class MainActivity extends Activity {
                     + "m.setAttribute('content','width=device-width, initial-scale=1, "
                     + "minimum-scale=1, maximum-scale=1');}catch(e){}})();";
 
+    // ---- built-in ad blocking ----
+    // Host-suffix blocklist of major ad, popunder, and ad-tracking
+    // networks. Not a full EasyList engine — the goal is narrower: in a
+    // single-WebView app there are no tabs, so an ad that navigates or
+    // pops a window doesn't open "somewhere else", it hijacks the whole
+    // app. Blocking the networks that do that (plus their measurement
+    // partners) keeps external pages usable from a couch.
+    private static final Set<String> AD_HOSTS = new HashSet<String>(Arrays.asList(
+            "doubleclick.net", "googlesyndication.com", "googleadservices.com",
+            "adservice.google.com", "google-analytics.com", "amazon-adsystem.com",
+            "adnxs.com", "adsrvr.org", "adform.net", "criteo.com", "criteo.net",
+            "taboola.com", "outbrain.com", "revcontent.com", "mgid.com", "zedo.com",
+            "openx.net", "pubmatic.com", "rubiconproject.com", "casalemedia.com",
+            "contextweb.com", "smartadserver.com", "teads.tv", "sharethrough.com",
+            "gumgum.com", "33across.com", "sonobi.com", "yieldmo.com",
+            "bidswitch.net", "adroll.com", "quantserve.com", "scorecardresearch.com",
+            "moatads.com", "adsafeprotected.com", "doubleverify.com",
+            "springserve.com", "spotxchange.com", "spotx.tv", "tremorhub.com",
+            "propellerads.com", "propellerclick.com", "exoclick.com", "exosrv.com",
+            "juicyads.com", "trafficjunky.net", "popads.net", "popcash.net",
+            "poptm.com", "adsterra.com", "hilltopads.net", "clickadu.com",
+            "adcash.com", "zeropark.com", "adblade.com", "undertone.com",
+            "mopub.com", "inmobi.com"));
+
+    private static boolean isAdHost(String host) {
+        if (host == null) return false;
+        host = host.toLowerCase();
+        int idx = 0;
+        while (true) {
+            if (AD_HOSTS.contains(idx == 0 ? host : host.substring(idx))) return true;
+            idx = host.indexOf('.', idx);
+            if (idx < 0) return false;
+            idx++;
+        }
+    }
+
+    // True = swallow the navigation. Ad hosts never get the top frame, and
+    // non-web schemes (intent://, market://ads and their kin) would bounce
+    // the user clean out of the app.
+    private boolean blockNavigation(String url) {
+        if (url == null) return false;
+        if (url.startsWith(ASSET_PREFIX)) return false;
+        if (!url.startsWith("http://") && !url.startsWith("https://")) return true;
+        return isAdHost(Uri.parse(url).getHost());
+    }
+
     private WebView webView;
     private FrameLayout root;
     private View cursorView;
@@ -327,6 +386,7 @@ public class MainActivity extends Activity {
     private WebChromeClient.CustomViewCallback fullscreenCallback;
     private boolean pointerMode = false;
     private boolean cinemaMode = false;
+    private boolean backLongPressed = false;
     private float cursorX, cursorY;
     private float baseStepPx, maxStepPx, accelPx, edgePx;
     private int cursorSizePx;
@@ -415,8 +475,36 @@ public class MainActivity extends Activity {
             } catch (RuntimeException ignored) { }
         }
 
+        // Popups need declaring so onCreateWindow gets consulted at all;
+        // without this, window.open() navigates the one and only WebView —
+        // which is exactly how ad popunders trapped the app.
+        s.setSupportMultipleWindows(true);
+
         webView.setBackgroundColor(0xFF0A0C10);
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(
+                    WebView view, WebResourceRequest request) {
+                if (request != null && request.getUrl() != null
+                        && isAdHost(request.getUrl().getHost())) {
+                    return new WebResourceResponse(
+                            "text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            @SuppressWarnings("deprecation")
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return blockNavigation(url);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return blockNavigation(request.getUrl() == null
+                        ? null : request.getUrl().toString());
+            }
+
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
@@ -446,6 +534,34 @@ public class MainActivity extends Activity {
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
+            // No tabs exist here, so "open a new window" can only mean one
+            // of two things: an ad popunder (no user gesture — drop it
+            // silently), or a real target=_blank link the user clicked —
+            // capture the URL it wants via a throwaway WebView and route it
+            // into the main one, ad-filtered like any other navigation.
+            @Override
+            public boolean onCreateWindow(WebView view, boolean isDialog,
+                    boolean isUserGesture, Message resultMsg) {
+                if (!isUserGesture || resultMsg == null
+                        || !(resultMsg.obj instanceof WebView.WebViewTransport)) {
+                    return false;
+                }
+                final WebView popup = new WebView(MainActivity.this);
+                popup.setWebViewClient(new WebViewClient() {
+                    @SuppressWarnings("deprecation")
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView v, String url) {
+                        if (!blockNavigation(url)) webView.loadUrl(url);
+                        v.destroy();
+                        return true;
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(popup);
+                resultMsg.sendToTarget();
+                return true;
+            }
+
             @Override
             public void onShowCustomView(View view, CustomViewCallback callback) {
                 if (fullscreenView != null) { callback.onCustomViewHidden(); return; }
@@ -548,6 +664,25 @@ public class MainActivity extends Activity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         int code = event.getKeyCode();
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        if (code == KeyEvent.KEYCODE_BACK) {
+            // Long-press Back: guaranteed escape hatch straight back to the
+            // shelves, no matter how deep an ad redirect chain has buried
+            // the history stack. The matching UP must be swallowed too, or
+            // it would fire onBackPressed and immediately navigate again.
+            if (down && event.getRepeatCount() > 0 && !isOnAssetPage()) {
+                if (!backLongPressed) {
+                    backLongPressed = true;
+                    if (fullscreenView != null) exitFullscreen();
+                    cinemaMode = false;
+                    webView.loadUrl(ASSET_PREFIX + "index.html");
+                }
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP && backLongPressed) {
+                backLongPressed = false;
+                return true;
+            }
+        }
         if (code == KeyEvent.KEYCODE_MENU
                 && (fullscreenView != null || cinemaMode || pointerMode)) {
             if (down) toggleFullscreenMode();
@@ -1063,6 +1198,11 @@ fullscreen WebView tuned for the living room:
   while a video is playing on an external page and it snaps to fullscreen
   with the remote as transport control; press ≡ (or Back) again to return
   to the page.
+- **Ad blocking is built in** — requests to the major ad and popunder
+  networks are dropped, auto-opened popups are swallowed before they can
+  hijack the page, and app-store/intent redirects are blocked. If a page
+  ever does get you stuck, **hold Back** to jump straight home to your
+  shelves.
 
 ## Get the APK (pick whichever is easiest)
 
