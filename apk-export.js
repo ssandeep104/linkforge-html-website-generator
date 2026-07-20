@@ -223,21 +223,30 @@ import java.util.HashSet;
  *
  * The remote's dedicated media buttons (play/pause, rewind, fast-forward)
  * always control the page's video directly through evaluateJavascript. That
- * channel is deliberate: while a native fullscreen video surface is up the
- * WebView is hidden and cannot hold focus, so a real key event can never
- * reach the page — JS injection is the only input path that keeps working.
- * In fullscreen the D-pad joins in as transport control (left/right seek,
+ * channel is deliberate: while a native fullscreen video surface is up,
+ * input focus sits on that surface rather than the page, so real key
+ * events cannot be trusted to arrive — JS injection always works. In
+ * fullscreen the D-pad joins in as transport control (left/right seek,
  * up/down long seek, OK play/pause) instead of moving the cursor.
+ *
+ * The menu (≡) button toggles "cinema mode" on external pages: the page's
+ * video is pinned over a fixed black backdrop at full screen size, no site
+ * cooperation needed. Touch players hide their controls after a couple of
+ * seconds, which made the real fullscreen button nearly impossible to hit
+ * with a cursor — and a mis-click on the faded control bar would seek the
+ * video instead. Cinema mode skips that whole interaction.
  */
 public class MainActivity extends Activity {
     private static final String ASSET_PREFIX = "file:///android_asset/";
     private static final String DESKTOP_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                     + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
-    private static final float CURSOR_DP = 20f;
-    private static final float BASE_STEP_DP = 11f;
-    private static final float MAX_STEP_DP = 26f;
-    private static final float ACCEL_DP = 1.1f;
+    // Cursor tuning: big enough to spot from the couch, fast enough to
+    // cross the screen before a player's auto-hiding control bar fades.
+    private static final float CURSOR_DP = 40f;
+    private static final float BASE_STEP_DP = 16f;
+    private static final float MAX_STEP_DP = 48f;
+    private static final float ACCEL_DP = 2.4f;
     private static final float EDGE_DP = 56f;
     // Applied to every external page: some sites decide "mobile" purely
     // from viewport width (ignoring the desktop UA above), so this widens
@@ -309,6 +318,7 @@ public class MainActivity extends Activity {
     private View fullscreenView;
     private WebChromeClient.CustomViewCallback fullscreenCallback;
     private boolean pointerMode = false;
+    private boolean cinemaMode = false;
     private float cursorX, cursorY;
     private float baseStepPx, maxStepPx, accelPx, edgePx;
     private int cursorSizePx;
@@ -380,6 +390,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
+                cinemaMode = false;
                 setPointerMode(url == null || !url.startsWith(ASSET_PREFIX));
             }
 
@@ -415,14 +426,20 @@ public class MainActivity extends Activity {
                 // automatically (not just on an explicit "fullscreen" tap).
                 // The cursor is useless over it — the D-pad becomes transport
                 // control instead (see handleFullscreenKey), driven through
-                // evaluateJavascript because the hidden WebView can no longer
-                // receive real key events.
+                // evaluateJavascript so input works regardless of focus.
+                //
+                // The WebView must STAY VISIBLE underneath: hiding it pauses
+                // Chromium's renderer, so the viewport swap below (and the
+                // page's own fullscreen re-layout) would never be processed —
+                // the video sat at windowed size inside black bars until
+                // exit, when the un-paused renderer finally caught up. The
+                // opaque surface covers the WebView, so nothing shows through.
                 if (!isOnAssetPage()) {
                     webView.evaluateJavascript(FULLSCREEN_VIEWPORT_JS, null);
                 }
-                webView.setVisibility(View.GONE);
                 cursorView.setVisibility(View.GONE);
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                view.setBackgroundColor(0xFF000000);
                 root.addView(view, new FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.MATCH_PARENT));
@@ -485,10 +502,13 @@ public class MainActivity extends Activity {
 
     // All remote input funnels through here.
     //
-    // - Native fullscreen up: the WebView is hidden and cannot hold focus,
-    //   so no real key event can ever reach the page (this was the "nothing
-    //   works in fullscreen" dead end). Every D-pad/media key becomes a
-    //   transport command delivered via JS instead.
+    // - Menu (≡) button: toggles video fullscreen. Exits a native fullscreen
+    //   surface, else toggles cinema mode — so nobody has to chase a touch
+    //   player's tiny auto-hiding fullscreen button with the cursor.
+    // - Video surface up (native fullscreen or cinema mode): every D-pad and
+    //   media key becomes a transport command delivered via JS — input that
+    //   works regardless of where focus is, or whether the page can even
+    //   receive key events.
     // - Pointer mode (external page, windowed): D-pad moves the cursor and
     //   never reaches the page; media buttons drive the page's video by JS,
     //   since touch-oriented sites don't listen for Media* keys anyway.
@@ -498,7 +518,13 @@ public class MainActivity extends Activity {
     public boolean dispatchKeyEvent(KeyEvent event) {
         int code = event.getKeyCode();
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
-        if (fullscreenView != null && (isDpadKey(code) || isMediaKey(code))) {
+        if (code == KeyEvent.KEYCODE_MENU
+                && (fullscreenView != null || cinemaMode || pointerMode)) {
+            if (down) toggleFullscreenMode();
+            return true;
+        }
+        if ((fullscreenView != null || cinemaMode)
+                && (isDpadKey(code) || isMediaKey(code))) {
             if (down) handleFullscreenKey(code);
             return true;
         }
@@ -511,6 +537,72 @@ public class MainActivity extends Activity {
             return true;
         }
         return super.dispatchKeyEvent(event);
+    }
+
+    private void toggleFullscreenMode() {
+        if (fullscreenView != null) { exitFullscreen(); return; }
+        if (cinemaMode) { exitCinema(); return; }
+        enterCinema();
+    }
+
+    // "Cinema mode": CSS-level fullscreen for the page's video, toggled by
+    // the remote's menu (≡) button. Real element fullscreen can't be
+    // requested from injected JS (Chromium demands a user gesture), but
+    // pinning the video over a fixed black backdrop needs no permission —
+    // and it sidesteps touch players entirely: no waking their control bar,
+    // no racing its fade-out to a corner button, no mis-click hitting the
+    // invisible seek bar and jumping the video to the end.
+    private void enterCinema() {
+        webView.evaluateJavascript(
+                "(function(){try{var v=document.fullscreenElement;"
+                        + "if(v&&v.tagName!=='VIDEO'){v=v.querySelector('video');}"
+                        + "if(!v){var l=document.querySelectorAll('video');"
+                        + "for(var i=0;i<l.length;i++){"
+                        + "if(!l[i].paused&&l[i].readyState>0){v=l[i];break;}}"
+                        + "if(!v&&l.length){v=l[0];}}"
+                        + "if(!v){return false;}"
+                        + "window.__lfCv=v;"
+                        + "v.__lfStyle=v.getAttribute('style')||'';"
+                        + "v.__lfCtrl=v.controls;v.controls=false;"
+                        + "var b=document.createElement('div');b.id='__lfCinemaBd';"
+                        + "b.setAttribute('style','position:fixed;left:0;top:0;right:0;"
+                        + "bottom:0;background:#000;z-index:2147483645;');"
+                        + "document.body.appendChild(b);"
+                        + "v.setAttribute('style','position:fixed!important;"
+                        + "left:0!important;top:0!important;width:100vw!important;"
+                        + "height:100vh!important;max-width:none!important;"
+                        + "max-height:none!important;margin:0!important;"
+                        + "padding:0!important;transform:none!important;"
+                        + "z-index:2147483646!important;background:#000!important;"
+                        + "object-fit:contain!important;');"
+                        + "if(v.paused){v.play();}"
+                        + "return true;}catch(e){return false;}})();",
+                new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String found) {
+                        if ("true".equals(found)) {
+                            cinemaMode = true;
+                            cursorView.setVisibility(View.GONE);
+                        }
+                    }
+                });
+    }
+
+    private void exitCinema() {
+        cinemaMode = false;
+        webView.evaluateJavascript(
+                "(function(){try{var b=document.getElementById('__lfCinemaBd');"
+                        + "if(b&&b.parentNode){b.parentNode.removeChild(b);}"
+                        + "var v=window.__lfCv;if(v){"
+                        + "if(v.__lfStyle){v.setAttribute('style',v.__lfStyle);}"
+                        + "else{v.removeAttribute('style');}"
+                        + "v.controls=!!v.__lfCtrl;window.__lfCv=null;}"
+                        + "}catch(e){}})();",
+                null);
+        if (pointerMode) {
+            cursorView.setVisibility(View.VISIBLE);
+            placeCursor();
+        }
     }
 
     private boolean isDpadKey(int keyCode) {
@@ -546,8 +638,9 @@ public class MainActivity extends Activity {
         if (isOnAssetPage()) {
             // The bundled page (and its embedded YouTube/Vimeo players, via
             // its postMessage bridge) already knows what every key means —
-            // re-deliver the key as a synthetic DOM event, since the hidden
-            // WebView can no longer receive real ones.
+            // re-deliver the key as a synthetic DOM event, since real key
+            // delivery is unreliable while the fullscreen surface holds
+            // input focus.
             String key = domKeyFor(code);
             if (key != null) sendKeyToPage(key);
             return;
@@ -707,7 +800,6 @@ public class MainActivity extends Activity {
         if (fullscreenCallback != null) fullscreenCallback.onCustomViewHidden();
         fullscreenCallback = null;
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        webView.setVisibility(View.VISIBLE);
         // Undo the 1:1 fullscreen viewport and go back to desktop layout.
         if (!isOnAssetPage()) {
             webView.evaluateJavascript(forceDesktopViewportJs(), null);
@@ -728,6 +820,10 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         if (fullscreenView != null) {
             exitFullscreen();
+            return;
+        }
+        if (cinemaMode) {
+            exitCinema();
             return;
         }
         webView.evaluateJavascript(
@@ -907,6 +1003,11 @@ fullscreen WebView tuned for the living room:
   OK toggles play/pause, ◀ ▶ seek 10s, ▲ ▼ seek a minute, and the dedicated
   play/pause / rewind / fast-forward buttons work everywhere (fullscreen or
   not). Back leaves fullscreen.
+- **The menu (≡) button makes any video fullscreen** — no hunting for the
+  player's tiny fullscreen button before its control bar fades out. Press ≡
+  while a video is playing on an external page and it snaps to fullscreen
+  with the remote as transport control; press ≡ (or Back) again to return
+  to the page.
 
 ## Get the APK (pick whichever is easiest)
 
