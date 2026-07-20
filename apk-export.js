@@ -178,13 +178,17 @@
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -242,11 +246,15 @@ public class MainActivity extends Activity {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                     + "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
     // Cursor tuning: big enough to spot from the couch, fast enough to
-    // cross the screen before a player's auto-hiding control bar fades.
+    // cross the screen before a player's auto-hiding control bar fades —
+    // but a single press moves only BASE_STEP_DP, so small targets
+    // (checkboxes, player buttons) can be lined up press by press while a
+    // held key accelerates hard for distance.
     private static final float CURSOR_DP = 40f;
-    private static final float BASE_STEP_DP = 16f;
+    private static final float CURSOR_DOT_DP = 8f;
+    private static final float BASE_STEP_DP = 12f;
     private static final float MAX_STEP_DP = 48f;
-    private static final float ACCEL_DP = 2.4f;
+    private static final float ACCEL_DP = 3f;
     private static final float EDGE_DP = 56f;
     // Applied to every external page: some sites decide "mobile" purely
     // from viewport width (ignoring the desktop UA above), so this widens
@@ -338,12 +346,29 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         root.addView(webView);
 
+        // Ring with a small center dot, not a solid blob: the tap lands at
+        // the cursor's center, and with a filled circle bigger than many
+        // click targets (a consent checkbox, a player button) the eye can't
+        // locate that center — clicks felt "slightly off" every time. The
+        // dot marks the exact hotspot; the ring keeps it visible from the
+        // couch.
         cursorView = new View(this);
+        GradientDrawable ringShadow = new GradientDrawable();
+        ringShadow.setShape(GradientDrawable.OVAL);
+        ringShadow.setColor(0x00000000);
+        ringShadow.setStroke(Math.max(2, Math.round(5 * density)), 0x990A0C10);
+        GradientDrawable ring = new GradientDrawable();
+        ring.setShape(GradientDrawable.OVAL);
+        ring.setColor(0x00000000);
+        ring.setStroke(Math.max(1, Math.round(3 * density)), 0xFFFBBF24);
         GradientDrawable dot = new GradientDrawable();
         dot.setShape(GradientDrawable.OVAL);
         dot.setColor(0xFFFBBF24);
-        dot.setStroke(Math.max(1, Math.round(2 * density)), 0xFF0A0C10);
-        cursorView.setBackground(dot);
+        dot.setStroke(Math.max(1, Math.round(density)), 0xFF0A0C10);
+        LayerDrawable cursor = new LayerDrawable(new Drawable[] { ringShadow, ring, dot });
+        int dotInset = Math.round((CURSOR_DP - CURSOR_DOT_DP) / 2f * density);
+        cursor.setLayerInset(2, dotInset, dotInset, dotInset, dotInset);
+        cursorView.setBackground(cursor);
         cursorView.setVisibility(View.GONE);
         root.addView(cursorView, new FrameLayout.LayoutParams(cursorSizePx, cursorSizePx));
 
@@ -352,6 +377,11 @@ public class MainActivity extends Activity {
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
+        // Parity with regular TV browsers: WebView blocks third-party
+        // cookies by default, which breaks embedded widgets (consent
+        // prompts, verification checkboxes, comment frames) that real
+        // browsers happily run.
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
@@ -783,14 +813,39 @@ public class MainActivity extends Activity {
         placeCursor();
     }
 
+    // Synthesizes a tap with real-input fidelity: touchscreen source, finger
+    // tool type, and honest timing — the UP is dispatched when its timestamp
+    // says, not immediately with a timestamp 60ms in the future. The old
+    // bare-bones events (unknown source, unknown tool, time-travelling UP)
+    // were simply malformed input; pages that sanity-check a click's event
+    // stream, challenge widgets included, are right to distrust them.
     private void tapAtCursor() {
-        long t = SystemClock.uptimeMillis();
-        MotionEvent down = MotionEvent.obtain(t, t, MotionEvent.ACTION_DOWN, cursorX, cursorY, 0);
-        MotionEvent up = MotionEvent.obtain(t, t + 60, MotionEvent.ACTION_UP, cursorX, cursorY, 0);
-        webView.dispatchTouchEvent(down);
-        webView.dispatchTouchEvent(up);
-        down.recycle();
-        up.recycle();
+        final float x = cursorX, y = cursorY;
+        final long downTime = SystemClock.uptimeMillis();
+        dispatchTouch(MotionEvent.ACTION_DOWN, downTime, downTime, x, y);
+        webView.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                dispatchTouch(MotionEvent.ACTION_UP, downTime, SystemClock.uptimeMillis(), x, y);
+            }
+        }, 70);
+    }
+
+    private void dispatchTouch(int action, long downTime, long eventTime, float x, float y) {
+        MotionEvent.PointerProperties pp = new MotionEvent.PointerProperties();
+        pp.id = 0;
+        pp.toolType = MotionEvent.TOOL_TYPE_FINGER;
+        MotionEvent.PointerCoords pc = new MotionEvent.PointerCoords();
+        pc.x = x;
+        pc.y = y;
+        pc.pressure = 1f;
+        pc.size = 0.3f;
+        MotionEvent ev = MotionEvent.obtain(downTime, eventTime, action, 1,
+                new MotionEvent.PointerProperties[] { pp },
+                new MotionEvent.PointerCoords[] { pc },
+                0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+        webView.dispatchTouchEvent(ev);
+        ev.recycle();
     }
 
     private void exitFullscreen() {
