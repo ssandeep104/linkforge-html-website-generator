@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Linkforge — Landing Showcase (Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="../style.css" />
+<style>
+  /* ===================================================
+     PROPOSED — masonry showcase, Multiverse-inspired.
+     Scoped to .showcase; consumes existing tokens only.
+     Deliberately dark in both page themes (gallery-wall
+     device, like a darkened museum room off the vellum
+     page) — everything else on the page still themes
+     normally with the light/dark toggle.
+     =================================================== */
+  .showcase {
+    margin: var(--space-8) 0 var(--space-10);
+    border-radius: var(--radius-xl);
+    background: #0a0a0a;
+    padding: 44px var(--space-6) var(--space-8);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .showcase::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 100% -10%, color-mix(in oklab, var(--color-primary) 22%, transparent), transparent 38%),
+      radial-gradient(circle at 90% 100%, color-mix(in oklab, var(--color-accent) 16%, transparent), transparent 45%);
+    pointer-events: none;
+  }
+  .showcase__head {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-5);
+  }
+  .showcase__eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--color-primary) 70%, #fff);
+    margin: 0 0 var(--space-2);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .showcase__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 1.3rem + 1vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin: 0;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .showcase__sub {
+    color: rgba(255,255,255,0.56);
+    font-size: 0.92rem;
+    max-width: 46ch;
+    margin: var(--space-2) 0 0;
+  }
+  .showcase__count {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    white-space: nowrap;
+  }
+
+  .showcase__grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 64px;
+    gap: var(--space-3);
+  }
+  .showcase__tile {
+    position: relative;
+    grid-column: span 3;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: block;
+    background: #141414;
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  }
+  .showcase__tile:nth-child(1) { grid-column: span 4; grid-row: span 4; }
+  .showcase__tile:nth-child(2) { grid-column: span 2; grid-row: span 4; }
+  .showcase__tile:nth-child(3) { grid-column: span 2; grid-row: span 3; }
+  .showcase__tile:nth-child(4) { grid-column: span 2; grid-row: span 3; }
+  .showcase__tile:nth-child(5) { grid-column: span 2; grid-row: span 3; }
+  .showcase__tile:nth-child(6) { grid-column: span 6; grid-row: span 2; }
+  .showcase__tile:nth-child(6) img { object-position: top; }
+
+  .showcase__tile img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    transition: transform 480ms var(--ease, ease);
+  }
+  .showcase__tile:hover img,
+  .showcase__tile:focus-visible img {
+    transform: scale(1.035);
+  }
+  .showcase__tile:hover,
+  .showcase__tile:focus-visible {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--color-primary) 55%, transparent);
+    box-shadow: 0 20px 44px rgba(0,0,0,0.5), 0 0 0 1px color-mix(in oklab, var(--color-primary) 30%, transparent);
+  }
+  .showcase__tile:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+  .showcase__cap {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 28px 16px 14px;
+    background: linear-gradient(to top, rgba(0,0,0,0.86), rgba(0,0,0,0.5) 60%, transparent);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .showcase__cap-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.98rem;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  .showcase__cap-tag {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .showcase__tile, .showcase__tile img { transition: none; }
+  }
+
+  @media (max-width: 860px) {
+    .showcase__grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 120px; }
+    .showcase__tile:nth-child(1) { grid-column: span 2; grid-row: span 3; }
+    .showcase__tile:nth-child(2) { grid-column: span 2; grid-row: span 2; }
+    .showcase__tile:nth-child(3) { grid-column: span 1; grid-row: span 2; }
+    .showcase__tile:nth-child(4) { grid-column: span 1; grid-row: span 2; }
+    .showcase__tile:nth-child(5) { grid-column: span 1; grid-row: span 2; }
+    .showcase__tile:nth-child(6) { grid-column: span 2; grid-row: span 2; }
+  }
+
+  .mockup-note {
+    max-width: 900px;
+    margin: 0 auto 12px;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text-muted);
+    border: 1px dashed var(--color-border);
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+  <p class="mockup-note">MOCKUP — proposed addition to <code>#step-input</code>, sits between the hero and the composer. Real <code>style.css</code> is linked, so light/dark match the live app exactly. Not wired into <code>index.html</code> yet.</p>
+
+  <main id="step-input" class="screen screen--active">
+    <header class="topbar">
+      <a class="logo" href="#" aria-label="Linkforge home">
+        <svg width="34" height="34" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="33" height="33" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2 18 H34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
+          <path d="M18 2 V34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
+          <path d="M8 25V11h3v11h6v3H8z" fill="var(--color-text)"/>
+          <path d="M19 11h3l3.4 14h-3l-.5-2h-3.6l-.5 2h-3l4.2-14zm.7 8.5h2.7L21 13.7l-1.3 5.8z" fill="var(--color-text)"/>
+        </svg>
+        <span>Linkforge</span>
+      </a>
+      <div class="topbar__right">
+        <span class="step-pill" data-step-pill="1">
+          <span class="step-pill__dot"></span>
+          <span>01</span> / 02
+        </span>
+        <button class="icon-btn" id="theme-toggle" aria-label="Switch to dark mode" type="button">◐</button>
+      </div>
+    </header>
+
+    <section class="workspace-header">
+      <h1 class="workspace-title">Paste HTML. Forge a <em>watchlist or gallery.</em></h1>
+      <p class="workspace-subtitle">
+        Extract links, images, and video previews from messy page sources. Curate them into six responsive, portable layouts — all client-side, zero backend.
+      </p>
+    </section>
+
+    <!-- ============ PROPOSED: Multiverse-style showcase ============ -->
+    <section class="showcase" aria-label="Example Linkforge output">
+      <div class="showcase__head">
+        <div>
+          <p class="showcase__eyebrow">What you can forge</p>
+          <h2 class="showcase__title">One paste in, any of these out</h2>
+          <p class="showcase__sub">Every tile below is a real Linkforge export — same source links, different template.</p>
+        </div>
+        <span class="showcase__count">6 of 8 templates</span>
+      </div>
+      <div class="showcase__grid">
+        <a class="showcase__tile" href="#" tabindex="0">
+          <img src="../assets/v2-out-gallery.png" alt="Photo Wall template — dark masonry image grid" loading="lazy" />
+          <span class="showcase__cap"><span class="showcase__cap-name">Photo Wall</span><span class="showcase__cap-tag">Gallery</span></span>
+        </a>
+        <a class="showcase__tile" href="#" tabindex="0">
+          <img src="../assets/v2-out-screening.png" alt="Marquee template — cinematic video hero" loading="lazy" />
+          <span class="showcase__cap"><span class="showcase__cap-name">Marquee</span><span class="showcase__cap-tag">Video</span></span>
+        </a>
+        <a class="showcase__tile" href="#" tabindex="0">
+          <img src="../assets/v2-out-editorial.png" alt="Story Deck template — magazine lead story layout" loading="lazy" />
+          <span class="showcase__cap"><span class="showcase__cap-name">Story Deck</span><span class="showcase__cap-tag">Editorial</span></span>
+        </a>
+        <a class="showcase__tile" href="#" tabindex="0">
+          <img src="../assets/v2-out-showcase.png" alt="Spotlight Bento template — captioned bento grid" loading="lazy" />
+          <span class="showcase__cap"><span class="showcase__cap-name">Spotlight Bento</span><span class="showcase__cap-tag">Grid</span></span>
+        </a>
+        <a class="showcase__tile" href="#" tabindex="0">
+          <img src="../assets/v2-out-linklog.png" alt="Stream Catalog template — grouped link log" loading="lazy" />
+          <span class="showcase__cap"><span class="showcase__cap-name">Stream Catalog</span><span class="showcase__cap-tag">Link log</span></span>
+        </a>
+        <a class="showcase__tile" href="#" tabindex="0">
+          <img src="../assets/v2-out-journal.png" alt="Signal Board template — numbered entry index" loading="lazy" />
+          <span class="showcase__cap"><span class="showcase__cap-name">Signal Board</span><span class="showcase__cap-tag">Index</span></span>
+        </a>
+      </div>
+    </section>
+    <!-- ============ /PROPOSED ============ -->
+
+    <section class="composer">
+      <div class="composer__head">
+        <h2>Sources</h2>
+        <div class="composer__actions">
+          <button class="btn btn--ghost" type="button">Try a sample</button>
+          <label class="btn btn--ghost">Upload .html file</label>
+        </div>
+      </div>
+      <p class="composer__hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>Tip — for the richest preview, paste the <em>full page source</em>. Linkforge reads <code>&lt;script type="application/ld+json"&gt;</code> blocks for cleaner titles, hero images, and descriptions.</span>
+      </p>
+      <div class="sources"></div>
+      <div class="composer__add-more">
+        <button class="btn btn--dashed" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          Add another source
+        </button>
+      </div>
+      <div class="composer__foot">
+        <div class="composer__counts">
+          <span>0 sources</span><span class="dot-sep" aria-hidden="true">·</span><span>0 items detected</span>
+        </div>
+        <button class="btn btn--primary" type="button" disabled>
+          Parse &amp; continue
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" /></svg>
+        </button>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>Linkforge</span>
+      <span>Client-side only — your HTML never leaves the browser.</span>
+    </footer>
+  </main>
+
+  <script>
+    const btn = document.getElementById('theme-toggle');
+    btn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const cur = root.getAttribute('data-theme') || 'light';
+      root.setAttribute('data-theme', cur === 'light' ? 'dark' : 'light');
+    });
+  </script>
+</body>
+</html>
