@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linkforge — UI/UX Inspiration Report</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1a1614; --muted:#6b625c; --faint:#9a908a;
+    --accent:#ff4500; --accent2:#0aa5c4; --line:#ece7e3; --card:#faf8f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;font-size:16px}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px}
+  h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.15;letter-spacing:-.01em}
+  code,.mono{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.85em}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* header */
+  header{background:#161210;color:#fff;padding:56px 0 44px;border-bottom:3px solid var(--accent)}
+  header .kick{font-family:"SF Mono",Menlo,monospace;font-size:12px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent)}
+  header h1{font-size:44px;margin:12px 0 10px;color:#fff}
+  header h1 .hl{color:var(--accent)}
+  header p{color:#c9bfb8;max-width:620px;margin:0;font-size:17px}
+  .logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:26px}
+  .logo .mark{border:2px solid var(--accent);color:#fff;font-weight:700;
+    font-family:"SF Mono",monospace;font-size:13px;padding:3px 6px;border-radius:6px}
+  .logo span{font-weight:700;font-size:18px}
+
+  /* nav */
+  nav{position:sticky;top:0;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);z-index:10}
+  nav .wrap{display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+  nav button{border:1px solid var(--line);background:var(--card);color:var(--muted);
+    font-size:13px;padding:7px 14px;border-radius:999px;cursor:pointer;transition:.15s}
+  nav button:hover{color:var(--ink)}
+  nav button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  section{padding:44px 0;border-bottom:1px solid var(--line)}
+  section.hidden{display:none}
+  .lead{font-size:18px;color:var(--muted);max-width:680px}
+  h2{font-size:30px;margin:0 0 6px}
+  .sub{font-family:"SF Mono",Menlo,monospace;font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  h3{font-size:19px;margin:34px 0 10px}
+
+  /* summary cards */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .stat .n{font-family:Georgia,serif;font-size:34px;color:var(--accent);line-height:1}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:6px}
+
+  .callout{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:10px;padding:16px 18px;margin:20px 0;font-size:15px;color:var(--muted)}
+  .callout strong{color:var(--ink)}
+
+  /* item list */
+  .item{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0;background:#fff}
+  .item .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .item .name{font-weight:700;font-size:16px}
+  .item .meta{font-family:"SF Mono",Menlo,monospace;font-size:11.5px;color:var(--faint)}
+  .item .why{font-size:14.5px;color:var(--muted);margin-top:7px}
+  .tag{display:inline-block;font-size:11px;font-family:"SF Mono",monospace;
+    padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle}
+  .tag.free{background:#e7f6ec;color:#1c7a3e}
+  .tag.paid{background:#fdece6;color:#c1440e}
+  .tag.hi{background:var(--accent);color:#fff}
+  .pill{font-size:11px;font-family:"SF Mono",monospace;color:var(--accent2);
+    border:1px solid #d6eef4;background:#f2fbfd;padding:2px 8px;border-radius:999px}
+
+  .recs{background:#161210;color:#e9e2dc;border-radius:16px;padding:26px 28px;margin-top:20px}
+  .recs h3{color:#fff;margin-top:0}
+  .recs ol{margin:0;padding-left:20px}
+  .recs li{margin:10px 0;color:#cbc2bb}
+  .recs li b{color:#fff}
+  .recs .accent{color:var(--accent)}
+
+  footer{padding:34px 0;color:var(--faint);font-size:13px;text-align:center}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid,.split{grid-template-columns:1fr}header h1{font-size:32px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo"><span class="mark">LA</span><span>Linkforge</span></div>
+    <div class="kick">UI/UX Enhancement · Inspiration Research</div>
+    <h1>Making Linkforge <span class="hl">look as sharp as it works</span></h1>
+    <p>A curated research pack — visual references, downloadable templates, and open-source building blocks — to level up the interface and the HTML it generates. Compiled from three parallel research passes.</p>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <button data-t="overview" class="active">Overview</button>
+    <button data-t="github">GitHub UI (14)</button>
+    <button data-t="templates">Templates (20)</button>
+    <button data-t="opensource">Open-source (17)</button>
+    <button data-t="action">What to do</button>
+  </div>
+</nav>
+
+<!-- OVERVIEW -->
+<section id="overview" class="wrap">
+  <div class="sub">The app in one line</div>
+  <h2>What we're improving</h2>
+  <p class="lead">Linkforge is a fully client-side tool: paste messy HTML (or upload <code>.html</code>), it extracts links, images and video previews (reading JSON-LD/OpenGraph for rich titles &amp; hero images), you curate the picks, and it ships a single portable HTML watchlist/gallery from one of six responsive templates. Two things carry the product: <strong>HTML parsing</strong> and <strong>template generation</strong>.</p>
+
+  <div class="grid">
+    <div class="stat"><div class="n">14</div><div class="l">GitHub repos for visual inspiration</div></div>
+    <div class="stat"><div class="n">20</div><div class="l">Templates &amp; HTML samples to reference</div></div>
+    <div class="stat"><div class="n">17</div><div class="l">Open-source projects to borrow from</div></div>
+  </div>
+
+  <div class="callout">
+    <strong>Current look:</strong> dark near-black canvas with warm radial glows, an OrangeRed (~<code>#FF4500</code>) primary accent and cyan/teal secondary in the output, bold geometric display type paired with monospace labels, big rounded cards, and a clean 01→02→ship wizard. The direction is strong — the opportunity is polish: consistent tokens, richer cards, micro-interactions, and more distinctive output templates.
+  </div>
+
+  <h3>Themes that showed up everywhere</h3>
+  <div class="split">
+    <div class="item"><div class="name">Dark-first with a bold accent</div><div class="why">Every standout uses dark backgrounds, subtle gradients/glow, and one vivid accent for CTAs &amp; highlights — exactly Linkforge's instinct. Add a disciplined secondary (the existing cyan) for output.</div></div>
+    <div class="item"><div class="name">Rounded card grids</div><div class="why">8–16px radii, generous padding, hover elevation/glow, image+text pairing. The backbone of both the review screen and the generated gallery.</div></div>
+    <div class="item"><div class="name">Type hierarchy: display sans + mono labels</div><div class="why">Bold geometric headings over monospace metadata (counts, step markers) — a pattern Linkforge already leans into and should systematize.</div></div>
+    <div class="item"><div class="name">Micro-interactions signal quality</div><div class="why">200–300ms transitions, hover states, entrance fades. Cheap to add, big lift to perceived polish across the wizard.</div></div>
+  </div>
+</section>
+
+<!-- GITHUB -->
+<section id="github" class="wrap hidden">
+  <div class="sub">Sub-agent 1 · Visual references</div>
+  <h2>GitHub repos with UI worth borrowing</h2>
+  <p class="lead">14 high-quality public repos, chosen for <strong>visual patterns</strong> (not features). Focus on cards, dark-mode polish, typography, and micro-interactions. Full report: <code>results_github.md</code>.</p>
+
+  <div id="gh-list"></div>
+</section>
+
+<!-- TEMPLATES -->
+<section id="templates" class="wrap hidden">
+  <div class="sub">Sub-agent 2 · Templates &amp; HTML samples</div>
+  <h2>Downloadable templates &amp; live references</h2>
+  <p class="lead">20 templates across HTML5UP, Start Bootstrap, Cruip, Templatemo, UIdeck, ThemeForest &amp; ThemeWagon — many free/downloadable HTML. Mapped to the Linkforge screen each best inspires. Full report: <code>results_templates.md</code>.</p>
+  <div id="tpl-list"></div>
+</section>
+
+<!-- OPENSOURCE -->
+<section id="opensource" class="wrap hidden">
+  <div class="sub">Sub-agent 3 · Build on what exists</div>
+  <h2>Open-source projects to strengthen the engine</h2>
+  <p class="lead">17 projects for the two core concerns. Full report: <code>results_opensource.md</code>.</p>
+
+  <h3>Parsing &amp; content extraction</h3>
+  <div id="parse-list"></div>
+  <h3>Template generation &amp; galleries</h3>
+  <div id="gen-list"></div>
+</section>
+
+<!-- ACTION -->
+<section id="action" class="wrap hidden">
+  <div class="sub">Synthesis</div>
+  <h2>A concrete plan</h2>
+  <p class="lead">Where the three passes agree, and the shortest path to a visible upgrade.</p>
+
+  <div class="recs">
+    <h3>Engine (parsing &amp; generation)</h3>
+    <ol>
+      <li><b class="accent">Adopt Metascraper</b> for unified metadata (OpenGraph + JSON-LD + Twitter Cards + Microdata) with smart fallbacks — directly upgrades preview quality. <span class="mono">142.8K weekly downloads</span></li>
+      <li><b>Layer Mozilla Readability</b> to clean extracted titles/descriptions (strip nav, ads, boilerplate).</li>
+      <li><b>Watch performance with LinkedOM</b> as a lighter DOM parser if large pastes get slow (client-side friendly).</li>
+      <li><b>Study eleventy-photo-gallery &amp; GlassLink-Bio</b> for responsive gallery CSS and a modern single-file link-in-bio output — the closest analogues to Linkforge's six templates.</li>
+    </ol>
+  </div>
+
+  <div class="recs" style="margin-top:16px">
+    <h3>Interface &amp; output polish</h3>
+    <ol>
+      <li><b class="accent">Define design tokens</b> (color, spacing, radius, type) — model on shadcn/ui &amp; Semi Design so the wizard and output stay consistent.</li>
+      <li><b>Enrich cards &amp; hover states</b> using Tabler / cult-ui / HeroUI patterns for the review grid and gallery.</li>
+      <li><b>Add micro-interactions</b> (step transitions, button/input feedback) inspired by Inspira UI and the 3D-portfolio motion work.</li>
+      <li><b>Refresh the six output templates</b> against Multiverse, Lens, and Folio (gallery) and GlassLink-Bio (link hub) so exports feel premium out of the box.</li>
+      <li><b>Sharpen the landing/wizard</b> with hero &amp; feature patterns from Launch UI, Square UI, and AI-Agent kits.</li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Compiled July 22, 2026 · All URLs verified in the linked source reports · Inspiration only — no copying of any artist's work.</div>
+</footer>
+
+<script>
+// ---- data ----
+const gh = [
+ ["shadcn/ui","~120k ★ · ui.shadcn.com","https://github.com/shadcn-ui/ui","Copy-paste component library with near-perfect dark polish; exemplary card grids & step indicators."],
+ ["Chakra UI","~40k ★ · chakra-ui.com","https://github.com/chakra-ui/chakra-ui","Mature dark theming & semantic color tokens; good model for multi-step UI and form polish."],
+ ["tabler/tabler","~41k ★ · tabler.io","https://github.com/tabler/tabler","100+ components; excellent card design & typography hierarchy for the gallery output."],
+ ["DouyinFE/semi-design","~10k ★ · semi.design","https://github.com/DouyinFE/semi-design","3000+ design tokens — a blueprint for a reusable color/spacing system."],
+ ["cult/ui","~5.9k ★ · cult-ui.com","https://github.com/nolly-studio/cult-ui","Creative compositions with strong motion/feedback — great for wizard micro-interactions."],
+ ["square-ui","~5.9k ★ · square.lndev.me","https://github.com/ln-dev7/square-ui","Copy-paste page layouts (hero, feature cards, grids) for output templates."],
+ ["keenthemes/reui","~3.1k ★ · reui.io","https://github.com/keenthemes/reui","1000+ free blocks; advanced dark-theme component composition."],
+ ["next-shadcn-dashboard-starter","~6.6k ★","https://github.com/kiranism/next-shadcn-dashboard-starter","Full admin system: nav, tables, cards — reference for organizing a multi-step tool."],
+ ["launch-ui","~811 ★ · launchuicomponents.com","https://github.com/launch-ui/launch-ui","Landing/marketing components; hero & CTA styling for the intro screen."],
+ ["Inspira UI","~4.6k ★ · inspira-ui.com","https://github.com/unovue/inspira-ui","Animated, distinctive components (glassmorphism, motion) — framework-agnostic ideas."],
+ ["3d-portfolio","~1.1k ★ · nareshkhatri.site","https://github.com/Naresh-Khatri/3d-portfolio","Buttery GSAP/Framer motion on dark canvas — inspiration for transitions & hover."],
+ ["masterPortfolio","~4.1k ★","https://github.com/ashutosh1919/masterPortfolio","Clean modular card layouts & section hierarchy; good architectural reference."],
+ ["vercel-labs/json-render","~15.6k ★ · json-render.dev","https://github.com/vercel-labs/json-render","Schema-driven UI rendering — ideas for data→HTML output generation."],
+ ["HeroUI","~30k ★ · heroui.com","https://github.com/heroui-inc/heroui","Elegant compound components (Card.Header/Content) with premium dark states."],
+];
+const tpl = [
+ ["Multiverse — HTML5UP","free","Gallery output","https://html5up.net/multiverse","Masonry image-grid gallery on dark bg — the curated-links-as-gallery-wall idea."],
+ ["Solid State — HTML5UP","free","Review + output","https://html5up.net/solid-state","Dark + blue accent, clean card layout, strong dark-theme type hierarchy."],
+ ["Dimension — HTML5UP","free","Wizard/modal","https://html5up.net/dimension","Focused side-panel modal — minimalist pattern for step workflows."],
+ ["Hyperspace — HTML5UP","free","Whole tool flow","https://html5up.net/hyperspace","Dark theme + bold accent, multi-step nav — fits the wizard aesthetic."],
+ ["Lens — HTML5UP","free","Gallery output","https://html5up.net/lens","Thumbnail grid + lightbox for link/image previews."],
+ ["Paradigm Shift — HTML5UP","free","Landing","https://html5up.net/paradigm-shift","Teal/cyan accent (matches output secondary), device mockups, clear sections."],
+ ["Future Imperfect — HTML5UP","free","Watchlist layout","https://html5up.net/future-imperfect","Blog/portfolio grid with descriptions — adaptable to the watchlist format."],
+ ["SB Admin 2 — Start Bootstrap","free","Dashboard/cards","https://startbootstrap.com/template/sb-admin-2","2.5M+ downloads; sidebar nav, metric cards, dark/light toggle."],
+ ["DarkPan — ThemeWagon","free","Dark dashboard","https://themewagon.com/themes/free-bootstrap-5-admin-dashboard-template-darkpan/","Free Bootstrap 5 dark admin, clean readable code, hover effects."],
+ ["Play Bootstrap — UIdeck","free","Landing sections","https://github.com/uideck/play-bootstrap","Open-source modular landing (hero/features/CTA) for output presentation."],
+ ["TailAdmin React — UIdeck","free/prem","Card grids","https://uideck.com/templates/tail-admin","Tailwind+React, 100+ components, modern responsive data display."],
+ ["AI Agent — UIdeck","free/prem","SaaS landing","https://uideck.com/templates/ai-agent","Contemporary AI/SaaS kit — feature cards & CTA flows for positioning."],
+ ["Novapay — Templatemo","free","Data-heavy dark","https://www.templatemo.com/tm-575-novapay","Slate-blue fintech landing; clean cards & metric displays."],
+ ["Nexus — Templatemo","free","Interaction fx","https://www.templatemo.com/tm-534-nexus","Z-depth scroll-stacking — creative 3D transform ideas."],
+ ["Folio Slideshow — Templatemo","free","Gallery carousel","https://www.templatemo.com/tm-529-folio","Pure HTML/CSS/JS slideshow for showcasing curated galleries."],
+ ["Artifact — Cruip","paid","Prod dashboard","https://cruip.com/artifact","Next.js + Tailwind + shadcn admin; professional dark implementation."],
+ ["Relay — Cruip","paid","Dev marketing","https://cruip.com/relay","Dark premium template, green accent — technical-product showcase."],
+ ["Cadence — Cruip","paid","Portfolio","https://cruip.com/cadence","Calm motion-driven marketing/portfolio sections."],
+ ["Mystic — ThemeForest","paid","Full UI system","https://themeforest.net/item/mystic-multipurpose-dashboard-html5-template/28683615","128 pages, full light+dark, ARIA-compliant reference."],
+ ["Admiria — ThemeForest","paid","Dual-theme system","https://themeforest.net/item/admiria-responsive-bootstrap-4-admin-dashboard/20479945","Complete Bootstrap 5 admin, light/dark + RTL, form patterns."],
+];
+const parse = [
+ ["Metascraper","2.7k ★ · 142.8K/wk npm","hi","https://github.com/microlinkhq/metascraper","Unified OpenGraph + JSON-LD + Twitter Cards + Microdata extraction with fallbacks — top priority; directly covers Linkforge's metadata needs."],
+ ["Mozilla Readability","11.1k ★","hi","https://github.com/mozilla/readability","Firefox Reader-View algorithm; strips clutter to clean titles/descriptions."],
+ ["Cheerio","30.3k ★ · 27.2M/wk","","https://github.com/cheeriojs/cheerio","jQuery-like HTML parsing — industry-standard selector-based extraction engine."],
+ ["Postlight Parser","5.7k ★","","https://github.com/postlight/parser","Article extraction (title, author, date, lead image) as a secondary layer."],
+ ["LinkedOM","3.5M/wk npm","","https://github.com/WebReflection/linkedom","Lightweight, fast client-side DOM — good fallback for very large pastes."],
+ ["html-metadata","15 ★","","https://github.com/jcottam/html-metadata","TS-first minimal meta/OG extractor if you want fewer dependencies."],
+ ["QuickLookVideo","3.5k ★","","https://github.com/Marginal/QuickLookVideo","Reference for extracting video thumbnails/metadata (video-preview feature)."],
+];
+const gen = [
+ ["eleventy-photo-gallery","181 ★","hi","https://github.com/tannerdolby/eleventy-photo-gallery","Responsive image-grid CSS + data→template→HTML flow — closest to the six templates."],
+ ["GlassLink-Bio","4 ★","hi","https://github.com/drafterfurniture/GlassLink-Bio","Modern single-file glassmorphism link-in-bio with schema markup — near-identical output format."],
+ ["Von","8 ★","","https://github.com/TimboKZ/Von","Elegant single-page gallery generator — matches the portable single-file requirement."],
+ ["corbin","5 ★","","https://github.com/ian-vandenberg/corbin","Static responsive image + video gallery generator."],
+ ["f2.8gallery","11 ★","","https://github.com/asmartin/f2.8gallery","Responsive photography-portfolio layout patterns."],
+ ["VitePress","18.1k ★","","https://github.com/vuejs/vitepress","Component-as-template architecture reference for rebuilding templates."],
+ ["Decap CMS","19.3k ★","","https://github.com/decaporg/decap-cms","Data→HTML pipeline & admin-flow patterns mirroring Input→Review→Ship."],
+];
+
+function row(d){
+  const badge = d[1]||"";
+  const tagName = (d.length===4)? "" : "";
+  return `<div class="item"><div class="top">
+    <span class="name">${d[0]}</span>
+    <span class="meta">${badge}</span></div>
+    <div class="why">${d[d.length-1]}</div>
+    <div style="margin-top:8px"><a href="${d[d.length-2]}" target="_blank">${d[d.length-2]}</a></div></div>`;
+}
+function rowTpl(d){
+  const cls = d[1]==='paid'?'paid':'free';
+  return `<div class="item"><div class="top">
+    <span class="name">${d[0]} <span class="tag ${cls}">${d[1]}</span></span>
+    <span class="pill">${d[2]}</span></div>
+    <div class="why">${d[4]}</div>
+    <div style="margin-top:8px"><a href="${d[3]}" target="_blank">${d[3]}</a></div></div>`;
+}
+function rowOS(d){
+  const hi = d[2]==='hi'?'<span class="tag hi">high priority</span>':'';
+  return `<div class="item"><div class="top">
+    <span class="name">${d[0]} ${hi}</span>
+    <span class="meta">${d[1]}</span></div>
+    <div class="why">${d[4]}</div>
+    <div style="margin-top:8px"><a href="${d[3]}" target="_blank">${d[3]}</a></div></div>`;
+}
+document.getElementById('gh-list').innerHTML = gh.map(row).join('');
+document.getElementById('tpl-list').innerHTML = tpl.map(rowTpl).join('');
+document.getElementById('parse-list').innerHTML = parse.map(rowOS).join('');
+document.getElementById('gen-list').innerHTML = gen.map(rowOS).join('');
+
+// tabs
+const btns=[...document.querySelectorAll('nav button')];
+const secs=[...document.querySelectorAll('section')];
+btns.forEach(b=>b.addEventListener('click',()=>{
+  btns.forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  secs.forEach(s=>s.classList.toggle('hidden',s.id!==b.dataset.t));
+  window.scrollTo({top:0,behavior:'smooth'});
+}));
+</script>
+</body>
+</html>
