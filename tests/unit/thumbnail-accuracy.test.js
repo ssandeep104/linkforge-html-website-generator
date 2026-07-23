@@ -101,6 +101,19 @@ test('still catches a genuine placeholder whose filename IS exactly a known plac
   assert.equal(items[0].thumbnail, 'https://cdn.example.com/full/999.jpg');
 });
 
+test('prefers data-src when src is exactly a site logo', () => {
+  const html = `<html><body>
+    <a href="https://publisher.example/story">
+      <img src="https://publisher.example/logo.png"
+           data-src="https://cdn.publisher.example/stories/hero.jpg"
+           alt="Story hero">
+    </a>
+  </body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.publisher.example/stories/hero.jpg');
+});
+
 test('a <figcaption> outranks the image alt text as the default title', () => {
   // Photography-portfolio pattern: <figure><a><img alt="..."></a><figcaption>
   // Real Title</figcaption></figure>. alt text describes the image for

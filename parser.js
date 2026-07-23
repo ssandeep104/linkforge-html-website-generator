@@ -262,7 +262,7 @@ function looksLikePlaceholder(url) {
 // blank somewhere."
 const KNOWN_PLACEHOLDER_BASENAMES = new Set([
   '1x1', '2x2', 'blank', 'spacer', 'placeholder', 'transparent',
-  'noimage', 'no-image', 'no_image', 'pixel',
+  'noimage', 'no-image', 'no_image', 'pixel', 'logo',
 ]);
 function looksLikeLazyLoadPlaceholder(url) {
   if (!url) return true;

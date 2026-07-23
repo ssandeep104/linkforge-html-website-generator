@@ -2,8 +2,8 @@
    LINKFORGE — client-side HTML aggregator
    ===================================================== */
 
-const DEFAULT_SITE_TITLE = 'Streamstack';
-const DEFAULT_SITE_TAGLINE = 'A watchlist, gallery, and link hub built from the web.';
+const DEFAULT_SITE_TITLE = 'My Collection';
+const DEFAULT_SITE_TAGLINE = '';
 
 // Exposed on window for in-browser test diagnostics (no behavior change).
 const state = window.__lfState = {
@@ -37,16 +37,29 @@ function showScreen(id) {
 // ---------- theme toggle ----------
 (function initTheme() {
   const root = document.documentElement;
-  const savedMode = localStorage.getItem('lf-theme');
+  const getSavedMode = () => {
+    try {
+      const saved = localStorage.getItem('lf-theme');
+      return saved === 'dark' || saved === 'light' ? saved : null;
+    } catch (_) {
+      return null;
+    }
+  };
+  const saveMode = (value) => {
+    try { localStorage.setItem('lf-theme', value); } catch (_) {}
+  };
+  const savedMode = getSavedMode();
   const systemMode = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   let mode = savedMode === 'dark' || savedMode === 'light' ? savedMode : systemMode;
   root.setAttribute('data-theme', mode);
-  const sunSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
-  const moonSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  const sunSvg = '<svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+  const moonSvg = '<svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
   const render = () => {
     $$('[data-theme-toggle]').forEach((b) => {
       b.innerHTML = mode === 'dark' ? sunSvg : moonSvg;
-      b.setAttribute('aria-label', `Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`);
+      const label = `Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`;
+      b.setAttribute('aria-label', label);
+      b.setAttribute('title', label);
     });
   };
   render();
@@ -55,7 +68,14 @@ function showScreen(id) {
     if (!t) return;
     mode = mode === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', mode);
-    localStorage.setItem('lf-theme', mode);
+    saveMode(mode);
+    render();
+  });
+  const media = matchMedia('(prefers-color-scheme: dark)');
+  media.addEventListener?.('change', (event) => {
+    if (getSavedMode()) return;
+    mode = event.matches ? 'dark' : 'light';
+    root.setAttribute('data-theme', mode);
     render();
   });
 })();
@@ -327,7 +347,7 @@ function renderBanner(src, card) {
       <span>${escapeText(msg)}</span>
     </div>
     <form class="banner__form" data-banner-form>
-      <input type="text" class="banner__input" placeholder="e.g. dallasnews.com" value="${escapeAttr(src.overrideBase || '')}" autocomplete="off" spellcheck="false" />
+      <input type="text" class="banner__input" placeholder="e.g. example.com" value="${escapeAttr(src.overrideBase || '')}" autocomplete="off" spellcheck="false" />
       <button type="submit" class="banner__btn banner__btn--primary">Use this domain</button>
       <button type="button" class="banner__btn banner__btn--ghost" data-banner-skip>Skip & drop these links</button>
     </form>
@@ -367,7 +387,7 @@ function renderBanner(src, card) {
   });
 }
 
-// Accept anything from "dallasnews.com" to "https://www.dallasnews.com/foo"
+// Accept anything from "example.com" to "https://www.example.com/path"
 // and return a clean "https://host" origin string. Returns null if invalid.
 function normalizeHostToOrigin(raw) {
   let s = raw.trim();
@@ -439,16 +459,17 @@ function escapeAttr(s) {
 // ===================================================
 
 const CATEGORY_META = {
-  'article': { title: 'Articles', desc: 'Links classified as articles, with image previews.' },
-  'video': { title: 'Videos', desc: 'Links classified as videos, with players or previews.' },
+  'article': { title: 'Media links', desc: 'Links with image previews.' },
+  'video': { title: 'Videos', desc: 'Links with video players or previews.' },
   'gallery': { title: 'Images', desc: 'Standalone images and visual assets.' },
-  'link': { title: 'Plain Links', desc: 'Anchors with text only — no image or video previews.' },
+  'link': { title: 'Links', desc: 'Links without an image or video preview.' },
 };
 
 const CATEGORY_ORDER = ['article', 'video', 'gallery', 'link'];
 
 const reviewState = {
   activeSourceId: null,
+  filter: 'all',
 };
 
 // Map the internal item.category to the user-facing bucket above.
@@ -456,6 +477,27 @@ function bucketOf(item) {
   if (item.category === 'video') return 'with-video';
   if (item.thumbnail) return 'with-image'; // includes article + gallery
   return 'plain';
+}
+
+function reviewFilterOf(item) {
+  if (item.category === 'video') return 'video';
+  if (item.thumbnail) return 'image';
+  return 'link';
+}
+
+function applyReviewItemFilter() {
+  const filter = reviewState.filter || 'all';
+  $$('[data-review-filter]').forEach((button) => {
+    const active = button.dataset.reviewFilter === filter;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  $$('.item-row', $('#categories')).forEach((row) => {
+    row.hidden = filter !== 'all' && row.dataset.reviewFilterKind !== filter;
+  });
+  $$('.group-panel', $('#categories')).forEach((panel) => {
+    panel.hidden = !panel.querySelector('.item-row:not([hidden])');
+  });
 }
 
 function getReviewableSources() {
@@ -597,6 +639,7 @@ function gotoReview() {
   flattenSourcesIntoItems({ resetEnabled: true });
   ensureActiveReviewSource();
   renderReview();
+  setReviewMode('edit');
   showScreen('step-review');
 }
 
@@ -656,21 +699,45 @@ function applySourceStrategy(src) {
     const strat = src.strategyByPattern[it.pattern] || {};
     it._excludedByPattern = !!strat.exclude;
     if (it._excludedByPattern) continue;
-    if (strat.title && it.titleCandidates?.length) {
-      const pick = it.titleCandidates.find((c) => c.strategy === strat.title);
-      if (pick) it.title = pick.value;
+    if (strat.title) {
+      const pick = it.titleCandidates?.find((c) => c.strategy === strat.title);
+      // A partial strategy is deliberately allowed by the picker. Items that
+      // do not offer it must be empty, matching the option-group warning,
+      // rather than silently retaining a stale value from the last strategy.
+      it.title = pick ? pick.value : '';
     }
-    if (strat.thumb && it.thumbCandidates?.length) {
-      const pick = it.thumbCandidates.find((c) => c.strategy === strat.thumb);
-      if (pick) it.thumbnail = pick.value;
-      else if (strat.thumb === '__none__') it.thumbnail = null;
+    if (strat.thumb) {
+      const pick = it.thumbCandidates?.find((c) => c.strategy === strat.thumb);
+      it.thumbnail = pick ? pick.value : null;
     }
-    if (strat.video && it.videoCandidates?.length) {
-      const pick = it.videoCandidates.find((c) => c.strategy === strat.video);
-      if (pick) it.video = pick.info || { url: pick.value };
-      else if (strat.video === '__none__') it.video = null;
+    if (strat.video) {
+      const pick = it.videoCandidates?.find((c) => c.strategy === strat.video);
+      it.video = pick ? (pick.info || { url: pick.value }) : null;
     }
+    refreshItemCategory(it);
   }
+}
+
+const STRATEGY_VIDEO_HOSTS = [
+  'youtube.com', 'youtu.be', 'vimeo.com', 'tiktok.com', 'twitch.tv',
+  'dailymotion.com', 'wistia.com', 'instagram.com',
+];
+
+function refreshItemCategory(item) {
+  // Preserve the parser's gallery distinction while still allowing a chosen
+  // video strategy to promote the item (and a cleared image to demote it).
+  item._strategyBaseCategory ||= item.category;
+  let hrefIsVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(item.href || '');
+  try {
+    const host = new URL(item.href).hostname.replace(/^www\./, '');
+    hrefIsVideo = hrefIsVideo
+      || STRATEGY_VIDEO_HOSTS.some((candidate) => host === candidate || host.endsWith('.' + candidate));
+  } catch {}
+  item.category = item.video || hrefIsVideo
+    ? 'video'
+    : item.thumbnail
+      ? (item._strategyBaseCategory === 'gallery' ? 'gallery' : 'article')
+      : 'link';
 }
 
 // Build the per-source picker option list as a UNION across every item in
@@ -761,9 +828,11 @@ function seedDefaultStrategies(src) {
 function renderSourceStrategyPicker() {
   const root = $('#source-strategy');
   if (!root) return;
+  const disclosure = $('#extraction-advanced');
   const src = getActiveReviewSource();
   if (!src) {
     root.hidden = true;
+    if (disclosure) disclosure.hidden = true;
     root.innerHTML = '';
     return;
   }
@@ -792,13 +861,19 @@ function renderSourceStrategyPicker() {
     const currentStrategy = src.strategyByPattern[pattern] || {};
     rows.push({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy });
   }
-  if (rows.length === 0) { root.hidden = true; root.innerHTML = ''; return; }
+  if (rows.length === 0) {
+    root.hidden = true;
+    if (disclosure) disclosure.hidden = true;
+    root.innerHTML = '';
+    return;
+  }
   const srcIdx = state.sources.findIndex((s) => s.id === src.id);
+  if (disclosure) disclosure.hidden = false;
   root.hidden = false;
   root.innerHTML = `
     <div class="strategy-picker__head">
-      <h3>Tune extraction for this source</h3>
-      <p class="muted">You are editing ${escapeText(displayName(src, srcIdx))}. Choose how title, image, and video fields are finalized before moving to the next source.</p>
+      <h3>${escapeText(displayName(src, srcIdx))}</h3>
+      <p class="muted">Override Linkforge’s best guesses for this source.</p>
     </div>
     <div class="strategy-picker__list">
       ${rows.map(({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy }) => `
@@ -935,6 +1010,48 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
 
+let reviewPreviewTimer = null;
+
+function refreshReviewPreview({ immediate = false } = {}) {
+  const frame = $('#review-live-preview');
+  if (!frame || !state.items.length) return;
+  clearTimeout(reviewPreviewTimer);
+  const render = () => {
+    try {
+      frame.srcdoc = buildGeneratedSite();
+      const template = window.LINKFORGE_TEMPLATES?.[state.site.template];
+      const label = $('#review-preview-template');
+      if (label) label.textContent = template?.name || 'Preview';
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  if (immediate) render();
+  else reviewPreviewTimer = setTimeout(render, 180);
+}
+
+function setReviewMode(mode) {
+  const workbench = $('.review-workbench');
+  if (!workbench || (mode !== 'edit' && mode !== 'preview')) return;
+  workbench.dataset.reviewView = mode;
+  const mobile = matchMedia('(max-width: 767px)').matches;
+  const editor = $('.review-editor');
+  const preview = $('.review-preview');
+  if (editor) editor.hidden = mobile && mode !== 'edit';
+  if (preview) preview.hidden = mobile && mode !== 'preview';
+  $$('[data-review-mode]').forEach((button) => {
+    const active = button.dataset.reviewMode === mode;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  if (mode === 'preview') refreshReviewPreview({ immediate: true });
+}
+
+function syncReviewModeForViewport() {
+  const mode = $('.review-workbench')?.dataset.reviewView || 'edit';
+  setReviewMode(mode);
+}
+
 function renderReview() {
   ensureActiveReviewSource();
   updateReviewMeta();
@@ -949,6 +1066,12 @@ function renderReview() {
 
   const activeSource = getActiveReviewSource();
   const activeItems = getActiveReviewItems();
+  const activeSourceName = $('[data-active-source-name]');
+  if (activeSourceName) {
+    activeSourceName.textContent = activeSource
+      ? displayName(activeSource, state.sources.findIndex((s) => s.id === activeSource.id))
+      : '';
+  }
 
   if (!activeSource || activeItems.length === 0) {
     root.innerHTML = `
@@ -971,8 +1094,8 @@ function renderReview() {
   const header = document.createElement('section');
   header.className = 'source-finalized';
   header.innerHTML = `
-    <h3 class="source-finalized__title">Finalized links for ${escapeText(displayName(activeSource, state.sources.findIndex((s) => s.id === activeSource.id)))}</h3>
-    <p class="source-finalized__desc">Review only this source below. Your picks are saved automatically when you move to the next source.</p>
+    <h3 class="source-finalized__title">Extracted links and media</h3>
+    <span class="source-finalized__source">${escapeText(displayName(activeSource, state.sources.findIndex((s) => s.id === activeSource.id)))}</span>
   `;
   root.appendChild(header);
 
@@ -982,6 +1105,11 @@ function renderReview() {
     // Show all groups open by default so the user can immediately see images/titles
     root.appendChild(renderGroupPanel(key, items, true));
   });
+  applyReviewItemFilter();
+  const summary = $('[data-review-selection-summary]');
+  const enabledCount = state.items.filter((item) => item.enabled).length;
+  if (summary) summary.textContent = `${enabledCount} link${enabledCount === 1 ? '' : 's'} selected`;
+  refreshReviewPreview();
 }
 
 function renderGroupPanel(key, items, openByDefault) {
@@ -1044,6 +1172,7 @@ function renderItemRow(item) {
   row.className = 'item-row';
   if (!item.enabled) row.classList.add('item-row--off');
   row.dataset.id = item.id;
+  row.dataset.reviewFilterKind = reviewFilterOf(item);
 
   const thumbHtml = item.thumbnail
     ? `<div class="item-row__thumb ${item.category === 'video' ? 'item-row__thumb--video' : ''}">
@@ -1072,6 +1201,10 @@ function renderItemRow(item) {
     // Update parent group + meta counts without re-rendering everything
     updateGroupHeader(row);
     updateReviewMeta();
+    const enabledCount = state.items.filter((it) => it.enabled).length;
+    const summary = $('[data-review-selection-summary]');
+    if (summary) summary.textContent = `${enabledCount} link${enabledCount === 1 ? '' : 's'} selected`;
+    refreshReviewPreview();
   });
 
   return row;
@@ -1176,37 +1309,21 @@ document.addEventListener('click', (e) => {
 // ===================================================
 
 const TEMPLATE_DEFAULTS = {
-  marquee: {
-    title: 'Marquee Showcase',
-    tagline: 'A curated marquee spotlight of streaming video highlights and media cards.'
-  },
-  firetv: {
-    title: 'My TV Collection',
-    tagline: 'A lean-back collection built for the big screen — browse and play with just the remote.'
-  },
   youtube: {
     title: DEFAULT_SITE_TITLE,
     tagline: DEFAULT_SITE_TAGLINE
   },
-  cinema: {
-    title: 'Stream Catalog',
-    tagline: 'A lean-back dark catalog with source tabs and an editorial watchlist feel.'
-  },
   wall: {
-    title: 'Photo Wall',
-    tagline: 'A fluid gallery grid keeping each source in its own visual lane.'
-  },
-  bento: {
-    title: 'Spotlight Bento',
-    tagline: 'A custom bento arrangement featuring top clips and mixed story cards.'
+    title: DEFAULT_SITE_TITLE,
+    tagline: DEFAULT_SITE_TAGLINE
   },
   signal: {
-    title: 'Signal Board',
-    tagline: 'A dense dark monitoring board and high-frequency update dashboard.'
+    title: DEFAULT_SITE_TITLE,
+    tagline: DEFAULT_SITE_TAGLINE
   },
   editorial: {
-    title: 'Story Deck',
-    tagline: 'A calm story-led deck for article-heavy collections and reading lists.'
+    title: DEFAULT_SITE_TITLE,
+    tagline: DEFAULT_SITE_TAGLINE
   }
 };
 const DEFAULT_TEMPLATE_TITLES = new Set(Object.values(TEMPLATE_DEFAULTS).map((d) => d.title));
@@ -1312,6 +1429,7 @@ function renderTemplatePicker() {
         c.classList.toggle('template-card--active', active);
         c.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
+      refreshReviewPreview({ immediate: true });
     });
     grid.appendChild(card);
   }
@@ -1859,13 +1977,8 @@ function gotoOutput() {
   iframe.srcdoc = html;
   iframe._html = html;
 
-  // The Fire TV template downloads as an Android app project, not a bare
-  // HTML file — reflect that on the output screen.
-  const isTvApp = state.site.template === 'firetv';
   const label = $('#btn-download-label');
-  if (label) label.textContent = isTvApp ? 'Download Fire TV App' : 'Download HTML';
-  const note = $('#tv-export-note');
-  if (note) note.hidden = !isTvApp;
+  if (label) label.textContent = 'Download HTML';
 
   showScreen('step-output');
 }
@@ -1876,19 +1989,6 @@ function siteSlug() {
 
 function downloadHtml() {
   const html = $('#preview-frame')._html || buildGeneratedSite();
-
-  if (state.site.template === 'firetv' && window.LINKFORGE_APK) {
-    // Fire TV export: a ready-to-build Android app project (.zip). The APK
-    // itself needs the Android SDK — the bundled GitHub Actions workflow or
-    // Android Studio produces it from this project (see README inside).
-    window.LINKFORGE_APK.downloadProject({ html, title: state.site.title, slug: siteSlug() })
-      .then((name) => showToast(`Downloaded ${name} — push it to a GitHub repo and the bundled workflow builds the .apk for you (README inside)`))
-      .catch((err) => {
-        console.error(err);
-        showToast('Could not package the Fire TV app project.');
-      });
-    return;
-  }
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const a = document.createElement('a');
@@ -1906,6 +2006,28 @@ function downloadHtml() {
 // ===================================================
 
 document.addEventListener('click', (e) => {
+  const reviewFilter = e.target.closest('[data-review-filter]');
+  if (reviewFilter) {
+    reviewState.filter = reviewFilter.dataset.reviewFilter;
+    applyReviewItemFilter();
+    return;
+  }
+  const reviewMode = e.target.closest('[data-review-mode]');
+  if (reviewMode) {
+    setReviewMode(reviewMode.dataset.reviewMode);
+    return;
+  }
+  const previewWidth = e.target.closest('[data-preview-width]');
+  if (previewWidth) {
+    const canvas = $('.review-preview__canvas');
+    if (canvas) canvas.dataset.previewSize = previewWidth.dataset.previewWidth;
+    $$('[data-preview-width]').forEach((button) => {
+      const active = button === previewWidth;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    return;
+  }
   if (e.target.closest('[data-add-source]')) {
     addSource();
     return;
@@ -1927,6 +2049,27 @@ document.addEventListener('click', (e) => {
 $('#btn-parse').addEventListener('click', gotoReview);
 $('#btn-generate').addEventListener('click', handleReviewPrimaryAction);
 $('#btn-download').addEventListener('click', downloadHtml);
+['site-title', 'site-tagline'].forEach((id) => {
+  $(`#${id}`)?.addEventListener('input', () => {
+    if (id === 'site-title') {
+      const heading = $('#review-collection-heading');
+      if (heading) heading.textContent = $(`#${id}`).value.trim() || DEFAULT_SITE_TITLE;
+    }
+    refreshReviewPreview();
+  });
+});
+$('#review-collection-heading')?.addEventListener('input', (event) => {
+  const value = event.currentTarget.textContent.replace(/\s+/g, ' ').trim().slice(0, 80);
+  $('#site-title').value = value;
+  refreshReviewPreview();
+});
+$('#review-collection-heading')?.addEventListener('blur', (event) => {
+  if (event.currentTarget.textContent.trim()) return;
+  event.currentTarget.textContent = DEFAULT_SITE_TITLE;
+  $('#site-title').value = DEFAULT_SITE_TITLE;
+  refreshReviewPreview({ immediate: true });
+});
+window.addEventListener('resize', syncReviewModeForViewport);
 
 // Publish-to-Vercel was removed: hosting user-generated pages on a shared
 // Vercel account is an abuse vector (anyone could fill the project quota or
@@ -1982,72 +2125,78 @@ document.addEventListener('drop', async (e) => {
 function loadSample() {
   state.sources = [];
 
-  // Section-rich news sample with lazy-loaded images (the TOI pattern):
-  // every <img> has src=site-logo and data-src=real-article-image.
+  // Mixed-media sample with lazy-loaded thumbnails: every image keeps a
+  // generic logo in `src` and the real item image in `data-src`.
   addSource({
-    name: 'Daily Times — homepage',
+    name: 'Weekend finds — sample',
     html: `<!doctype html><html>
       <head>
-        <meta property="og:url" content="https://signal.dev/" />
-        <meta property="og:image" content="https://signal.dev/logo.png" />
+        <meta property="og:url" content="https://collection.example/" />
+        <meta property="og:image" content="https://collection.example/logo.png" />
       </head>
       <body>
-        <section id="top-news" aria-label="Top News">
-          <h2>Top News</h2>
-          <a href="https://signal.dev/the-quiet-rise-of-small-towns">
-            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1518002171953-a080ee817e1f?w=800" alt="Sunset over a small town" />
-            <h3>The quiet rise of America's smallest towns</h3>
+        <section id="places" aria-label="Places">
+          <h2>Places</h2>
+          <a href="https://unsplash.com/photos/moraine-lake">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=900" alt="Mountain lake" />
+            <h3>Moraine Lake, Banff National Park</h3>
           </a>
-          <a href="https://signal.dev/inside-the-new-space-race">
-            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?w=800" alt="Rocket launch at night" />
-            <h3>Inside the new space race — and who's actually winning</h3>
+          <a href="https://unsplash.com/photos/forest-cabin">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?w=900" alt="Cabin in a forest" />
+            <h3>Cabin hideaways in the Pacific Northwest</h3>
           </a>
-          <a href="https://signal.dev/coffee-and-the-modern-morning">
-            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800" alt="Pour over coffee" />
-            <h3>What our morning coffee says about the way we live now</h3>
-          </a>
-        </section>
-
-        <section id="sports" aria-label="Sports">
-          <h2>Sports</h2>
-          <a href="https://signal.dev/sports/champions-league-final">
-            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=800" alt="Soccer stadium" />
-            <h3>The Champions League final — what to watch for</h3>
-          </a>
-          <a href="https://signal.dev/sports/grand-slam-preview">
-            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800" alt="Tennis court" />
-            <h3>Grand Slam preview: five storylines to follow</h3>
-          </a>
-          <a href="https://signal.dev/sports/marathon-records">
-            Why marathon records keep falling
+          <a href="https://unsplash.com/photos/ocean-surf">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=900" alt="Surfer on a wave" />
+            <h3>Surf session highlights</h3>
           </a>
         </section>
 
-        <section id="entertainment" aria-label="Entertainment">
-          <h2>Entertainment</h2>
-          <a href="https://signal.dev/entertainment/summer-blockbusters">
-            <img src="https://signal.dev/logo.png" data-src="https://images.unsplash.com/photo-1489599735188-900a0c1316dd?w=800" alt="Cinema seats" />
-            <h3>Summer blockbuster season: the films to watch</h3>
+        <section id="design" aria-label="Design">
+          <h2>Design</h2>
+          <a href="https://www.behance.net/gallery/color-and-shape">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1550859492-d5da9d8e45f3?w=900" alt="Colorful abstract forms" />
+            <h3>Color &amp; shape inspiration</h3>
+          </a>
+          <a href="https://store.example.com/minimal-chair">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=900" alt="Minimal wooden chair" />
+            <h3>Minimal chair collection</h3>
+          </a>
+          <a href="https://design.example.com/material-library">
+            Material library for small spaces
+          </a>
+        </section>
+
+        <section id="sound-and-motion" aria-label="Sound and motion">
+          <h2>Sound &amp; motion</h2>
+          <a href="https://vimeo.com/76979871">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=900" alt="Motion design screen" />
+            <h3>Motion design reel</h3>
           </a>
           <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-            <h3>Behind the scenes of a record season</h3>
+            <h3>Studio session — live performance</h3>
           </a>
           <a href="https://www.youtube.com/watch?v=9bZkp7q19f0">
-            <h3>A morning at the harbor — short film</h3>
+            <h3>Animation breakdown: light and form</h3>
           </a>
         </section>
 
-        <section id="opinion" aria-label="Opinion">
-          <h2>Opinion</h2>
-          <a href="https://signal.dev/opinion/why-cities-still-matter">Why cities still matter</a>
-          <a href="https://signal.dev/opinion/the-quiet-power-of-public-libraries">The quiet power of public libraries</a>
-          <a href="https://signal.dev/opinion/saturday-mail">Saturday Mail: readers respond</a>
+        <section id="objects" aria-label="Objects">
+          <h2>Objects</h2>
+          <a href="https://shop.example.com/headphones">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=900" alt="Black headphones" />
+            <h3>Noise-cancelling headphones</h3>
+          </a>
+          <a href="https://www.rei.com/product/trail-runner">
+            <img src="https://collection.example/logo.png" data-src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=900" alt="Trail running shoe" />
+            <h3>Trail runner GTX</h3>
+          </a>
+          <a href="https://music.example.com/chillwave-essentials">Chillwave essentials playlist</a>
         </section>
       </body>
     </html>`,
   });
 
-  showToast('Sample loaded — try the section view');
+  showToast('Sample loaded — review your collection');
 }
 
 // ===================================================

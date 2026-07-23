@@ -6,10 +6,24 @@
     <title>Linkforge — curate the web</title>
     <meta
       name="description"
-      content="Linkforge extracts every link, thumbnail, and video preview from any HTML and renders it into six curated layouts for watchlists, galleries, and mixed-media drops. Client-side, source-grouped, zero backend."
+      content="Turn links and media from any HTML into a polished, portable visual collection. Client-side, source-grouped, zero backend."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem('lf-theme');
+          const theme = saved === 'light' || saved === 'dark'
+            ? saved
+            : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+        } catch (_) {
+          document.documentElement.dataset.theme =
+            matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+      })();
+    </script>
     <link rel="stylesheet" href="./style.css" />
     <link
       rel="icon"
@@ -32,14 +46,14 @@
             <path d="M2 18 H34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
             <path d="M18 2 V34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
             <path d="M8 25V11h3v11h6v3H8z" fill="var(--color-text)"/>
-            <path d="M19 11h3l3.4 14h-3l-.5-2h-3.6l-.5 2h-3l4.2-14zm.7 8.5h2.7L21 13.7l-1.3 5.8z" fill="var(--color-text)"/>
+            <path d="M19 11h9v3h-6v3h5v3h-5v5h-3V11z" fill="var(--color-text)"/>
           </svg>
-          <span>Linkforge</span>
+          <span>LinkForge</span>
         </a>
         <div class="topbar__right">
           <span class="step-pill" data-step-pill="1">
             <span class="step-pill__dot"></span>
-            <span data-step-current>01</span> / 02
+            <span data-step-current>01</span> / 03
           </span>
           <button
             class="icon-btn"
@@ -51,9 +65,9 @@
       </header>
 
       <section class="workspace-header">
-        <h1 class="workspace-title">Paste HTML. Forge a <em>watchlist or gallery.</em></h1>
+        <h1 class="workspace-title">Paste HTML. Forge a <em>visual collection.</em></h1>
         <p class="workspace-subtitle">
-          Extract links, images, and video previews from messy page sources. Curate them into six responsive, portable layouts — all client-side, zero backend.
+          Extract links, images, and video previews from any page source. Curate them into four responsive, portable layouts — all client-side, zero backend.
         </p>
       </section>
 
@@ -141,15 +155,15 @@
           <div class="how-grid-compact">
             <div class="how-item-compact">
               <strong>§01 — Input</strong>
-              <p>Paste raw HTML or upload <code>.html</code> page source files from creator channels, photo sets, bookmarks, or social feeds.</p>
+              <p>Paste raw HTML or upload <code>.html</code> from web pages, portfolios, product lists, media libraries, or bookmarks.</p>
             </div>
             <div class="how-item-compact">
               <strong>§02 — Review</strong>
-              <p>Choose from six responsive layout templates. Untick links you don't want, customize names, titles, and media selections.</p>
+              <p>Choose from four responsive layout templates. Untick links you don't want, customize names, titles, and media selections.</p>
             </div>
             <div class="how-item-compact">
               <strong>§03 — Ship</strong>
-              <p>Download a single, standalone HTML page containing your curated, source-grouped watchlist or gallery to host anywhere.</p>
+              <p>Download a standalone HTML page containing your curated, source-grouped collection to host anywhere.</p>
             </div>
           </div>
         </div>
@@ -176,14 +190,14 @@
             <path d="M2 18 H34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
             <path d="M18 2 V34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
             <path d="M8 25V11h3v11h6v3H8z" fill="var(--color-text)"/>
-            <path d="M19 11h3l3.4 14h-3l-.5-2h-3.6l-.5 2h-3l4.2-14zm.7 8.5h2.7L21 13.7l-1.3 5.8z" fill="var(--color-text)"/>
+            <path d="M19 11h9v3h-6v3h5v3h-5v5h-3V11z" fill="var(--color-text)"/>
           </svg>
-          <span>Linkforge</span>
+          <span>LinkForge</span>
         </a>
         <div class="topbar__right">
           <span class="step-pill" data-step-pill="2">
             <span class="step-pill__dot"></span>
-            02 / 02 — REVIEW
+            02 / 03 — REVIEW
           </span>
           <button
             class="icon-btn"
@@ -213,15 +227,25 @@
         </button>
         <div class="review-head__title">
           <p class="eyebrow">SHEET 02 — SELECTION &amp; LAYOUT</p>
-          <h2 class="page-title">Pick what goes in</h2>
+          <h2 class="page-title" id="review-collection-heading" contenteditable="true" role="textbox" aria-label="Collection title" spellcheck="true">My Collection</h2>
           <p class="muted">
-            Sorted by what each link came with. Open a group, untick the ones you
-            don’t want, and only your picks land in the final export.
+            Choose a layout, then untick anything you don’t want in the export.
           </p>
         </div>
         <div class="review-head__meta" data-review-meta></div>
       </section>
 
+      <nav class="review-mode-switch" aria-label="Review workspace view">
+        <button class="review-mode-switch__button is-active" type="button" data-review-mode="edit" aria-pressed="true">
+          Edit
+        </button>
+        <button class="review-mode-switch__button" type="button" data-review-mode="preview" aria-pressed="false">
+          Preview
+        </button>
+      </nav>
+
+      <div class="review-workbench" data-review-view="edit">
+        <div class="review-editor">
       <section class="review-controls">
         <div class="site-meta">
           <label class="field">
@@ -229,7 +253,7 @@
             <input
               type="text"
               id="site-title"
-              value="Streamstack"
+              value="My Collection"
               maxlength="80"
             />
           </label>
@@ -238,56 +262,86 @@
             <input
               type="text"
               id="site-tagline"
-              value="A watchlist, gallery, and link hub built from the web."
+              value=""
               maxlength="120"
             />
           </label>
 
         </div>
-        <div class="bulk-actions">
-          <button class="btn btn--ghost btn--sm" type="button" data-bulk="all">
-            Select all
-          </button>
-          <button class="btn btn--ghost btn--sm" type="button" data-bulk="none">
-            Select none
-          </button>
-          <button
-            class="btn btn--ghost btn--sm"
-            type="button"
-            data-bulk="with-image"
-          >
-            Only with image
-          </button>
-        </div>
       </section>
-
-      <!-- Template picker -->
-      <section class="template-picker">
-        <div class="template-picker__head">
-          <h3>Pick a layout</h3>
-          <p class="muted">We&rsquo;ll suggest one based on your mix. Browse streaming, gallery, dashboard, and story modes, then click to choose.</p>
-        </div>
-        <div class="template-carousel">
-          <button class="template-carousel__btn template-carousel__btn--prev" type="button" aria-label="Previous template">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <div class="template-carousel__viewport">
-            <div id="template-grid" class="template-grid template-carousel__track"></div>
-          </div>
-          <button class="template-carousel__btn template-carousel__btn--next" type="button" aria-label="Next template">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-          </button>
-        </div>
-        <div id="template-carousel-dots" class="template-carousel__dots"></div>
-      </section>
-
-      <section id="source-strategy" class="strategy-picker" hidden></section>
 
       <section id="review-source-stepper" class="source-stepper" hidden></section>
 
+      <div class="review-list-head">
+        <strong>Extracted links and media</strong>
+        <span data-active-source-name></span>
+      </div>
+
+      <nav class="review-filter" aria-label="Filter extracted items">
+        <div class="review-filter__modes">
+          <button type="button" class="is-active" data-review-filter="all" aria-pressed="true">All</button>
+          <button type="button" data-review-filter="link" aria-pressed="false">Links</button>
+          <button type="button" data-review-filter="image" aria-pressed="false">Images</button>
+          <button type="button" data-review-filter="video" aria-pressed="false">Videos</button>
+        </div>
+        <div class="bulk-actions">
+          <button class="btn btn--ghost btn--sm" type="button" data-bulk="all">Select all</button>
+          <button class="btn btn--ghost btn--sm" type="button" data-bulk="none">Deselect all</button>
+        </div>
+      </nav>
+
       <div id="categories" class="categories"></div>
 
+      <details id="extraction-advanced" class="extraction-advanced" hidden>
+        <summary>
+          <span>
+            <strong>Advanced extraction</strong>
+            <small>Change how Linkforge chooses titles, images, and video previews</small>
+          </span>
+          <span class="extraction-advanced__action" aria-hidden="true">Tune fields</span>
+        </summary>
+        <section id="source-strategy" class="strategy-picker" hidden></section>
+      </details>
+        </div>
+
+        <aside class="review-preview" aria-label="Live site preview">
+          <header class="review-preview__head">
+            <div>
+              <span class="review-preview__eyebrow">Live preview</span>
+              <strong id="review-preview-template">Creator Grid</strong>
+            </div>
+            <div class="review-preview__devices" aria-label="Preview size">
+              <button type="button" class="is-active" data-preview-width="desktop" aria-label="Desktop preview" aria-pressed="true">Desktop</button>
+              <button type="button" data-preview-width="tablet" aria-label="Tablet preview" aria-pressed="false">Tablet</button>
+              <button type="button" data-preview-width="mobile" aria-label="Mobile preview" aria-pressed="false">Mobile</button>
+            </div>
+          </header>
+          <div class="review-preview__canvas" data-preview-size="desktop">
+            <iframe id="review-live-preview" title="Live generated site preview" sandbox="allow-scripts allow-popups"></iframe>
+          </div>
+          <section class="template-picker">
+            <div class="template-picker__head">
+              <h3>Choose template</h3>
+              <p class="muted">Four image-first layouts</p>
+            </div>
+            <div class="template-carousel">
+              <button class="template-carousel__btn template-carousel__btn--prev" type="button" aria-label="Previous template">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+              <div class="template-carousel__viewport">
+                <div id="template-grid" class="template-grid template-carousel__track"></div>
+              </div>
+              <button class="template-carousel__btn template-carousel__btn--next" type="button" aria-label="Next template">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+            <div id="template-carousel-dots" class="template-carousel__dots"></div>
+          </section>
+        </aside>
+      </div>
+
       <div class="review-foot">
+        <div class="review-foot__summary" data-review-selection-summary>0 links selected</div>
         <button class="btn btn--ghost" type="button" data-back-to-input>
           Back
         </button>
@@ -325,9 +379,9 @@
             <path d="M2 18 H34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
             <path d="M18 2 V34" stroke="currentColor" stroke-width="0.6" stroke-dasharray="1.5 1.5" opacity="0.5"/>
             <path d="M8 25V11h3v11h6v3H8z" fill="var(--color-text)"/>
-            <path d="M19 11h3l3.4 14h-3l-.5-2h-3.6l-.5 2h-3l4.2-14zm.7 8.5h2.7L21 13.7l-1.3 5.8z" fill="var(--color-text)"/>
+            <path d="M19 11h9v3h-6v3h5v3h-5v5h-3V11z" fill="var(--color-text)"/>
           </svg>
-          <span>Linkforge</span>
+          <span>LinkForge</span>
         </a>
         <div class="topbar__right">
           <button class="btn btn--ghost btn--sm" type="button" data-back-to-review>
@@ -371,15 +425,6 @@
         </div>
       </header>
 
-      <div class="tv-export-note" id="tv-export-note" hidden>
-        <strong>📺 Fire TV preview</strong> — arrow keys act like the remote's
-        D-pad, Enter is the center button (click the preview first to give it
-        focus). “Download Fire TV App” gives you a ready-to-build Android
-        project (.zip). <strong>No Android tools needed:</strong> push the
-        unzipped folder to a GitHub repo and the bundled workflow builds the
-        sideloadable .apk for you — the README inside walks through it (plus
-        Android Studio / local Gradle, if you prefer).
-      </div>
       <div class="preview-frame-wrap">
         <iframe
           id="preview-frame"
@@ -408,7 +453,6 @@
       window.domainOf = domainOf;
     </script>
     <script src="./templates.js" defer></script>
-    <script src="./apk-export.js" defer></script>
     <script src="./app.js" defer></script>
   </body>
 </html>
