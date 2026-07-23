@@ -236,3 +236,31 @@ Successfully established and executed a systematic approach to CSS deduplication
 **Quality:** ✅ Production-Ready  
 **Tests:** ✅ 60/60 Passing  
 **Ready for PR:** ✅ Yes
+
+
+### Batch 4: Buttons, How Section, and Page Header (2026-07-22)
+**Selectors Merged:** 7  
+**Selectors Deliberately Skipped:** 1  
+**Lines Removed:** -38  
+
+| Selector | Lines (before merge) | Notes |
+|----------|----------------------|-------|
+| `.btn--ghost` | 499, 2824 | Merged to the later rule; newer background/border/color intentionally kept. |
+| `.btn--ghost:hover` | 505, 2830 | Merged to the later hover state; retained updated hover color treatment. |
+| `.btn--sm` | 510, 2836 | Merged to the later size scale values (padding + font-size). |
+| `.how` | 516, 2841 | Preserved layout structure from first rule (display/grid-template) and spacing overrides from later rule. |
+| `.how__item` | 523, 2846 | Merged to later card-style rule; earlier border-top/padding-top were superseded by later border/padding. |
+| `.how__num` | 528, 2858 | Merged to later inline-flex badge treatment; earlier display/type sizing intentionally superseded. |
+| `.page-title` | 577, 2903 | Preserved typography props from earlier rule and kept later clamp() font-size override. |
+
+| Selector | Decision | Reason |
+|----------|----------|--------|
+| `.site-meta` | Skipped | Not a true duplicate: one top-level rule + one `@media (max-width: 700px)` responsive override. |
+
+**Verification for this batch**
+- Brace balance: `Final brace depth: 0`
+- Duplicate selector count: `85 -> 78`
+- Render assertion: PASS (`#step-input` display = `block`, visible body text length = `842`)
+- Full screenshot comparison: PASS (pixel-identical baseline vs updated CSS)
+- Test suite: `npm test` PASS (60/60)
+- `style.css` line count: `3509 -> 3471`
