@@ -92,6 +92,15 @@
                 hidden
               />
             </label>
+            <span class="composer__actions-sep" aria-hidden="true"></span>
+            <button
+              class="btn btn--ghost btn--danger"
+              type="button"
+              data-reset-all-sources
+              title="Clear every source and start over"
+            >
+              Reset all
+            </button>
           </div>
         </div>
 
@@ -287,6 +296,9 @@
         <div class="bulk-actions">
           <button class="btn btn--ghost btn--sm" type="button" data-bulk="all">Select all</button>
           <button class="btn btn--ghost btn--sm" type="button" data-bulk="none">Deselect all</button>
+          <span class="bulk-actions__sep" aria-hidden="true"></span>
+          <button class="btn btn--ghost btn--sm btn--danger" type="button" data-reset-review-source title="Re-select every link in this source and undo its field overrides">Reset source</button>
+          <button class="btn btn--ghost btn--sm btn--danger" type="button" data-reset-review-all title="Re-select every link in every source and undo all field overrides">Reset all</button>
         </div>
       </nav>
 
@@ -447,10 +459,11 @@
       would otherwise race ahead of the deferred module).
     -->
     <script type="module">
-      import { parseSource, parseSourceWithMeta, domainOf } from './parser.js';
+      import { parseSource, parseSourceWithMeta, domainOf, canonicalHref } from './parser.js';
       window.parseSource = parseSource;
       window.parseSourceWithMeta = parseSourceWithMeta;
       window.domainOf = domainOf;
+      window.canonicalHref = canonicalHref;
     </script>
     <script src="./templates.js" defer></script>
     <script src="./app.js" defer></script>

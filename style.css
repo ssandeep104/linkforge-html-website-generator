@@ -2692,6 +2692,55 @@ a:hover {
   color: var(--color-primary);
 }
 
+/* Per-source "Reset" (clears one card's content, keeps the card) */
+.source-card__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 var(--space-3);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-faint);
+  transition: var(--transition);
+}
+
+.source-card__reset svg {
+  width: 14px;
+  height: 14px;
+}
+
+.source-card__reset:hover {
+  background: color-mix(in oklab, #dc2626 10%, transparent);
+  color: #dc2626;
+}
+
+@media (max-width: 560px) {
+  .source-card__reset span { display: none; }
+  .source-card__reset { padding: 0; width: 34px; justify-content: center; }
+}
+
+/* Subtle divider between utility actions and destructive reset actions */
+.composer__actions-sep,
+.bulk-actions__sep {
+  align-self: stretch;
+  width: 1px;
+  margin: 4px 2px;
+  background: var(--color-border);
+}
+
+/* Destructive action buttons — reset controls */
+.btn--danger {
+  color: #dc2626;
+}
+
+.btn--danger:hover {
+  background: color-mix(in oklab, #dc2626 8%, var(--color-surface-2));
+  border-color: color-mix(in oklab, #dc2626 30%, var(--color-border));
+  color: #dc2626;
+}
+
 .source-card textarea,
 .field input,
 .field select,
