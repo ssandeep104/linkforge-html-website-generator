@@ -85,6 +85,39 @@ function normalizeURL(urlStr) {
   }
 }
 
+// Canonical de-duplication KEY for a URL. This is NOT the URL we link to — it
+// is only used to decide whether two hrefs point at the same destination, so
+// the same story reached via slightly different URLs collapses into ONE card
+// instead of repeating. The displayed/linked href is always kept verbatim
+// (first occurrence wins); only the grouping key is canonicalized.
+//
+// Two URLs share a key when they differ only by things that never change the
+// destination:
+//   - protocol (http vs https)
+//   - a leading "www." on the host
+//   - a trailing slash on the path
+//   - an in-page fragment (#comments, #top) — but hashbang / hash-router
+//     routes (#/video/2, #!foo) ARE kept, since there the fragment IS the page
+//   - query-parameter ORDER (?a=1&b=2 == ?b=2&a=1)
+// Tracking params are already removed upstream by normalizeURL, so by the time
+// a URL reaches here the remaining params are content-bearing and are kept.
+function canonicalHref(urlStr) {
+  try {
+    const u = new URL(urlStr);
+    const host = u.hostname.toLowerCase().replace(/^www\./, '');
+    const path = u.pathname.replace(/\/+$/, '') || '/';
+    const params = [...u.searchParams.entries()].sort((a, b) =>
+      a[0] === b[0] ? a[1].localeCompare(b[1]) : a[0].localeCompare(b[0])
+    );
+    const search = params.length ? '?' + params.map(([k, v]) => `${k}=${v}`).join('&') : '';
+    // Keep only route-shaped fragments (#/… or #!…); drop plain in-page anchors.
+    const keepHash = /^#!?\//.test(u.hash) ? u.hash : '';
+    return `${host}${u.port ? ':' + u.port : ''}${path}${search}${keepHash}`;
+  } catch {
+    return urlStr;
+  }
+}
+
 // Try to detect the most likely host for a parsed document by counting absolute anchor hosts.
 function detectBaseFromAnchors(doc) {
   const counts = {};
@@ -1766,9 +1799,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   const jsonLdResult = extractJsonLd(doc, baseURL);
   const jsonLdByUrl = new Map();
   for (const e of jsonLdResult.entries) {
-    jsonLdByUrl.set(normalizeURL(e.url), e);
+    jsonLdByUrl.set(canonicalHref(normalizeURL(e.url)), e);
   }
-  const jsonLdMatchedUrls = new Set(); // urls consumed by anchor buckets
+  const jsonLdMatchedUrls = new Set(); // canonical keys consumed by anchor buckets
 
   const fallbackImage = getMetaImage(doc);
   const items = [];
@@ -1787,7 +1820,10 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // Issues #5 (two-anchor) and #10 (chrome filter, figure-sibling thumb).
   const claimedImgs = new WeakSet(); // images claimed by article-level synthesis
   const claimedVideos = new WeakSet(); // <video>/<iframe> claimed by anchor-bucket items (#5/Reddit)
-  const buckets = new Map(); // href -> { anchors: [a, ...], firstAnchor: a }
+  // Keyed by canonicalHref (destination identity) so URL variants of the same
+  // page — trailing slash, #comments, www, http/https, param order — merge into
+  // ONE bucket instead of repeating. `href` is the verbatim link we display.
+  const buckets = new Map(); // canonicalKey -> { anchors: [a, ...], firstAnchor: a, href }
   const rawAnchors = Array.from(doc.querySelectorAll('a[href], button[data-href], button[data-url], button[data-video-url], button[data-link], [role="link"][data-href]'));
 
   // Card-level grouping (the "byline-anchor" / uploader fix) — see
@@ -1824,14 +1860,16 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       }
     } catch {}
 
-    if (!buckets.has(href)) buckets.set(href, { anchors: [], firstAnchor: a });
-    buckets.get(href).anchors.push(a);
+    const bucketKey = canonicalHref(href);
+    if (!buckets.has(bucketKey)) buckets.set(bucketKey, { anchors: [], firstAnchor: a, href });
+    buckets.get(bucketKey).anchors.push(a);
   }
 
   const claims = { imgs: claimedImgs, videos: claimedVideos };
-  for (const [href, bucket] of buckets) {
-    if (seen.has(href)) continue;
-    seen.add(href);
+  for (const [bucketKey, bucket] of buckets) {
+    if (seen.has(bucketKey)) continue;
+    seen.add(bucketKey);
+    const href = bucket.href;
 
     // `title`/`thumb` are reassigned below if JSON-LD offers a stronger pick.
     let title = resolveBucketTitle(bucket) || domainOf(href);
@@ -1862,9 +1900,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     // JSON-LD enrichment: if any schema.org entry matches this bucket's href,
     // prepend its values so they're the top-ranked picks in the picker. The
     // user still chooses; this just surfaces authoritative metadata first.
-    const jsonLdEntry = jsonLdByUrl.get(href);
+    const jsonLdEntry = jsonLdByUrl.get(bucketKey);
     if (jsonLdEntry) {
-      jsonLdMatchedUrls.add(href);
+      jsonLdMatchedUrls.add(bucketKey);
       if (jsonLdEntry.headline && !seenTitles.has(jsonLdEntry.headline)) {
         seenTitles.add(jsonLdEntry.headline);
         titleCandidates.push({ value: jsonLdEntry.headline, strategy: 'jsonld-headline', label: 'JSON-LD headline' });
@@ -1979,8 +2017,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     // No IMAGE_EXT filter — modern CDNs serve images from extensionless URLs
     // (imgix, Cloudinary, opaque CMS routes). If the markup says <img src="X">,
     // X is the image, regardless of what the URL looks like.
-    if (seen.has(normalizedSrc)) continue;
-    seen.add(normalizedSrc);
+    const imgKey = canonicalHref(normalizedSrc);
+    if (seen.has(imgKey)) continue;
+    seen.add(imgKey);
     const altTitle = img.getAttribute('alt')?.trim() || 'Image';
     items.push({
       id: uid(),
@@ -2010,10 +2049,11 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     const resolvedSrc = safeURL(src, baseURL) || src;
     if (!/^https?:/i.test(resolvedSrc)) continue;
     const normalizedSrc = normalizeURL(resolvedSrc);
-    if (seen.has(normalizedSrc)) continue;
+    const videoKey = canonicalHref(normalizedSrc);
+    if (seen.has(videoKey)) continue;
     // only count actual video sources
     if (!isVideoHref(normalizedSrc) && !(v.tagName === 'VIDEO')) continue;
-    seen.add(normalizedSrc);
+    seen.add(videoKey);
     const vTitle = v.getAttribute('title') || 'Video';
     const vPoster = v.getAttribute('poster') || null;
     items.push({
@@ -2067,9 +2107,10 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // signal on a page (the site itself declaring "this is the article").
   for (const entry of jsonLdResult.entries) {
     const entryUrl = normalizeURL(entry.url);
-    if (jsonLdMatchedUrls.has(entryUrl)) continue;
-    if (seen.has(entryUrl)) continue;
-    seen.add(entryUrl);
+    const entryKey = canonicalHref(entryUrl);
+    if (jsonLdMatchedUrls.has(entryKey)) continue;
+    if (seen.has(entryKey)) continue;
+    seen.add(entryKey);
     const titleCandidates = [];
     const thumbCandidates = [];
     const descriptionCandidates = [];
@@ -2307,4 +2348,4 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   return outItems.length > 0 ? outItems : null;
 }
 
-export { parseSource, parseSourceWithMeta, domainOf };
+export { parseSource, parseSourceWithMeta, domainOf, canonicalHref };

@@ -172,6 +172,46 @@ function removeSource(id) {
   renderSources();
 }
 
+// Clear a single source back to a blank card (keeps its position in the list).
+// Wipes pasted HTML, attached files, name, parsed items, and any per-field
+// strategy overrides — but does NOT remove the card. Confirms first when the
+// source actually has content, so an accidental click can't destroy work.
+function resetSource(id) {
+  const src = state.sources.find((s) => s.id === id);
+  if (!src) return;
+  const hasContent = !!(src.html && src.html.trim());
+  if (hasContent && !confirm('Clear this source? Its pasted HTML and attached files will be removed.')) {
+    return;
+  }
+  src.fragments = [{ id: uid(), name: 'Pasted HTML', html: '', kind: 'manual' }];
+  src.name = '';
+  src.customName = false;
+  src.items = [];
+  src.overrideBase = null;
+  src.unresolvedCount = 0;
+  src.domainValidationState = 'idle';
+  src.strategyByPattern = {};
+  src.detectedBase = null;
+  src.emptyAfterParse = false;
+  syncSourceHtml(src);
+  renderSources();
+  if (hasContent) showToast('Source cleared');
+}
+
+// Wipe every source and start over with a single blank card. Confirms first
+// when any source has content.
+function resetAllSources() {
+  const hasContent = state.sources.some((s) => s.html && s.html.trim());
+  if (hasContent && !confirm('Reset all sources? Everything you have pasted will be cleared.')) {
+    return;
+  }
+  state.sources = [];
+  state.items = [];
+  reviewState.activeSourceId = null;
+  addSource(); // re-renders with one empty source
+  if (hasContent) showToast('All sources cleared');
+}
+
 function renderSources() {
   const root = $('#sources');
   root.innerHTML = '';
@@ -187,6 +227,10 @@ function renderSources() {
       <div class="source-card__head">
         <span class="source-card__label">${String(idx + 1).padStart(2, '0')}</span>
         <input class="source-card__name" type="text" value="${escapeAttr(displayName(src, idx))}" placeholder="Name this source (e.g. NYT homepage)" />
+        <button class="source-card__reset" type="button" aria-label="Reset this source" title="Clear this source's pasted HTML and files">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Reset</span>
+        </button>
         <button class="source-card__remove" type="button" aria-label="Remove source" title="Remove source">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
@@ -228,6 +272,7 @@ function renderSources() {
     const nameInput = card.querySelector('.source-card__name');
     const textarea = card.querySelector('textarea');
     const removeBtn = card.querySelector('.source-card__remove');
+    const resetBtn = card.querySelector('.source-card__reset');
     const fileInput = card.querySelector('[data-source-file-input]');
 
     nameInput.addEventListener('input', () => {
@@ -248,6 +293,7 @@ function renderSources() {
       runParse(src, card);
     });
     removeBtn.addEventListener('click', () => removeSource(src.id));
+    resetBtn.addEventListener('click', () => resetSource(src.id));
     fileInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files || []);
       await appendFilesToSource(src, files);
@@ -646,17 +692,21 @@ function gotoReview() {
 // Apply each source's strategy choice then flatten src.items into state.items.
 // Preserves per-item `enabled` toggles across re-flattens unless resetEnabled.
 function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
-  // remember enabled state by href before we rebuild
+  // Canonical destination key — the same story reached via URL variants
+  // (trailing slash, #fragment, www, http/https, param order) collapses to a
+  // single card. Falls back to the raw href if the helper isn't available.
+  const keyOf = (it) => (typeof canonicalHref === 'function' ? canonicalHref(it.href) : it.href);
+  // remember enabled state by destination before we rebuild
   const prevEnabled = new Map();
   if (!resetEnabled) {
-    for (const it of state.items || []) prevEnabled.set(it.href, it.enabled);
+    for (const it of state.items || []) prevEnabled.set(keyOf(it), it.enabled);
   }
   for (const src of state.sources) {
     applySourceStrategy(src);
   }
-  // Exact-href dedup, with a "richest-wins" tie-break so the card that has
-  // both title + thumbnail beats a thinner duplicate of the same URL.
-  // The user's rule: only ever ONE card per exact href. Final, global.
+  // Dedup by canonical destination, with a "richest-wins" tie-break so the card
+  // that has both title + thumbnail beats a thinner duplicate of the same URL.
+  // The user's rule: only ever ONE card per destination. Final, global.
   // Richness score: thumb (2) + non-domain title (1) + video (1).
   const richness = (it) => {
     let s = 0;
@@ -665,13 +715,14 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
     if (it.video) s += 1;
     return s;
   };
-  const byHref = new Map(); // href -> { item, srcIdx, itemIdx }
+  const byHref = new Map(); // canonicalKey -> { item, srcIdx, itemIdx }
   state.sources.forEach((src, srcIdx) => {
     (src.items || []).forEach((it, itemIdx) => {
       if (it._excludedByPattern) return;
-      const existing = byHref.get(it.href);
+      const key = keyOf(it);
+      const existing = byHref.get(key);
       if (!existing || richness(it) > richness(existing.item)) {
-        byHref.set(it.href, { item: it, srcIdx, itemIdx });
+        byHref.set(key, { item: it, srcIdx, itemIdx });
       }
     });
   });
@@ -680,13 +731,42 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
   for (const src of state.sources) {
     for (const it of src.items || []) {
       if (it._excludedByPattern) continue;
-      const winner = byHref.get(it.href);
+      const key = keyOf(it);
+      const winner = byHref.get(key);
       if (!winner || winner.item !== it) continue;
-      const enabled = resetEnabled ? true : (prevEnabled.has(it.href) ? prevEnabled.get(it.href) : true);
+      const enabled = resetEnabled ? true : (prevEnabled.has(key) ? prevEnabled.get(key) : true);
       all.push({ ...it, enabled, pageSection: it.pageSection || 'Other' });
     }
   }
   state.items = all;
+}
+
+// Reset the ACTIVE review source: undo its per-field strategy overrides (back
+// to Linkforge's default title/image/video picks) and re-select every one of
+// its links. Other sources are left untouched.
+function resetReviewSource() {
+  const src = getActiveReviewSource();
+  if (!src) return;
+  src.strategyByPattern = {};
+  seedDefaultStrategies(src);
+  flattenSourcesIntoItems({ resetEnabled: false });
+  for (const it of state.items) {
+    if (it.sourceId === src.id) it.enabled = true;
+  }
+  renderReview();
+  showToast('Source reset to defaults');
+}
+
+// Reset EVERY review source: undo all per-field overrides and re-select every
+// link across all sources.
+function resetReviewAll() {
+  for (const src of state.sources) {
+    src.strategyByPattern = {};
+    seedDefaultStrategies(src);
+  }
+  flattenSourcesIntoItems({ resetEnabled: true });
+  renderReview();
+  showToast('All sources reset to defaults');
 }
 
 // ---------- candidate-picker support ----------
@@ -2030,6 +2110,18 @@ document.addEventListener('click', (e) => {
   }
   if (e.target.closest('[data-add-source]')) {
     addSource();
+    return;
+  }
+  if (e.target.closest('[data-reset-all-sources]')) {
+    resetAllSources();
+    return;
+  }
+  if (e.target.closest('[data-reset-review-source]')) {
+    resetReviewSource();
+    return;
+  }
+  if (e.target.closest('[data-reset-review-all]')) {
+    resetReviewAll();
     return;
   }
   if (e.target.closest('[data-back-to-input]')) {
