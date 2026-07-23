@@ -531,6 +531,38 @@ function reviewFilterOf(item) {
   return 'link';
 }
 
+// Does an item belong to the category the user is currently filtering to?
+// 'all' matches everything.
+function reviewItemMatchesFilter(item, filter = reviewState.filter || 'all') {
+  return filter === 'all' || reviewFilterOf(item) === filter;
+}
+
+// The items actually visible in the review list right now: the ACTIVE source's
+// items, narrowed to the ACTIVE filter. The selection summary and the bulk
+// Select/Deselect actions operate on exactly this set, so the count always
+// matches "what you see and picked in this list" — not a global tally that
+// silently includes hidden categories or other sources.
+function getReviewScopedItems() {
+  const active = getActiveReviewSource();
+  return state.items.filter((it) =>
+    (active ? it.sourceId === active.id : true) && reviewItemMatchesFilter(it));
+}
+
+// Update the "N selected" summary shown above the list to reflect the current
+// view scope (active source + active filter).
+function updateReviewSelectionSummary() {
+  const summary = $('[data-review-selection-summary]');
+  if (!summary) return;
+  const scoped = getReviewScopedItems();
+  const selected = scoped.filter((it) => it.enabled).length;
+  const filter = reviewState.filter || 'all';
+  // Noun follows the active filter: "images"/"videos"/"links", or the neutral
+  // "links" when viewing everything.
+  const noun = filter === 'image' ? 'image' : filter === 'video' ? 'video' : 'link';
+  const plural = scoped.length === 1 ? '' : 's';
+  summary.textContent = `${selected} of ${scoped.length} ${noun}${plural} selected`;
+}
+
 function applyReviewItemFilter() {
   const filter = reviewState.filter || 'all';
   $$('[data-review-filter]').forEach((button) => {
@@ -1186,9 +1218,7 @@ function renderReview() {
     root.appendChild(renderGroupPanel(key, items, true));
   });
   applyReviewItemFilter();
-  const summary = $('[data-review-selection-summary]');
-  const enabledCount = state.items.filter((item) => item.enabled).length;
-  if (summary) summary.textContent = `${enabledCount} link${enabledCount === 1 ? '' : 's'} selected`;
+  updateReviewSelectionSummary();
   refreshReviewPreview();
 }
 
@@ -1281,9 +1311,7 @@ function renderItemRow(item) {
     // Update parent group + meta counts without re-rendering everything
     updateGroupHeader(row);
     updateReviewMeta();
-    const enabledCount = state.items.filter((it) => it.enabled).length;
-    const summary = $('[data-review-selection-summary]');
-    if (summary) summary.textContent = `${enabledCount} link${enabledCount === 1 ? '' : 's'} selected`;
+    updateReviewSelectionSummary();
     refreshReviewPreview();
   });
 
@@ -1374,8 +1402,10 @@ document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-bulk]');
   if (!btn) return;
   const mode = btn.dataset.bulk;
-  const active = getActiveReviewSource();
-  const targetItems = active ? state.items.filter((it) => it.sourceId === active.id) : state.items;
+  // Scope Select all / Deselect all to the current view — the active source AND
+  // the active category filter — so "Select all" while viewing Images only
+  // toggles the images you can see, not hidden links/videos in other tabs.
+  const targetItems = getReviewScopedItems();
   for (const it of targetItems) {
     if (mode === 'all') it.enabled = true;
     else if (mode === 'none') it.enabled = false;
@@ -2090,6 +2120,7 @@ document.addEventListener('click', (e) => {
   if (reviewFilter) {
     reviewState.filter = reviewFilter.dataset.reviewFilter;
     applyReviewItemFilter();
+    updateReviewSelectionSummary();
     return;
   }
   const reviewMode = e.target.closest('[data-review-mode]');
