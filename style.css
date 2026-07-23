@@ -240,19 +240,6 @@ a:hover {
 }
 
 /* ---------- screens ---------- */
-.screen {
-  display: none;
-  min-height: 100dvh;
-  max-width: var(--content-wide);
-  margin: 0 auto;
-  padding: var(--space-4) clamp(var(--space-4), 4vw, var(--space-10))
-    var(--space-12);
-}
-
-.screen--active {
-  display: block;
-  animation: fadeIn 320ms cubic-bezier(0.16, 1, 0.3, 1);
-}
 
 @keyframes fadeIn {
   from {
@@ -266,107 +253,16 @@ a:hover {
 }
 
 /* ---------- topbar ---------- */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) 0 var(--space-8);
-  gap: var(--space-4);
-}
 
-.logo {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  letter-spacing: -0.01em;
-}
 
-.logo svg {
-  color: var(--color-text);
-}
 
-.topbar__right {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
 
-.step-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  background: var(--color-surface);
-}
 
-.step-pill__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 20%, transparent);
-}
 
-.icon-btn {
-  width: 36px;
-  height: 36px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 999px;
-  color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  transition: var(--transition);
-}
 
-.icon-btn:hover {
-  color: var(--color-text);
-  background: var(--color-surface-offset);
-}
 
 /* ---------- hero ---------- */
-.hero {
-  max-width: 880px;
-  margin: var(--space-8) 0 var(--space-12);
-}
 
-.eyebrow {
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--color-primary);
-  font-weight: 500;
-  margin-bottom: var(--space-4);
-}
-
-.display {
-  font-family: var(--font-display);
-  font-size: var(--text-hero);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-weight: 400;
-  margin-bottom: var(--space-5);
-  color: var(--color-text);
-}
-
-.display em {
-  color: var(--color-primary);
-  font-style: italic;
-}
-
-.lede {
-  font-size: var(--text-lg);
-  color: var(--color-text-muted);
-  max-width: 56ch;
-  line-height: 1.5;
-}
 
 /* ---------- composer ---------- */
 .composer {
@@ -377,27 +273,6 @@ a:hover {
   box-shadow: var(--shadow-md);
 }
 
-.composer__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-5);
-}
-
-.composer__head h2 {
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: 400;
-  letter-spacing: -0.01em;
-}
-
-.composer__actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
 
 .sources {
   display: flex;
@@ -450,34 +325,6 @@ a:hover {
   outline: none;
 }
 
-.source-card__remove {
-  width: 28px;
-  height: 28px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: var(--radius-sm);
-  color: var(--color-text-faint);
-  transition: var(--transition);
-}
-
-.source-card__remove:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-highlight);
-}
-
-.source-card textarea {
-  width: 100%;
-  min-height: 140px;
-  resize: vertical;
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
-  font-size: 0.825rem;
-  line-height: 1.55;
-  color: var(--color-text);
-}
 
 .source-card textarea::placeholder {
   color: var(--color-text-faint);
@@ -624,51 +471,6 @@ a:hover {
   opacity: 0.85;
 }
 
-.composer__hint {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0 0 var(--space-5) 0;
-  padding: var(--space-3) var(--space-4);
-  border: 1px dashed var(--color-divider);
-  border-radius: var(--radius-md, 8px);
-  background: color-mix(in srgb, var(--color-accent) 4%, transparent);
-  font-size: var(--text-xs);
-  line-height: 1.5;
-  color: var(--color-text-muted);
-}
-
-.composer__hint svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--color-accent);
-}
-
-.composer__hint em {
-  font-style: normal;
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.composer__hint code {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
-  font-size: 0.92em;
-  padding: 1px 4px;
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
-  border-radius: 3px;
-}
-
-.composer__foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: var(--space-6);
-  padding-top: var(--space-5);
-  border-top: 1px dashed var(--color-divider);
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
 .composer__counts {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
@@ -682,23 +484,6 @@ a:hover {
 }
 
 /* ---------- buttons ---------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  border-radius: 999px;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  border: 1px solid transparent;
-  transition: var(--transition);
-  white-space: nowrap;
-}
-
-.btn--primary {
-  background: var(--color-text);
-  color: var(--color-bg);
-}
 
 .btn--primary:hover:not(:disabled) {
   background: var(--color-primary);
@@ -2295,11 +2080,26 @@ a:hover {
 }
 
 .screen {
+  display: none;
+  min-height: 100dvh;
+  margin: 0 auto;
   max-width: 1380px;
   padding: var(--space-5) clamp(var(--space-4), 4vw, var(--space-10)) var(--space-12);
 }
 
+/* Must stay after .screen: both set `display`, and this one needs to win
+   so the active step is actually visible. Moving .screen without also
+   moving this would silently hide the whole app again — see PR #33. */
+.screen--active {
+  display: block;
+  animation: fadeIn 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
   position: sticky;
   top: 14px;
   z-index: 20;
@@ -2318,6 +2118,9 @@ a:hover {
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
   font-family: var(--font-display);
   font-size: clamp(1.15rem, 0.98rem + 0.5vw, 1.45rem);
   font-weight: 700;
@@ -2331,10 +2134,15 @@ a:hover {
 }
 
 .topbar__right {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-3);
 }
 
 .step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.12em;
@@ -2362,11 +2170,14 @@ a:hover {
 .icon-btn {
   width: 42px;
   height: 42px;
+  display: inline-grid;
+  place-items: center;
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: color-mix(in oklab, var(--color-surface-2) 88%, transparent);
   color: var(--color-text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: var(--transition);
 }
 
 .icon-btn:hover {
@@ -2534,9 +2345,9 @@ a:hover {
 }
 
 .hero {
+  max-width: none;
   margin: var(--space-4) 0 var(--space-14);
   padding: 0;
-  max-width: none;
 }
 
 .hero::before,
@@ -2567,6 +2378,7 @@ a:hover {
   color: var(--color-primary);
   font-family: var(--font-mono);
   font-size: 0.7rem;
+  font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -2780,6 +2592,11 @@ a:hover {
 }
 
 .composer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-5);
   border-bottom: 1px solid var(--color-divider);
@@ -2808,6 +2625,8 @@ a:hover {
 }
 
 .composer__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
 }
 
@@ -2848,7 +2667,11 @@ a:hover {
 .source-card__remove {
   width: 34px;
   height: 34px;
+  display: inline-grid;
+  place-items: center;
   border-radius: 999px;
+  color: var(--color-text-faint);
+  transition: var(--transition);
 }
 
 .source-card__remove svg {
@@ -2872,9 +2695,17 @@ a:hover {
 }
 
 .source-card textarea {
+  width: 100%;
   min-height: 160px;
+  resize: vertical;
   padding: var(--space-4);
+  border-radius: 18px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in oklab, var(--color-surface-2) 94%, transparent);
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  font-size: 0.825rem;
   line-height: 1.65;
+  color: var(--color-text);
 }
 
 .source-card textarea:focus,
@@ -2903,18 +2734,31 @@ a:hover {
 }
 
 .composer__hint {
-  border-style: solid;
-  border-color: color-mix(in oklab, var(--color-accent) 18%, var(--color-border));
-  background: linear-gradient(135deg, color-mix(in oklab, var(--color-accent) 10%, var(--color-surface)), color-mix(in oklab, var(--color-primary) 4%, var(--color-surface)));
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 var(--space-5) 0;
   padding: var(--space-4);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 18%, var(--color-border));
+  border-radius: 999px;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-accent) 10%, var(--color-surface)), color-mix(in oklab, var(--color-primary) 4%, var(--color-surface)));
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  color: var(--color-text-muted);
 }
 
 .composer__hint code {
-  border-radius: 999px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.92em;
   padding: 3px 8px;
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  border-radius: 999px;
 }
 
 .composer__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-top: var(--space-6);
   padding-top: var(--space-5);
   border-top: 1px solid var(--color-divider);
@@ -2937,15 +2781,19 @@ a:hover {
 }
 
 .btn {
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: 0.92rem 1.25rem;
-  border: 1px solid transparent;
+  border-radius: 999px;
   font-family: var(--font-body);
   font-size: 0.94rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  border: 1px solid transparent;
   text-transform: none;
   transition: transform var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition), border-color var(--transition);
+  white-space: nowrap;
 }
 
 .btn--primary {
