@@ -2721,6 +2721,33 @@ a:hover {
   .source-card__reset { padding: 0; width: 34px; justify-content: center; }
 }
 
+/* Source reorder controls (move up / move down) */
+.source-card__move {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.source-card__move-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--color-text-faint);
+  transition: var(--transition);
+}
+
+.source-card__move-btn:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+.source-card__move-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 /* Subtle divider between utility actions and destructive reset actions */
 .composer__actions-sep,
 .bulk-actions__sep {
@@ -3444,7 +3471,20 @@ a:hover {
   .source-card textarea {
     min-height: 180px;
     padding: 14px;
-    font-size: 0.78rem;
+  }
+
+  /* iOS Safari zooms the page in when a focused text field is under 16px and
+     never zooms back out. Keep every text-entry field at 16px on small screens
+     so focusing the paste box or a name field doesn't hijack the viewport.
+     (16px, not maximum-scale=1 — that would break pinch-zoom accessibility.) */
+  .source-card textarea,
+  .source-card__name,
+  .field input,
+  .field select,
+  .banner__input,
+  #site-title,
+  #site-tagline {
+    font-size: 16px;
   }
 
   .template-grid,

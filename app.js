@@ -172,6 +172,20 @@ function removeSource(id) {
   renderSources();
 }
 
+// Reorder a source by swapping it with its neighbour (delta -1 up, +1 down).
+// Items keep their sourceId binding, so review grouping and selections survive
+// the move; only the display order (and position-based "Source N" labels for
+// unnamed sources) changes.
+function moveSource(id, delta) {
+  const idx = state.sources.findIndex((s) => s.id === id);
+  if (idx < 0) return;
+  const next = idx + delta;
+  if (next < 0 || next >= state.sources.length) return;
+  const [moved] = state.sources.splice(idx, 1);
+  state.sources.splice(next, 0, moved);
+  renderSources();
+}
+
 // Clear a single source back to a blank card (keeps its position in the list).
 // Wipes pasted HTML, attached files, name, parsed items, and any per-field
 // strategy overrides — but does NOT remove the card. Confirms first when the
@@ -227,6 +241,14 @@ function renderSources() {
       <div class="source-card__head">
         <span class="source-card__label">${String(idx + 1).padStart(2, '0')}</span>
         <input class="source-card__name" type="text" value="${escapeAttr(displayName(src, idx))}" placeholder="Name this source (e.g. NYT homepage)" />
+        <div class="source-card__move" role="group" aria-label="Reorder source">
+          <button class="source-card__move-btn" type="button" data-move="up" aria-label="Move source up" title="Move source up" ${idx === 0 ? 'disabled' : ''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+          </button>
+          <button class="source-card__move-btn" type="button" data-move="down" aria-label="Move source down" title="Move source down" ${idx === state.sources.length - 1 ? 'disabled' : ''}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
         <button class="source-card__reset" type="button" aria-label="Reset this source" title="Clear this source's pasted HTML and files">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
           <span>Reset</span>
@@ -294,6 +316,8 @@ function renderSources() {
     });
     removeBtn.addEventListener('click', () => removeSource(src.id));
     resetBtn.addEventListener('click', () => resetSource(src.id));
+    card.querySelector('[data-move="up"]')?.addEventListener('click', () => moveSource(src.id, -1));
+    card.querySelector('[data-move="down"]')?.addEventListener('click', () => moveSource(src.id, 1));
     fileInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files || []);
       await appendFilesToSource(src, files);
@@ -2207,16 +2231,18 @@ $('#file-input').addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
   for (const file of files) {
     const html = await file.text();
-    const name = file.name.replace(/\.html?$/i, '');
+    // Derive the source name from the HTML's own domain (via runParse below),
+    // exactly like paste and "add file to source" — not from the file name —
+    // so a source is named the same way no matter how its HTML arrived.
     const firstEmpty = state.sources.find((s) => !s.html.trim());
     if (firstEmpty) {
-      firstEmpty.name = name;
-      firstEmpty.customName = true;
+      firstEmpty.name = '';
+      firstEmpty.customName = false;
       firstEmpty.fragments = [{ id: uid(), name: file.name, html, kind: 'manual' }];
       syncSourceHtml(firstEmpty);
       // items + banner state get populated by renderSources → runParse below
     } else {
-      addSource({ name, html });
+      addSource({ html });
     }
   }
   renderSources();

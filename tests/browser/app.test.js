@@ -343,3 +343,53 @@ test('selection summary and bulk actions are scoped to the active filter', async
     await page.close();
   }
 });
+
+test('uploaded file names its source by domain, not the file name', async () => {
+  const { page, pageErrors } = await openApp();
+  try {
+    await page.locator('#step-input.screen--active').waitFor();
+    await page.setInputFiles('#file-input', {
+      name: 'my-download-1.html',
+      mimeType: 'text/html',
+      buffer: Buffer.from('<base href="https://www.nytimes.com/"><a href="/2026/story"><h3>Story</h3></a>'),
+    });
+    await page.waitForFunction(() => window.__lfState.sources[0].items.length > 0);
+
+    const nameValue = await page.locator('.source-card__name').first().inputValue();
+    assert.equal(nameValue, 'nytimes.com', 'source name should be the domain, not the .html file name');
+    assert.ok(!/my-download-1/.test(nameValue), 'the file name must not leak into the source name');
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
+test('sources can be reordered with the move up / down controls', async () => {
+  const { page, pageErrors } = await openApp();
+  try {
+    await page.locator('#step-input.screen--active').waitFor();
+
+    await page.locator('.source-card textarea').first()
+      .fill('<base href="https://www.nytimes.com/"><a href="/a"><h3>A</h3></a>');
+    await page.waitForFunction(() => window.__lfState.sources[0].items.length > 0);
+    await page.locator('[data-add-source]').click();
+    await page.locator('.source-card textarea').nth(1)
+      .fill('<base href="https://www.bbc.com/"><a href="/b"><h3>B</h3></a>');
+    await page.waitForFunction(() => window.__lfState.sources.length === 2 && window.__lfState.sources[1].items.length > 0);
+
+    const order = () => page.evaluate(() => window.__lfState.sources.map((s) => s.name));
+    assert.deepEqual(await order(), ['nytimes.com', 'bbc.com'], 'initial order follows insertion');
+
+    // First card's "up" and last card's "down" are disabled at the ends.
+    assert.equal(await page.locator('.source-card').nth(0).locator('[data-move="up"]').isDisabled(), true);
+    assert.equal(await page.locator('.source-card').nth(1).locator('[data-move="down"]').isDisabled(), true);
+
+    // Move the second source up; order swaps.
+    await page.locator('.source-card').nth(1).locator('[data-move="up"]').click();
+    assert.deepEqual(await order(), ['bbc.com', 'nytimes.com'], 'moving the 2nd source up swaps the order');
+
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
