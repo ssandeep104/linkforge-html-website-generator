@@ -14,42 +14,42 @@
    the old one was invisible because this one always won.
    ===================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap');
 
 :root,
 [data-theme='light'] {
-  --color-bg: #faf9f6;
-  --color-surface: rgba(255, 255, 255, 0.72);
-  --color-surface-2: rgba(255, 255, 255, 0.88);
-  --color-surface-offset: #eef0f3;
-  --color-surface-offset-2: #e3e6eb;
-  --color-divider: rgba(12, 13, 16, 0.08);
-  --color-border: rgba(12, 13, 16, 0.12);
+  --color-bg: #f1f5f4;
+  --color-surface: #f8fbfa;
+  --color-surface-2: #ffffff;
+  --color-surface-offset: #e7eeec;
+  --color-surface-offset-2: #d9e4e1;
+  --color-divider: rgba(12, 31, 28, 0.1);
+  --color-border: rgba(12, 31, 28, 0.16);
 
-  --color-text: #0c0d10;
-  --color-text-muted: #5c5f6f;
-  --color-text-faint: #9094a6;
+  --color-text: #10201e;
+  --color-text-muted: #586a67;
+  --color-text-faint: #83938f;
   --color-text-inverse: #ffffff;
 
-  --color-primary: #ff3e00;
-  --color-primary-hover: #ff551a;
-  --color-primary-active: #cc3100;
-  --color-primary-highlight: rgba(255, 62, 0, 0.1);
+  --color-primary: #0c806c;
+  --color-primary-hover: #096d5c;
+  --color-primary-active: #07594c;
+  --color-primary-highlight: rgba(12, 128, 108, 0.12);
 
-  --color-accent: #ff3e00;
-  --color-accent-soft: rgba(255, 62, 0, 0.1);
+  --color-accent: #2ca6c4;
+  --color-accent-soft: rgba(44, 166, 196, 0.12);
 
   --color-success: #1f8f63;
   --color-warning: #c88417;
 
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 9px;
+  --radius-xl: 12px;
 
-  --shadow-sm: 0 10px 24px rgba(12, 13, 16, 0.08);
-  --shadow-md: 0 18px 48px rgba(12, 13, 16, 0.12);
-  --shadow-lg: 0 30px 90px rgba(12, 13, 16, 0.18);
+  --shadow-sm: 0 1px 2px rgba(5, 20, 18, 0.08);
+  --shadow-md: 0 8px 22px rgba(5, 20, 18, 0.1);
+  --shadow-lg: 0 16px 44px rgba(5, 20, 18, 0.14);
 
   --transition: 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
 
@@ -74,8 +74,8 @@
   --text-2xl: clamp(2.2rem, 1.5rem + 2.5vw, 3.6rem);
   --text-hero: clamp(2.8rem, 1.4rem + 5.5vw, 5.8rem);
 
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Space Grotesk', sans-serif;
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Manrope', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
   --content-narrow: 720px;
@@ -84,33 +84,33 @@
 }
 
 [data-theme='dark'] {
-  --color-bg: #0a0a0a;
-  --color-surface: #141414;
-  --color-surface-2: #1c1c1c;
-  --color-surface-offset: #222222;
-  --color-surface-offset-2: #2a2a2a;
-  --color-divider: rgba(255, 255, 255, 0.1);
-  --color-border: rgba(255, 255, 255, 0.15);
+  --color-bg: #080c0d;
+  --color-surface: #0d1314;
+  --color-surface-2: #11191a;
+  --color-surface-offset: #172122;
+  --color-surface-offset-2: #202c2d;
+  --color-divider: rgba(213, 255, 245, 0.1);
+  --color-border: rgba(213, 255, 245, 0.16);
 
-  --color-text: #ffffff;
-  --color-text-muted: rgba(255, 255, 255, 0.6);
-  --color-text-faint: rgba(255, 255, 255, 0.4);
-  --color-text-inverse: #0a0a0a;
+  --color-text: #f0f7f5;
+  --color-text-muted: #9aadaa;
+  --color-text-faint: #687b78;
+  --color-text-inverse: #07100e;
 
-  --color-primary: #ff3e00;
-  --color-primary-hover: #ff551a;
-  --color-primary-active: #cc3100;
-  --color-primary-highlight: rgba(255, 62, 0, 0.15);
+  --color-primary: #72efd2;
+  --color-primary-hover: #91f5de;
+  --color-primary-active: #4ed6b7;
+  --color-primary-highlight: rgba(114, 239, 210, 0.14);
 
-  --color-accent: #ff3e00;
-  --color-accent-soft: rgba(255, 62, 0, 0.15);
+  --color-accent: #79d8ef;
+  --color-accent-soft: rgba(121, 216, 239, 0.12);
 
   --color-success: #1f8f63;
   --color-warning: #c88417;
 
-  --shadow-sm: 0 12px 30px rgba(0, 0, 0, 0.26);
-  --shadow-md: 0 22px 56px rgba(0, 0, 0, 0.34);
-  --shadow-lg: 0 38px 110px rgba(0, 0, 0, 0.44);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.34);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -4323,5 +4323,227 @@ body:has(#step-review.screen--active)::before {
 
   .review-foot__summary {
     justify-self: start;
+  }
+}
+
+/* =====================================================
+   OBSIDIAN MINT — application visual system
+   ===================================================== */
+
+body {
+  background-color: var(--color-bg);
+  background-image: none;
+}
+
+body::before,
+body::after {
+  display: none !important;
+}
+
+.screen {
+  max-width: 1480px;
+  padding: 14px clamp(12px, 2vw, 28px) 28px;
+}
+
+.topbar {
+  top: 8px;
+  margin: 0 0 28px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--color-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.logo {
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.logo svg {
+  filter: none;
+}
+
+.step-pill,
+.icon-btn {
+  border-radius: 4px;
+}
+
+.btn {
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.btn--primary,
+.btn--primary:hover,
+.btn--primary:active {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  box-shadow: none;
+}
+
+.btn--primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.workspace-title {
+  max-width: 860px;
+  letter-spacing: -0.055em;
+}
+
+.workspace-title em {
+  color: var(--color-primary);
+}
+
+.composer,
+.source-card,
+.how-collapse,
+.review-editor,
+.review-preview,
+.preview-frame-wrap,
+.review-foot {
+  border-radius: 7px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.composer,
+.source-card,
+.how-collapse {
+  background: var(--color-surface);
+}
+
+.composer__hint,
+.source-file-list,
+.source-card textarea,
+.field input,
+.field select,
+.strategy-field select {
+  border-radius: 5px;
+  background: var(--color-surface-2);
+}
+
+.source-card textarea:focus,
+.field input:focus,
+.field select:focus,
+.strategy-field select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-highlight);
+}
+
+#step-review {
+  background: var(--color-bg);
+}
+
+body:has(#step-review.screen--active),
+[data-theme='dark'] body:has(#step-review.screen--active) {
+  background: var(--color-bg);
+}
+
+#step-review .topbar {
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+#step-review .review-head {
+  margin-bottom: 14px;
+}
+
+#step-review .page-title {
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
+.review-editor,
+.review-preview {
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.review-preview__devices,
+.review-mode-switch {
+  border-radius: 4px;
+}
+
+.review-preview__devices button,
+.review-mode-switch__button {
+  border-radius: 3px;
+}
+
+.review-filter__modes button,
+#step-review .bulk-actions .btn {
+  border-radius: 4px;
+}
+
+.review-filter__modes button.is-active {
+  background: var(--color-primary-highlight);
+}
+
+#step-review .categories,
+#step-review .extraction-advanced {
+  border-radius: 5px;
+}
+
+#step-review .item-row__box {
+  border-radius: 3px;
+}
+
+#step-review .item-row__thumb,
+#step-review .item-row__thumb--empty {
+  border-radius: 5px;
+}
+
+#step-review .template-card,
+#step-review .template-carousel__track .template-card {
+  border-radius: 5px;
+  background: var(--color-surface-2);
+}
+
+#step-review .template-card__body {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+#step-review .template-card--active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+#step-review .review-foot {
+  grid-template-columns: auto auto 1fr auto;
+  border-radius: 5px;
+  background: var(--color-surface);
+  backdrop-filter: none;
+}
+
+#step-review .review-foot #btn-generate {
+  grid-column: 4;
+}
+
+#step-review .review-foot #btn-generate {
+  min-width: 160px;
+}
+
+.toast {
+  border-radius: 4px;
+  background: var(--color-surface-offset);
+  box-shadow: var(--shadow-md);
+}
+
+#step-output .preview-frame-wrap {
+  background: var(--color-surface);
+}
+
+#preview-frame {
+  border-radius: 5px;
+}
+
+@media (max-width: 767px) {
+  #step-review .review-foot {
+    grid-template-columns: 1fr auto;
+  }
+
+  #step-review .review-foot #btn-generate {
+    grid-column: 2;
   }
 }

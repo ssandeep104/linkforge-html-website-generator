@@ -49,8 +49,7 @@ function showScreen(id) {
     try { localStorage.setItem('lf-theme', value); } catch (_) {}
   };
   const savedMode = getSavedMode();
-  const systemMode = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  let mode = savedMode === 'dark' || savedMode === 'light' ? savedMode : systemMode;
+  let mode = savedMode === 'dark' || savedMode === 'light' ? savedMode : 'dark';
   root.setAttribute('data-theme', mode);
   const sunSvg = '<svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
   const moonSvg = '<svg aria-hidden="true" focusable="false" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
@@ -69,13 +68,6 @@ function showScreen(id) {
     mode = mode === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', mode);
     saveMode(mode);
-    render();
-  });
-  const media = matchMedia('(prefers-color-scheme: dark)');
-  media.addEventListener?.('change', (event) => {
-    if (getSavedMode()) return;
-    mode = event.matches ? 'dark' : 'light';
-    root.setAttribute('data-theme', mode);
     render();
   });
 })();
@@ -1451,11 +1443,11 @@ const TEMPLATE_DEFAULTS = {
     title: DEFAULT_SITE_TITLE,
     tagline: DEFAULT_SITE_TAGLINE
   },
-  signal: {
+  flux: {
     title: DEFAULT_SITE_TITLE,
     tagline: DEFAULT_SITE_TAGLINE
   },
-  editorial: {
+  shelf: {
     title: DEFAULT_SITE_TITLE,
     tagline: DEFAULT_SITE_TAGLINE
   }
@@ -1707,7 +1699,7 @@ function buildGeneratedSite() {
     today,
   };
 
-  const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || window.LINKFORGE_TEMPLATES.youtube || window.LINKFORGE_TEMPLATES.editorial;
+  const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || window.LINKFORGE_TEMPLATES.youtube || window.LINKFORGE_TEMPLATES.flux;
   if (tpl.validate) {
     const check = tpl.validate(ctx);
     if (check && check.ok === false) {

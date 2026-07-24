@@ -16,11 +16,10 @@
           const saved = localStorage.getItem('lf-theme');
           const theme = saved === 'light' || saved === 'dark'
             ? saved
-            : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            : 'dark';
           document.documentElement.dataset.theme = theme;
         } catch (_) {
-          document.documentElement.dataset.theme =
-            matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          document.documentElement.dataset.theme = 'dark';
         }
       })();
     </script>

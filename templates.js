@@ -355,6 +355,8 @@ function previewSvg(layout) {
     timeline: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#fff"/><line x1="22" y1="15" x2="22" y2="95" stroke="#e5e5e5" stroke-width="1"/><circle cx="22" cy="22" r="4" fill="#111"/><rect x="32" y="18" width="28" height="4" rx="1" fill="#18181b"/><rect x="32" y="28" width="110" height="10" rx="2" fill="#f4f4f5"/><rect x="32" y="40" width="110" height="10" rx="2" fill="#f4f4f5"/><circle cx="22" cy="58" r="4" fill="#111"/><rect x="32" y="54" width="28" height="4" rx="1" fill="#18181b"/><rect x="32" y="64" width="110" height="3" rx="1" fill="#666"/><rect x="32" y="71" width="110" height="3" rx="1" fill="#bbb"/><rect x="32" y="78" width="110" height="3" rx="1" fill="#666"/><rect x="32" y="85" width="110" height="3" rx="1" fill="#bbb"/></svg>`,
     broadsheet: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#fbfaf5"/><rect x="8" y="8" width="144" height="6" rx="1" fill="#111827"/><rect x="8" y="20" width="68" height="44" rx="2" fill="#d6d3d1"/><rect x="82" y="20" width="70" height="5" rx="1" fill="#111827"/><rect x="82" y="30" width="70" height="3" rx="1" fill="#6b7280"/><rect x="82" y="38" width="70" height="3" rx="1" fill="#9ca3af"/><rect x="82" y="46" width="70" height="3" rx="1" fill="#9ca3af"/><line x1="8" y1="72" x2="152" y2="72" stroke="#111827" stroke-width="1"/><rect x="8" y="78" width="40" height="3" rx="1" fill="#111827"/><rect x="56" y="78" width="40" height="3" rx="1" fill="#111827"/><rect x="104" y="78" width="40" height="3" rx="1" fill="#111827"/></svg>`,
     signal: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#09111f"/><rect x="8" y="8" width="34" height="84" rx="6" fill="#0f1c34"/><rect x="50" y="8" width="102" height="20" rx="6" fill="#16233d"/><rect x="56" y="14" width="34" height="4" rx="1" fill="#f1f5f9"/><rect x="50" y="34" width="102" height="24" rx="6" fill="#16233d"/><rect x="50" y="64" width="102" height="24" rx="6" fill="#16233d"/><circle cx="64" cy="46" r="4" fill="#38bdf8"/><circle cx="64" cy="76" r="4" fill="#f97316"/><rect x="74" y="43" width="52" height="3" rx="1" fill="#f1f5f9"/><rect x="74" y="73" width="52" height="3" rx="1" fill="#f1f5f9"/></svg>`,
+    flux: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#090d0f"/><rect x="9" y="10" width="48" height="8" fill="#edf5f4"/><rect x="9" y="23" width="29" height="3" fill="#86f4d3"/><rect x="9" y="36" width="66" height="29" rx="3" fill="#172327"/><rect x="80" y="36" width="34" height="29" rx="3" fill="#bce7f5"/><rect x="119" y="36" width="32" height="29" rx="3" fill="#24363c"/><rect x="9" y="71" width="43" height="18" rx="3" fill="#162025"/><rect x="57" y="71" width="43" height="18" rx="3" fill="#162025"/><rect x="105" y="71" width="46" height="18" rx="3" fill="#162025"/></svg>`,
+    shelf: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#f7f8f8"/><rect x="8" y="9" width="36" height="5" fill="#1b2428"/><rect x="8" y="27" width="38" height="25" rx="3" fill="#dfe7ea"/><rect x="51" y="18" width="64" height="34" rx="3" fill="#bde5f4"/><rect x="120" y="18" width="32" height="34" rx="3" fill="#263843"/><rect x="8" y="58" width="47" height="33" rx="3" fill="#9ebbd6"/><rect x="60" y="58" width="38" height="33" rx="3" fill="#e6e8e9"/><rect x="103" y="58" width="49" height="33" rx="3" fill="#d9d4eb"/></svg>`,
   };
   return layouts[layout] || layouts.stream;
 }
@@ -377,21 +379,22 @@ const TEMPLATES = {
     preview: () => previewSvg('wall'),
     build: (ctx) => buildWall(normalize(ctx)),
   },
-  signal: {
-    name: 'Signal Board',
-    desc: 'Dense dark source tabs with stronger metadata for frequent updates.',
-    focus: 'Dashboard',
-    fit: 'Best for recurring drops, research boards, and multi-source monitoring',
-    preview: () => previewSvg('signal'),
-    build: (ctx) => buildSignal(normalize(ctx)),
+  flux: {
+    name: 'Flux Index',
+    desc: 'An obsidian media index with mint signals and crisp mono metadata.',
+    focus: 'Mixed media',
+    fit: 'Great for modern collections spanning video, images, products, and links',
+    featured: true,
+    preview: () => previewSvg('flux'),
+    build: (ctx) => buildFlux(normalize(ctx)),
   },
-  editorial: {
-    name: 'Story Deck',
-    desc: 'Story-led source tabs for article-heavy picks without the newspaper feel.',
-    focus: 'Stories',
-    fit: 'Best for mixed article links when you still want a calm visual rhythm',
-    preview: () => previewSvg('editorial'),
-    build: (ctx) => buildEditorial(normalize(ctx)),
+  shelf: {
+    name: 'Pop Shelf',
+    desc: 'A bright, architectural gallery shelf with quiet icy-blue accents.',
+    focus: 'Showcase',
+    fit: 'Best for image-led portfolios, creator picks, products, and playlists',
+    preview: () => previewSvg('shelf'),
+    build: (ctx) => buildShelf(normalize(ctx)),
   },
 };
 
@@ -399,8 +402,8 @@ function suggestTemplate(counts) {
   const t = counts.total || 1;
   if (counts.gallery / t >= 0.4) return 'wall';
   if (counts.video / t >= 0.3) return 'youtube';
-  if (counts.article / t >= 0.55) return 'editorial';
-  return 'signal';
+  if (counts.article / t >= 0.55) return 'shelf';
+  return 'flux';
 }
 
 // =====================================================
@@ -454,7 +457,7 @@ function shell({ title, tagline, today, body, css, bodyClass = '' }) {
 <meta name="description" content="${attr(tagline || '')}" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     /* ---- radius / shadow (legacy aliases kept for existing per-family CSS) ---- */
@@ -1359,7 +1362,133 @@ function buildBroadsheet(ctx) {
 }
 
 // =====================================================
-// 9) SIGNAL — dark intelligence-style dashboard
+// FLUX INDEX — obsidian mixed-media index
+// =====================================================
+function buildFlux(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const titleWords = String(ctx.title || '').trim().split(/\s+/).filter(Boolean);
+  const displayTitle = titleWords.length > 1
+    ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}`
+    : esc(ctx.title);
+  const css = `
+  :root { --flux-bg:#080c0e; --flux-panel:#10171a; --flux-line:#263238; --flux-text:#edf5f4; --flux-muted:#89979b; --flux-mint:#86f4d3; --flux-ice:#bceafa; --lf-focus-color:var(--flux-mint); }
+  body { background:var(--flux-bg); color:var(--flux-text); font-family:"Manrope",system-ui,sans-serif; }
+  .flux-shell { max-width:1480px; margin:0 auto; padding:28px 42px 48px; }
+  .flux-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--flux-line); }
+  .flux-mark { color:var(--flux-mint); font:600 10px/1 "IBM Plex Mono",monospace; letter-spacing:.18em; text-transform:uppercase; }
+  .flux-count { color:var(--flux-muted); font:400 10px/1 "IBM Plex Mono",monospace; letter-spacing:.12em; text-transform:uppercase; }
+  .flux-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,.68fr); align-items:end; min-height:180px; padding:34px 0 24px; border-bottom:1px solid var(--flux-line); }
+  .flux-hero h1 { max-width:900px; margin:0; font-size:clamp(48px,8vw,112px); font-weight:500; line-height:.84; letter-spacing:-.065em; text-transform:uppercase; }
+  .flux-signal { display:grid; grid-template-columns:repeat(14,1fr); gap:8px; align-items:end; height:70px; padding-bottom:6px; }
+  .flux-signal i { display:block; height:var(--h); background:#303b3f; }
+  .flux-signal i:nth-child(4n+1) { background:var(--flux-mint); }
+  .flux-signal i:nth-child(7n) { background:var(--flux-ice); }
+  .tab-shell { gap:20px; padding-top:18px; }
+  .tab-nav { flex-wrap:nowrap; overflow-x:auto; gap:0; border-bottom:1px solid var(--flux-line); }
+  .tab-btn { min-width:max-content; min-height:42px; padding:0 22px 12px 0; border:0; border-radius:0; background:transparent; color:var(--flux-muted); }
+  .tab-btn:hover,.tab-btn.active { background:transparent; color:var(--flux-text); box-shadow:none; transform:none; }
+  .tab-btn.active { color:var(--flux-mint); }
+  .tab-btn__title { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
+  .tab-btn__meta { display:none; }
+  .flux-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:12px; }
+  .flux-card { grid-column:span 3; min-width:0; overflow:hidden; border:1px solid var(--flux-line); border-radius:3px; background:var(--flux-panel); }
+  .flux-card:nth-child(1),.flux-card:nth-child(2) { grid-column:span 6; }
+  .flux-card:nth-child(6n+4) { grid-column:span 4; }
+  .flux-card:nth-child(6n+5) { grid-column:span 5; }
+  .flux-card:nth-child(6n+6) { grid-column:span 3; }
+  .flux-card__media { position:relative; aspect-ratio:4/3; overflow:hidden; background:#172126; }
+  .flux-card:nth-child(1) .flux-card__media,.flux-card:nth-child(2) .flux-card__media { aspect-ratio:16/9; }
+  .flux-card__media img { width:100%; height:100%; object-fit:cover; filter:saturate(.82) contrast(1.04); transition:transform .4s var(--ease-out),filter .25s ease; }
+  .flux-card:hover img { transform:scale(1.025); filter:saturate(1); }
+  .flux-card__kind { position:absolute; left:12px; bottom:12px; padding:5px 7px; border:1px solid rgba(134,244,211,.45); background:rgba(8,12,14,.82); color:var(--flux-mint); font:600 9px/1 "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
+  .flux-card__body { display:grid; gap:7px; padding:12px; border-top:1px solid var(--flux-line); }
+  .flux-card h2 { margin:0; overflow:hidden; font-size:14px; font-weight:500; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
+  .flux-card__meta { color:var(--flux-muted); font:400 9px/1.3 "IBM Plex Mono",monospace; }
+  .flux-card:hover h2 { color:var(--flux-mint); }
+  .flux-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px; }
+  .flux-links a { display:grid; grid-template-columns:1fr auto; gap:12px; padding:13px 14px; border:1px solid var(--flux-line); border-radius:3px; color:#c9d2d3; font:400 11px/1.35 "IBM Plex Mono",monospace; }
+  .flux-links a::after { content:"↗"; color:var(--flux-mint); }
+  .flux-links a:hover { border-color:#527067; color:var(--flux-text); }
+  .flux-empty { padding:36px 0; color:var(--flux-muted); font:400 11px "IBM Plex Mono",monospace; }
+  @media(max-width:900px){ .flux-shell{padding:24px}.flux-hero{grid-template-columns:1fr}.flux-signal{display:none}.flux-card,.flux-card:nth-child(n){grid-column:span 6}.flux-links{grid-template-columns:1fr 1fr} }
+  @media(max-width:600px){ .flux-shell{padding:20px 14px 36px}.flux-top{padding-bottom:18px}.flux-hero{min-height:132px;padding:28px 0 18px}.flux-hero h1{font-size:clamp(42px,17vw,72px)}.flux-card,.flux-card:nth-child(n){grid-column:span 12}.flux-card__media,.flux-card:nth-child(n) .flux-card__media{aspect-ratio:16/10}.flux-links{grid-template-columns:1fr}.tab-btn{padding-right:18px} }
+  `;
+  const content = renderSourceTabs(groups, (group) => {
+    const cards = group.previewItems.map((item) => `<a class="flux-card" href="${attr(item.href)}" target="_blank" rel="noopener">
+      <div class="flux-card__media">${thumbImg(item, 'decoding="async" onerror="this.parentElement.parentElement.remove()"')}<span class="flux-card__kind">${esc(itemKindLabel(item))}</span></div>
+      <div class="flux-card__body"><h2>${esc(item.title || item.href)}</h2><span class="flux-card__meta">${esc(item.domain || srcLabel(group))}</span></div>
+    </a>`).join('');
+    const links = group.linkItems.map((item) => `<a href="${attr(item.href)}" target="_blank" rel="noopener"><span>${esc(item.title || item.href)}</span></a>`).join('');
+    return `${cards ? `<div class="flux-grid">${cards}</div>` : '<div class="flux-empty">No image previews in this source.</div>'}${links ? `<div class="flux-links">${links}</div>` : ''}`;
+  }, { prefix:'flux-tabs', emptyHtml:'<div class="flux-empty">No items selected for this export yet.</div>' });
+  const bars = [42,68,30,84,54,36,72,24,62,46,78,34,58,88].map((h) => `<i style="--h:${h}%"></i>`).join('');
+  const total = groups.reduce((sum, group) => sum + group.previewItems.length + group.linkItems.length, 0);
+  const body = `<div class="flux-shell"><header class="flux-top"><span class="flux-mark">Flux index</span><span class="flux-count">${total} curated ${total === 1 ? 'item' : 'items'}</span></header><section class="flux-hero"><h1>${displayTitle}</h1><div class="flux-signal" aria-hidden="true">${bars}</div></section><main>${content}</main></div>`;
+  return shell({ title:ctx.title, tagline:ctx.tagline, today:ctx.today, body, css, bodyClass:'flux-theme' });
+}
+
+// =====================================================
+// POP SHELF — light architectural media gallery
+// =====================================================
+function buildShelf(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const titleWords = String(ctx.title || '').trim().split(/\s+/).filter(Boolean);
+  const displayTitle = titleWords.length > 1
+    ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}`
+    : esc(ctx.title);
+  const css = `
+  :root { --shelf-bg:#f7f8f8; --shelf-text:#172126; --shelf-muted:#6e7b80; --shelf-line:#d9e0e2; --shelf-blue:#4f76e8; --shelf-ice:#dff4fb; --lf-focus-color:var(--shelf-blue); }
+  body { background:var(--shelf-bg); color:var(--shelf-text); font-family:"Manrope",system-ui,sans-serif; }
+  .shelf-shell { max-width:1460px; margin:0 auto; padding:24px 30px 44px; }
+  .shelf-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:18px; border-bottom:1px solid var(--shelf-line); }
+  .shelf-brand { font-size:14px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; }
+  .shelf-date { color:var(--shelf-muted); font:400 9px "IBM Plex Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
+  .shelf-layout { display:grid; grid-template-columns:minmax(210px,.34fr) minmax(0,1fr); gap:28px; padding-top:30px; }
+  .shelf-intro { position:sticky; top:24px; align-self:start; min-height:420px; display:flex; flex-direction:column; justify-content:space-between; }
+  .shelf-intro h1 { margin:72px 0 0; font-size:clamp(42px,4.3vw,64px); font-weight:400; line-height:.92; letter-spacing:-.055em; text-transform:uppercase; overflow-wrap:normal; word-break:normal; }
+  .shelf-index { color:var(--shelf-muted); font:400 10px "IBM Plex Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
+  .tab-shell { gap:14px; }
+  .tab-nav { flex-wrap:nowrap; overflow-x:auto; gap:4px; }
+  .tab-btn { min-width:max-content; min-height:38px; padding:8px 12px; border:0; border-radius:3px; background:transparent; color:var(--shelf-muted); }
+  .tab-btn:hover { background:#eef2f3; transform:none; }
+  .tab-btn.active { border-color:transparent; background:var(--shelf-ice); color:#2459c4; box-shadow:none; }
+  .tab-btn__title { font-size:11px; font-weight:600; }
+  .tab-btn__meta { display:none; }
+  .shelf-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-auto-flow:dense; gap:8px; }
+  .shelf-card { grid-column:span 4; min-width:0; overflow:hidden; border:1px solid var(--shelf-line); border-radius:4px; background:#fff; }
+  .shelf-card:nth-child(1){grid-column:span 7}.shelf-card:nth-child(2){grid-column:span 5}.shelf-card:nth-child(3){grid-column:span 5}.shelf-card:nth-child(4){grid-column:span 7}.shelf-card:nth-child(7n){grid-column:span 8}
+  .shelf-card__media { position:relative; aspect-ratio:4/3; overflow:hidden; background:#e9eef0; }
+  .shelf-card:nth-child(1) .shelf-card__media,.shelf-card:nth-child(4) .shelf-card__media,.shelf-card:nth-child(7n) .shelf-card__media{aspect-ratio:16/9}
+  .shelf-card__media img { width:100%; height:100%; object-fit:cover; filter:saturate(.9); transition:transform .45s var(--ease-out),filter .25s ease; }
+  .shelf-card:hover img { transform:scale(1.025); filter:saturate(1.05); }
+  .shelf-card__body { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; padding:12px; }
+  .shelf-card h2 { margin:0; font-size:13px; font-weight:600; line-height:1.25; }
+  .shelf-card__meta { display:block; margin-top:5px; color:var(--shelf-muted); font:400 9px "IBM Plex Mono",monospace; }
+  .shelf-card__arrow { color:var(--shelf-blue); font:500 14px "IBM Plex Mono",monospace; }
+  .shelf-card:hover h2 { color:#2459c4; }
+  .shelf-links { margin-top:8px; border:1px solid var(--shelf-line); border-radius:4px; background:#fff; }
+  .shelf-links a { display:grid; grid-template-columns:1fr auto; gap:18px; padding:13px 14px; border-bottom:1px solid var(--shelf-line); font-size:12px; }
+  .shelf-links a:last-child { border-bottom:0; }
+  .shelf-links a::after { content:"↗"; color:var(--shelf-blue); font-family:"IBM Plex Mono",monospace; }
+  .shelf-links a:hover { background:#f0f7fa; color:#2459c4; }
+  .shelf-empty { padding:40px 0; color:var(--shelf-muted); font-size:13px; }
+  @media(max-width:900px){.shelf-layout{grid-template-columns:1fr}.shelf-intro{position:static;min-height:0}.shelf-intro h1{margin:18px 0 8px}.shelf-index{display:none}}
+  @media(max-width:620px){.shelf-shell{padding:18px 12px 36px}.shelf-date{display:none}.shelf-layout{padding-top:20px}.shelf-intro h1{font-size:clamp(44px,16vw,68px)}.shelf-card,.shelf-card:nth-child(n){grid-column:span 12}.shelf-card__media,.shelf-card:nth-child(n) .shelf-card__media{aspect-ratio:16/10}}
+  `;
+  const content = renderSourceTabs(groups, (group) => {
+    const cards = group.previewItems.map((item) => `<a class="shelf-card" href="${attr(item.href)}" target="_blank" rel="noopener">
+      <div class="shelf-card__media">${thumbImg(item, 'decoding="async" onerror="this.parentElement.parentElement.remove()"')}</div>
+      <div class="shelf-card__body"><div><h2>${esc(item.title || item.href)}</h2><span class="shelf-card__meta">${esc(itemKindLabel(item))} · ${esc(item.domain || srcLabel(group))}</span></div><span class="shelf-card__arrow" aria-hidden="true">↗</span></div>
+    </a>`).join('');
+    const links = group.linkItems.map((item) => `<a href="${attr(item.href)}" target="_blank" rel="noopener"><span>${esc(item.title || item.href)}</span></a>`).join('');
+    return `${cards ? `<div class="shelf-grid">${cards}</div>` : '<div class="shelf-empty">No image previews in this source.</div>'}${links ? `<div class="shelf-links">${links}</div>` : ''}`;
+  }, { prefix:'shelf-tabs', emptyHtml:'<div class="shelf-empty">No items selected for this export yet.</div>' });
+  const body = `<div class="shelf-shell"><header class="shelf-top"><span class="shelf-brand">Pop shelf</span><span class="shelf-date">${esc(ctx.today)}</span></header><div class="shelf-layout"><aside class="shelf-intro"><h1>${displayTitle}</h1><span class="shelf-index">Curated links / mixed media</span></aside><main>${content}</main></div></div>`;
+  return shell({ title:ctx.title, tagline:ctx.tagline, today:ctx.today, body, css, bodyClass:'shelf-theme' });
+}
+
+// =====================================================
+// 9) SIGNAL — retired dark intelligence-style dashboard
 // =====================================================
 function buildSignal(ctx) {
   const groups = buildSourceTabs(ctx.sourceGroups);
