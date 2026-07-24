@@ -290,3 +290,56 @@ test('review media filters only change visible rows and preserve inclusion state
     await page.close();
   }
 });
+
+test('selection summary and bulk actions are scoped to the active filter', async () => {
+  const { page, pageErrors } = await openApp();
+  try {
+    await loadSampleAndReview(page);
+
+    const summary = page.locator('[data-review-selection-summary]');
+    const imageRows = page.locator('#categories .item-row[data-review-filter-kind="image"]');
+    const imageTotal = await imageRows.count();
+    assert.ok(imageTotal > 0, 'sample should contain image-bucket rows');
+
+    // Count of enabled items that are NOT in the image bucket — must survive an
+    // image-scoped "Deselect all" untouched.
+    const nonImageEnabled = () => page.evaluate(() => window.__lfState.items.filter(
+      (it) => !(it.thumbnail && it.category !== 'video') && it.enabled,
+    ).length);
+    const nonImageBefore = await nonImageEnabled();
+
+    // Filter to Images: the summary must report the image bucket, not a global
+    // tally of every enabled item across categories/sources.
+    await page.locator('[data-review-filter="image"]').click();
+    assert.equal(
+      (await summary.textContent()).trim(),
+      `${imageTotal} of ${imageTotal} images selected`,
+      'summary reflects the images view, not a global count',
+    );
+
+    // Deselect all while viewing Images only clears images.
+    await page.locator('[data-bulk="none"]').click();
+    assert.equal(
+      (await summary.textContent()).trim(),
+      `0 of ${imageTotal} images selected`,
+      'image-scoped deselect zeroes the images view',
+    );
+    assert.equal(
+      await nonImageEnabled(),
+      nonImageBefore,
+      'deselecting within Images must not touch links/videos in other tabs',
+    );
+
+    // Selecting one visible image updates the scoped count by one.
+    await page.locator('#categories .item-row:visible').first().click();
+    assert.equal(
+      (await summary.textContent()).trim(),
+      `1 of ${imageTotal} images selected`,
+      'ticking one image reports 1 selected in the images view',
+    );
+
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
