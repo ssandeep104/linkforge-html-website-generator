@@ -4,8 +4,8 @@
   "outputDirectory": ".",
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/", "destination": "/neo-tech-preview.html" }
+  "redirects": [
+    { "source": "/", "destination": "/neo-tech-preview.html", "permanent": false }
   ],
   "headers": [
     {
