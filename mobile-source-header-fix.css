@@ -1,0 +1,41 @@
+/* Mobile source-card header: preserve the editable source name without hiding actions. */
+@media (max-width: 640px) {
+  .source-card__head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "label name name name"
+      ". move reset remove";
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 10px;
+  }
+
+  .source-card__label {
+    grid-area: label;
+  }
+
+  .source-card__name {
+    grid-area: name;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .source-card__move {
+    grid-area: move;
+    justify-self: end;
+  }
+
+  .source-card__reset {
+    grid-area: reset;
+    justify-self: end;
+  }
+
+  .source-card__remove {
+    grid-area: remove;
+    justify-self: end;
+  }
+}
