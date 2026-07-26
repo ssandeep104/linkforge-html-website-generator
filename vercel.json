@@ -2,19 +2,16 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "outputDirectory": ".",
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "rewrites": [
-    { "source": "/style.css", "destination": "/neo-tech-production.css" },
-    { "source": "/style-original.css", "destination": "/style.css" }
-  ],
-  "headers": [
+  "routes": [
+    { "src": "/style\\.css", "dest": "/neo-tech-production.css" },
+    { "handle": "filesystem" },
     {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "no-referrer" }
-      ]
+      "src": "/(.*)",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer"
+      },
+      "dest": "/$1"
     }
   ]
 }
