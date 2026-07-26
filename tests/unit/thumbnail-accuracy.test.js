@@ -129,3 +129,101 @@ test('a <figcaption> outranks the image alt text as the default title', () => {
   assert.equal(items.length, 1);
   assert.equal(items[0].title, 'Foggy Pier — Dawn Series #4');
 });
+
+test('an author avatar inside the card anchor does not win over the card artwork', () => {
+  // Card anchors routinely open with furniture — a byline portrait, a channel
+  // badge, a play-button sprite — before the artwork. Taking the anchor's
+  // FIRST <img> meant the avatar became the card's thumbnail on every item in
+  // the feed.
+  const html = `<html><body><article class="card">
+    <a href="https://news.example/transit-plan">
+      <img class="author-avatar" src="https://cdn.example/avatars/jane.jpg" width="32" height="32" alt="Jane Doe">
+      <img class="card-image" src="https://cdn.example/photos/transit-hero.jpg" width="800" height="450" alt="Hero">
+      <h3>Council approves new transit plan</h3>
+    </a></article></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.example/photos/transit-hero.jpg');
+});
+
+test('a play-button sprite inside the anchor does not win over the poster frame', () => {
+  const html = `<html><body><article class="card">
+    <a href="https://news.example/rescue">
+      <img class="play-icon" src="https://cdn.example/ui/play-button.png" width="44" height="44" alt="Play">
+      <img src="https://cdn.example/posters/rescue.jpg" alt="Rescue crews at the scene">
+      <h3>Rescue crews reach stranded hikers</h3>
+    </a></article></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.example/posters/rescue.jpg');
+});
+
+test('a site logo loose in the card block is not promoted to card artwork', () => {
+  // findFigureSiblingThumb's last-resort tier matches ANY <img> in the block,
+  // with nothing in the markup saying the image plays a thumbnail role — the
+  // tier most likely to hand back the site logo. One logo repeated across
+  // every card is worse output than cards with no image (which templates
+  // route to their "More links" tail), so this tier takes a content-looking
+  // image or nothing.
+  const html = `<html><body><article class="card">
+    <a href="https://news.example/story-four"><h3>Story four</h3></a>
+    <img src="https://cdn.example/site-logo.png" alt="Site logo" width="120" height="30">
+  </article></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, null);
+});
+
+test('a placeholder <video poster> loses to the real artwork in the same card', () => {
+  // Players ship poster="…/blank.gif" as a first-paint stand-in. Promoting it
+  // straight to item.thumbnail (Tier 1 beats Tier 2 by design) turned every
+  // such card into a blank thumbnail even though real art sat beside it.
+  const html = `<html><body><article class="card">
+    <a href="https://vid.example/watch/9">
+      <video poster="https://cdn.example/img/blank.gif"><source src="https://cdn.example/v/9.mp4" type="video/mp4"></video>
+      <img class="thumb" src="https://cdn.example/posters/9-real.jpg" alt="poster">
+      <h3>Real video title</h3>
+    </a></article></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.example/posters/9-real.jpg');
+});
+
+test('a placeholder poster is still used when the card offers nothing else', () => {
+  const html = `<html><body><article class="card">
+    <a href="https://vid.example/watch/10">
+      <video poster="https://cdn.example/img/blank.gif"><source src="https://cdn.example/v/10.mp4" type="video/mp4"></video>
+      <h3>Only a placeholder poster</h3>
+    </a></article></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.example/img/blank.gif');
+});
+
+test('an <img> carrying only a srcset still produces a thumbnail', () => {
+  // Responsive markup with no `src` at all is common on lazy-load grids.
+  // pickImgSrc consulted src and the data-* attributes but never srcset, so
+  // these items came out with no thumbnail whatsoever.
+  const html = `<html><body>
+    <a href="https://news.example/story-six" class="card">
+      <img srcset="https://cdn.example/s6-400.jpg 400w, https://cdn.example/s6-1200.jpg 1200w" alt="Six">
+      <h3>Story six</h3></a></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.example/s6-1200.jpg');
+});
+
+test('<picture><source> wins over the blank <img> that <picture> uses as its fallback slot', () => {
+  // The classic <picture> shape is <source srcset="real"><img src="data:…blank">.
+  // The <img> exists to satisfy the element contract, not to be displayed —
+  // but it was checked first, so the base64 pixel became the thumbnail.
+  const html = `<html><body><a href="https://news.example/story-one" class="card">
+    <picture>
+      <source type="image/webp" srcset="https://cdn.example/real-800.webp 800w, https://cdn.example/real-1600.webp 1600w">
+      <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7" alt="">
+    </picture>
+    <h3>Story one</h3></a></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].thumbnail, 'https://cdn.example/real-1600.webp');
+});

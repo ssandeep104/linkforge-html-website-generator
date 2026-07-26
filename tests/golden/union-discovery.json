@@ -49,11 +49,11 @@
     {
       "title": "Article B",
       "href": "https://union-test.example.com/article-b",
-      "thumbnail": null,
+      "thumbnail": "https://cdn.example.com/b-1600.jpg",
       "video": null,
       "description": null,
       "domain": "union-test.example.com",
-      "category": "link",
+      "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
       "titleCandidates": [
@@ -83,6 +83,11 @@
           "value": "https://cdn.example.com/b-1600.jpg",
           "strategy": "img-srcset:any",
           "label": "<img srcset> · any size (largest)"
+        },
+        {
+          "value": "https://cdn.example.com/b-1600.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []

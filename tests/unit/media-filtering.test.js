@@ -30,3 +30,41 @@ test('filters images under 48px on both dimensions as icons', () => {
   assert.equal(items.length, 1);
   assert.equal(items[0].href, 'https://example.com/photo.jpg');
 });
+
+test('filters an image whose WRAPPER names it as furniture (subscriber badge)', () => {
+  // The <img> itself is anonymous — no class, no alt — but it sits in
+  // <div class="subscriber-badge">. Judging the element alone let the badge
+  // through as the only "gallery item" on a whole NBC video feed.
+  const html = `<html><body><div class="card">
+    <div class="subscriber-badge"><img src="https://cdn.example/asterisk.svg" alt=""></div>
+    <img src="https://cdn.example/photos/story.jpg" alt="Story photo">
+  </div></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].href, 'https://cdn.example/photos/story.jpg');
+});
+
+test('does not read furniture words out of unrelated ancestor classes', () => {
+  // Word-delimited matching, so "blogosphere" doesn't read as "logo" and
+  // "iconic" doesn't read as "icon" — a substring test would drop both photos.
+  const html = `<html><body>
+    <div class="blogosphere-roundup"><img src="https://cdn.example/photos/one.jpg" alt="One" width="400" height="300"></div>
+    <div class="iconic-covers"><img src="https://cdn.example/photos/two.jpg" alt="Two" width="400" height="300"></div>
+  </body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 2);
+});
+
+test('drops a decorative alt="" image that nothing on the page names', () => {
+  // alt="" is the HTML spec's "this image is decorative, ignore it". On its
+  // own that isn't enough to discard an image — gallery photos are routinely
+  // alt-less with the caption in <figcaption> (covered in
+  // title-extraction.test.js) — but decorative AND unnamed is junk.
+  const html = `<html><body>
+    <div><img src="https://cdn.example/ui/divider-rule.png" alt=""></div>
+    <figure><img src="https://cdn.example/gallery/07.jpg" alt=""><figcaption>Dawn over the Cascades</figcaption></figure>
+  </body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].href, 'https://cdn.example/gallery/07.jpg');
+});

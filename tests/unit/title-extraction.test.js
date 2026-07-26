@@ -93,3 +93,79 @@ test('container heading wins over the anchor\'s own text (BBC/Reuters/Medium ima
   assert.equal(items.length, 1);
   assert.equal(items[0].title, 'The Real BBC Headline');
 });
+
+test('a "Read more" CTA anchor loses to the headline sharing its href', () => {
+  // Cards commonly emit three anchors for one URL: the thumbnail wrapper, the
+  // headline, and a "Read more →" call to action. Whichever the DOM walk
+  // reached first won the bucket's title, so feeds came out as a wall of
+  // items all titled "Read more".
+  const html = `<html><body><article class="card">
+    <a href="https://blog.example/post-1" class="thumb"><img src="https://cdn.example/p1.jpg" alt="Post art"></a>
+    <a href="https://blog.example/post-1" class="cta">Read more →</a>
+    <h3><a href="https://blog.example/post-1">The quiet death of the RSS reader</a></h3>
+  </article></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].title, 'The quiet death of the RSS reader');
+});
+
+test('a generic aria-label ("Read more") loses to the anchor\'s own heading', () => {
+  // aria-label outranks the anchor's heading in the rule order, which is right
+  // when the label names the story — but plenty of templates hard-code the
+  // same CTA label on every card.
+  const html = `<html><body><article class="card">
+    <a href="https://news.example/rates" aria-label="Read more"><h3>Central bank holds rates steady</h3></a>
+  </article></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].title, 'Central bank holds rates steady');
+});
+
+test('a date anchor sharing the story href loses to the headline', () => {
+  const html = `<html><body><li class="item">
+    <a href="https://blog.example/p3" class="date">Sep 3, 2026</a>
+    <a href="https://blog.example/p3">A field guide to slow software</a>
+  </li></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].title, 'A field guide to slow software');
+});
+
+test('a junk-looking title is still used when the bucket offers nothing better', () => {
+  // Same last-resort contract the duration-chip rules follow: rejecting a
+  // candidate must never leave an item with no title at all.
+  const html = `<html><body><div class="wrap"><a href="https://blog.example/p4">Read more</a></div></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].title, 'Read more');
+});
+
+test('each card takes its own heading, not the list heading they all share', () => {
+  // The per-item wrappers here (<div>, no class) don't match
+  // CARD_CONTAINER_SELECTOR, so closest() lands on <section class="post-list">
+  // — which does match, via "post" — for every anchor in the list. The rule
+  // then took that container's FIRST heading in document order, handing every
+  // item in the feed the same "Latest posts" section label as its title.
+  // Headings are now ranked by how close they sit to the anchor instead.
+  const html = `<html><body><section class="post-list">
+    <h2>Latest posts</h2>
+    <div><a href="https://blog.example/a" class="thumb"><img src="https://cdn.example/a.jpg" alt="A"></a><h3>How we cut our build time in half</h3></div>
+    <div><a href="https://blog.example/b" class="thumb"><img src="https://cdn.example/b.jpg" alt="B"></a><h3>A field guide to slow software</h3></div>
+  </section></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 2);
+  assert.equal(items[0].title, 'How we cut our build time in half');
+  assert.equal(items[1].title, 'A field guide to slow software');
+});
+
+test('a standalone gallery image takes its <figcaption> as the title', () => {
+  // Gallery photos are frequently alt-less, with the caption in <figcaption>.
+  // Titling them "Image" threw away the one name the page actually gave them.
+  const html = `<html><body><figure>
+    <img src="https://cdn.example/gallery/07.jpg" alt="">
+    <figcaption>Dawn over the Cascades, 2026</figcaption>
+  </figure></body></html>`;
+  const { items } = parseSourceWithMeta(html, 'Test');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].title, 'Dawn over the Cascades, 2026');
+});
