@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkForge — Neo-Tech Shell Preview</title>
+  <style>
+    html,body{width:100%;height:100%;margin:0;background:#06060c;overflow:hidden}
+    iframe{width:100%;height:100%;border:0;display:block}
+    .badge{position:fixed;z-index:20;right:16px;bottom:14px;padding:8px 11px;border:1px solid rgba(45,213,245,.35);
+      border-radius:2px;background:rgba(6,6,12,.88);color:#8deeff;font:600 10px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;
+      letter-spacing:.12em;text-transform:uppercase;backdrop-filter:blur(12px);pointer-events:none}
+  </style>
+</head>
+<body>
+  <iframe id="app" src="./index.html" title="LinkForge Neo-Tech shell preview"></iframe>
+  <div class="badge">Neo-Tech structural preview</div>
+  <script>
+    const frame=document.getElementById('app');
+    frame.addEventListener('load',()=>{
+      const doc=frame.contentDocument;
+      if(!doc||doc.querySelector('link[data-neo-tech-shell]')) return;
+      const theme=doc.createElement('link');
+      theme.rel='stylesheet';
+      theme.href='./neo-tech-shell.css';
+      theme.dataset.neoTechShell='';
+      doc.head.appendChild(theme);
+      doc.documentElement.dataset.design='neo-tech-shell';
+    });
+  </script>
+</body>
+</html>
