@@ -4,6 +4,10 @@
   "outputDirectory": ".",
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    { "source": "/style.css", "destination": "/neo-tech-production.css" },
+    { "source": "/style-original.css", "destination": "/style.css" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
