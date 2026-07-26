@@ -89,7 +89,18 @@
           "label": "fallback"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://cdn.mypersonalsite.example/videos/latest.mp4",
+          "strategy": "anchor-video",
+          "label": "anchor <video>",
+          "info": {
+            "url": "https://cdn.mypersonalsite.example/videos/latest.mp4",
+            "poster": "https://cdn.mypersonalsite.example/poster/latest.jpg",
+            "kind": "anchor"
+          }
+        }
+      ]
     }
   ]
 }

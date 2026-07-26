@@ -123,6 +123,13 @@ Tier 5 → fallback (see §2.5)
 
 **Gap:** `video.poster` is never promoted to `item.thumbnail`. The synthesis step (Tier 4 today) handles YouTube ID → URL but runs last. The fix is to promote `video.poster` to `item.thumbnail` at bucket finalization time, before the og:image check.
 
+**Amendment (implemented):** the poster promotion above is now in place, with one qualification the original spec didn't anticipate — *a poster attribute is not automatically a usable image*. Players ship `poster="…/blank.gif"` (or a base64 pixel) as a first-paint stand-in, and promoting that unconditionally handed Tier 1 the win with a blank image while real artwork sat in Tier 2. A poster that reads as a placeholder (`looksLikeLazyLoadPlaceholder`) is therefore demoted to *last resort*: Tiers 2–4 get their turn first, and it is still used if none of them produce anything. `poster` is read through `pickVideoPoster`, which also honours the `data-poster` / `data-thumb` lazy convention.
+
+Two other Tier 1 details now differ from the description above:
+
+- **Vendor matching is by hostname, not substring.** Item 4's "iframe with a YouTube/Vimeo src" test used to run as a regex over the whole URL, so an ad frame at `https://ads.example.com/frame?utm_source=youtube` was accepted as a video and flipped the item's category. `isVideoEmbedUrl` resolves the URL and matches `VIDEO_EMBED_HOSTS` against its host (suffix match, so `player.vimeo.com` and `fast.wistia.net` are covered), which also let the list grow to the embed-only domains — `youtube-nocookie.com`, Brightcove, Kaltura, JW Player, Loom, Streamable, Vidyard, Rumble.
+- **`<source>` order is a player preference, not a quality ranking.** Sites list the adaptive manifest first because their JS player wants it; a browser `<video>` can't play `.m3u8`/`.mpd` outside Safari. `pickVideoSource` prefers a progressive MP4, then any progressive file, then anything non-manifest — so previews point at something that actually loads.
+
 ### Tier 2 — Direct image inside or adjacent to the item block
 
 **Detection logic (in sub-order):**
@@ -140,6 +147,15 @@ Covers: `.svg`, `.webp`, `.avif`, `.jpg`, `.png`, `.gif` (enforced by `IMAGE_EXT
 - Both are called in the bucket loop (lines 628–655) — Tier 2 is already correctly implemented.
 
 **Gap:** None for the detection itself. The gap is ordering: currently both Tier 2 paths run before `video.poster` is considered. See Tier 1 gap.
+
+**Amendment (implemented):** "the anchor's `<img>`" turned out to be too loose a rule — sub-order item 1 took the *first* `<img>`, and card anchors routinely open with furniture (a byline avatar, a channel badge, a play-button sprite) ahead of the artwork. Every step of Tier 2 now prefers a **content-looking** image, via `isContentImage` = `isLikelyContentMediaElement` (word-delimited avatar/logo/icon/badge/sprite naming on the element *and* up to three wrapper levels, known avatar CDNs, sub-48px dimensions) plus "the URL it resolves to isn't a blank placeholder". Where the tier's own selectors already imply a thumbnail role — `figure`/`picture`/`class*=thumb|hero|poster` — an unfiltered fallback still runs, so a misjudged image can't leave a card with nothing.
+
+The two tiers with *no* such role signal are strict, with no fallback: `findFigureSiblingThumb`'s "any `<img>` in the block" last resort, and the adjacent-sibling scan. Both match images that merely sit near the anchor, which makes them the ones that surface site logos — and one logo repeated across every card is worse output than cards with no image, which templates route to their "More links" tail.
+
+Two further Tier 2 corrections:
+
+- **`<picture><source>` is checked before a non-content `<img>`,** not after it. The canonical shape is `<source srcset="real.jpg"><img src="data:…blank">`, where the `<img>` exists to satisfy the element contract rather than to be displayed.
+- **`pickImgSrc` consults `srcset` / `data-srcset`** once `src` and the `data-*` attributes come up empty. Responsive markup that ships *only* a srcset is common on lazy-load grids and used to yield no thumbnail at all. `src` still wins when it's real: the larger srcset variants stay available as picker candidates rather than being silently promoted over the size the page itself chose to render.
 
 ### Tier 3 — og:image / twitter:image of the linked page
 

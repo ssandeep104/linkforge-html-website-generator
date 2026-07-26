@@ -24,6 +24,76 @@ const SHORT_LINK_HOSTS = new Set([
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif|svg)(\?|$)/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg|mov)(\?|$)/i;
 
+// Adaptive-streaming manifests. Real video URLs, but a browser <video> tag
+// can't play them natively outside Safari, so when a <video> offers both a
+// manifest and a progressive file we prefer the progressive one for previews.
+const STREAMING_MANIFEST_EXT = /\.(m3u8|mpd)(\?|$)/i;
+
+// Hosts whose <iframe> embeds are genuinely video players.
+//
+// Matched against the embed URL's HOSTNAME, never as a substring of the whole
+// URL: an ad frame at `https://ads.example.com/f?utm_source=youtube` contains
+// "youtube" and used to be accepted as a video by a naive /youtube|vimeo|…/
+// test on the raw src, which then set item.video and flipped the item's whole
+// category to "video".
+const VIDEO_EMBED_HOSTS = [
+  'youtube.com', 'youtube-nocookie.com', 'youtu.be',
+  'vimeo.com', 'tiktok.com', 'twitch.tv',
+  'dailymotion.com', 'dai.ly',
+  'wistia.com', 'wistia.net',
+  'instagram.com',
+  'streamable.com', 'brightcove.net', 'brightcove.com',
+  'jwplayer.com', 'jwplat.com', 'kaltura.com',
+  'loom.com', 'rumble.com', 'vidyard.com', 'bilibili.com', 'ted.com',
+];
+
+function hostOf(url, base) {
+  const resolved = safeURL(url, base);
+  if (resolved) return domainOf(resolved);
+  // Protocol-relative embeds (//player.vimeo.com/video/1) still carry a host
+  // even when we have no base URL to resolve them against.
+  const m = /^\/\/([^/?#]+)/.exec(String(url || '').trim());
+  return m ? m[1].toLowerCase().replace(/^www\./, '') : '';
+}
+
+function isVideoEmbedUrl(src, base) {
+  if (!src) return false;
+  const host = hostOf(src, base);
+  if (!host) return false;
+  return VIDEO_EMBED_HOSTS.some((h) => host === h || host.endsWith('.' + h));
+}
+
+// Choose the best playable URL out of a <video> element: its own src, or one
+// of its <source> children. Preference order is progressive MP4 → any
+// progressive file → anything non-manifest → whatever is left, so a card that
+// ships `<source hls.m3u8><source clip.mp4>` previews the .mp4 the browser can
+// actually play instead of the manifest that happens to come first.
+// Poster URL for a <video>, honouring the lazy-load convention some players
+// use (`data-poster`, filled in by JS at playback time) in addition to the
+// standard attribute.
+function pickVideoPoster(video) {
+  if (!video) return null;
+  const poster = (video.getAttribute('poster') || '').trim();
+  if (poster) return poster;
+  const lazy = (video.getAttribute('data-poster') || video.getAttribute('data-thumb') || '').trim();
+  return lazy || null;
+}
+
+function pickVideoSource(video) {
+  if (!video) return null;
+  const direct = (video.getAttribute('src') || '').trim();
+  if (direct && !STREAMING_MANIFEST_EXT.test(direct)) return direct;
+  const sources = Array.from(video.querySelectorAll('source'));
+  const srcOf = (s) => (s.getAttribute('src') || s.getAttribute('data-src') || '').trim();
+  const pick =
+    sources.find((s) => /video\/mp4/i.test(s.getAttribute('type') || '') && srcOf(s) && !STREAMING_MANIFEST_EXT.test(srcOf(s))) ||
+    sources.find((s) => VIDEO_EXT.test(srcOf(s))) ||
+    sources.find((s) => srcOf(s) && !STREAMING_MANIFEST_EXT.test(srcOf(s))) ||
+    sources.find((s) => srcOf(s));
+  if (pick) return srcOf(pick);
+  return direct || null;
+}
+
 function safeURL(href, base) {
   // If no base and href is relative, return the raw href without inventing a domain.
   // The caller can decide how to handle truly relative links (we filter them out for hrefs,
@@ -41,7 +111,7 @@ function normalizeURL(urlStr) {
     const u = new URL(urlStr);
 
     // 1) Handle YouTube URLs specifically
-    if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+    if (u.hostname.includes('youtube.com') || u.hostname.includes('youtube-nocookie.com') || u.hostname.includes('youtu.be')) {
       let videoId = null;
       if (u.hostname.includes('youtu.be')) {
         videoId = u.pathname.slice(1).split('/')[0];
@@ -159,7 +229,9 @@ function youtubeId(url) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
-    if (u.hostname.includes('youtube.com')) {
+    // youtube-nocookie.com is the privacy-mode embed domain — same video IDs,
+    // so it must yield the same ID (and therefore the same i.ytimg poster).
+    if (u.hostname.includes('youtube.com') || u.hostname.includes('youtube-nocookie.com')) {
       if (u.searchParams.get('v')) return u.searchParams.get('v');
       const m = u.pathname.match(/\/(embed|shorts)\/([^/?]+)/);
       if (m) return m[2];
@@ -576,47 +648,75 @@ function pickImgSrc(img) {
   for (const v of fallbacks) {
     if (v && typeof v === 'string' && v.trim()) return v.trim();
   }
+  // Still nothing: consult srcset / data-srcset. Responsive markup that ships
+  // ONLY a srcset (no src, or a placeholder src) is common on lazy-load grids,
+  // and until this fallback existed those items came out with no thumbnail at
+  // all. srcset is only read here — when `src` is real it still wins, and the
+  // larger variants stay available as picker candidates rather than being
+  // silently promoted over the size the page itself chose to render.
+  for (const attr of ['srcset', 'data-srcset']) {
+    const ss = img.getAttribute(attr);
+    if (!ss) continue;
+    const best = bestSrcsetEntry(ss);
+    if (best?.url) return best.url;
+  }
   // Nothing better — a placeholder-looking src still beats no thumbnail.
   if (src && src.trim()) return src.trim();
   return null;
 }
 
+// Returns { url, el } — `el` is the <img> the URL came from (null when the URL
+// came from a <source> or an inline background-image), so the caller can claim
+// exactly the element it used instead of guessing at the anchor's first <img>.
 function extractImageFromAnchor(a) {
-  // direct img child
-  const img = a.querySelector('img');
+  // Direct <img> children. A card anchor routinely contains furniture BEFORE
+  // the artwork — an author avatar, a play-button sprite, a channel badge — so
+  // prefer the first image that looks like real content and only fall back to
+  // "first image with any src" when none of them do.
+  const imgs = Array.from(a.querySelectorAll('img'));
+  const img = imgs.find(isContentImage);
   if (img) {
     const picked = pickImgSrc(img);
-    if (picked) return picked;
+    if (picked) return { url: picked, el: img };
   }
-  // picture > source (prefer largest in srcset)
+  // picture > source (prefer largest in srcset).
+  // Checked BEFORE settling for a non-content <img>: the classic <picture>
+  // shape is <source srcset="real.jpg"><img src="data:…blank"> — the <img> is
+  // there purely as the fallback slot, so the real art is in the <source>.
   const source = a.querySelector('picture source[srcset], source[srcset]');
   if (source) {
     const ss = source.getAttribute('srcset');
     if (ss) {
       const best = bestSrcsetEntry(ss);
-      if (best?.url) return best.url;
+      if (best?.url) return { url: best.url, el: null };
     }
+  }
+  // Last resort among <img>s: whatever has a URL at all, placeholder or not.
+  const anyImg = imgs.find((el) => pickImgSrc(el));
+  if (anyImg) {
+    const picked = pickImgSrc(anyImg);
+    if (picked) return { url: picked, el: anyImg };
   }
   // background-image inline style
   const styled = Array.from(a.querySelectorAll('[style*="background"]'));
   for (const el of styled) {
     const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/i);
-    if (m) return m[1];
+    if (m) return { url: m[1], el: null };
   }
   return null;
 }
 
-function extractVideoFromAnchor(a) {
+function extractVideoFromAnchor(a, baseURL) {
   const v = a.querySelector('video');
   if (v) {
-    const src = v.getAttribute('src') || v.querySelector('source')?.getAttribute('src');
-    const poster = v.getAttribute('poster');
+    const src = pickVideoSource(v);
+    const poster = pickVideoPoster(v);
     if (src || poster) return { src, poster };
   }
   const iframe = a.querySelector('iframe[src]');
   if (iframe) {
     const src = iframe.getAttribute('src');
-    if (src && /youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(src)) {
+    if (src && isVideoEmbedUrl(src, baseURL)) {
       return { src };
     }
   }
@@ -664,6 +764,11 @@ function isChromeAnchor(a, resolvedHref) {
   return false;
 }
 
+// Page furniture, named the way markup names it. Word-delimited on purpose:
+// a plain substring test matches "logo" inside "blogosphere" and "icon" inside
+// "iconic", which would throw away real content.
+const FURNITURE_HINT = /(?:^|[-_ \t])(avatar|logo|icon|badge|sprite|emoji|favicon)(?:[-_ \t]|$)/;
+
 function isLikelyContentMediaElement(el) {
   if (!el) return false;
   if (el.closest(CHROME_CONTAINER_SELECTOR)) return false;
@@ -676,8 +781,22 @@ function isLikelyContentMediaElement(el) {
     el.getAttribute?.('data-testid') || '',
   ].join(' ').toLowerCase();
 
-  if (/(?:^|[-_ \t])(avatar|logo|icon|badge|sprite|emoji|favicon)(?:[-_ \t]|$)/.test(hintText)) {
+  if (FURNITURE_HINT.test(hintText)) {
     return false;
+  }
+
+  // The image itself may be unnamed while its WRAPPER says what it is —
+  // <div class="subscriber-badge" data-testid="subscriber-badge"><img src="…">.
+  // Only a few levels up: any further and we'd start reading the whole card's
+  // classes, where an unrelated "icon" somewhere would veto real artwork.
+  let wrapper = el.parentElement;
+  for (let depth = 0; wrapper && depth < 3; depth++) {
+    const wrapperHint = [
+      wrapper.getAttribute?.('class') || '',
+      wrapper.getAttribute?.('data-testid') || '',
+    ].join(' ').toLowerCase();
+    if (FURNITURE_HINT.test(wrapperHint)) return false;
+    wrapper = wrapper.parentElement;
   }
 
   const src = (el.getAttribute?.('src') || el.getAttribute?.('data-src') || '').toLowerCase();
@@ -701,6 +820,21 @@ function isLikelyContentMediaElement(el) {
   return true;
 }
 
+// Does this <img> look like article art rather than page furniture?
+//
+// isLikelyContentMediaElement already filters avatars / logos / sprites / sub-
+// 48px icons and known avatar CDNs; this adds "and the URL it would actually
+// resolve to isn't a blank placeholder". Used as a PREFERENCE (every caller
+// falls back to the unfiltered pick when nothing passes), so a false positive
+// costs nothing where the rejected image is the only one available.
+function isContentImage(img) {
+  if (!img) return false;
+  if (!isLikelyContentMediaElement(img)) return false;
+  const picked = pickImgSrc(img);
+  if (!picked) return false;
+  return !looksLikeLazyLoadPlaceholder(picked);
+}
+
 // ---------- figure-sibling thumbnail fallback (issue #5 / #10) ----------
 // On many modern news templates (Time.com, Vox, Gutenberg block-editor sites),
 // the article image is in a <figure> sibling of the headline anchor, with NO
@@ -719,24 +853,32 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
     '[class*="thumb" i] img, [class*="image" i] img, [class*="media" i] img, ' +
     '[class*="poster" i] img, [class*="hero" i] img, [class*="photo" i] img'
   );
-  for (const cand of candidates) {
-    if (claimedSet && claimedSet.has(cand)) continue;
-    if (cand.tagName === 'SOURCE') {
-      const ss = cand.getAttribute('srcset');
-      if (!ss) continue;
-      const best = bestSrcsetEntry(ss);
-      if (best?.url) {
-        const resolved = safeURL(best.url, baseURL) || best.url;
-        return { thumb: resolved, claimedEl: cand.closest('picture') || cand };
+  // Two passes: content-looking images first (skips the byline avatar sitting
+  // in a <div class="media">), then anything with a usable URL.
+  const fromCandidates = (strict) => {
+    for (const cand of candidates) {
+      if (claimedSet && claimedSet.has(cand)) continue;
+      if (cand.tagName === 'SOURCE') {
+        const ss = cand.getAttribute('srcset');
+        if (!ss) continue;
+        const best = bestSrcsetEntry(ss);
+        if (best?.url) {
+          const resolved = safeURL(best.url, baseURL) || best.url;
+          return { thumb: resolved, claimedEl: cand.closest('picture') || cand };
+        }
+        continue;
       }
-      continue;
+      if (strict && !isContentImage(cand)) continue;
+      const picked = pickImgSrc(cand);
+      if (picked) {
+        const resolved = safeURL(picked, baseURL) || picked;
+        return { thumb: resolved, claimedEl: cand };
+      }
     }
-    const picked = pickImgSrc(cand);
-    if (picked) {
-      const resolved = safeURL(picked, baseURL) || picked;
-      return { thumb: resolved, claimedEl: cand };
-    }
-  }
+    return null;
+  };
+  const tierA = fromCandidates(true) || fromCandidates(false);
+  if (tierA) return tierA;
   // Tier B — block-level background-image (some CMSes inline the thumb as CSS).
   const styled = block.querySelectorAll('[style*="background"]');
   for (const el of styled) {
@@ -748,10 +890,16 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
   }
   // Tier C — last-resort: ANY non-placeholder <img> anywhere in the block.
   // Catches arbitrary layouts (NBC, MSN, Bloomberg variants) where the thumb
-  // lives in a wrapper with no class hint at all.
-  const allImgs = block.querySelectorAll('img');
-  for (const cand of allImgs) {
-    if (claimedSet && claimedSet.has(cand)) continue;
+  // lives in a wrapper with no class hint at all. Because this tier matches
+  // literally any image in the card — with no <figure>/thumb/hero hint to say
+  // the image plays a thumbnail role — it is by far the likeliest to hand back
+  // the site logo or a byline portrait, and a logo repeated across every card
+  // is worse output than a card with no image (those route to the template's
+  // "More links" tail). So unlike Tiers A and B, this tier does NOT fall back
+  // to furniture: it takes a content-looking image or nothing.
+  const allImgs = Array.from(block.querySelectorAll('img'))
+    .filter((cand) => !(claimedSet && claimedSet.has(cand)));
+  for (const cand of allImgs.filter(isContentImage)) {
     const picked = pickImgSrc(cand);
     if (picked) {
       const resolved = safeURL(picked, baseURL) || picked;
@@ -785,29 +933,31 @@ function findAdjacentSiblingThumb(a, allAnchors, baseURL, claimedSet) {
 
   // Step 1 — walk forward/backward sibling elements from the anchor.
   // Stop if we hit another anchor (its thumb, not ours).
+  // Candidates are collected in scan order and only then ranked, so a content
+  // image two hops away beats a logo sitting immediately next to the anchor —
+  // while still falling back to that logo if it's genuinely all there is.
+  const nearby = [];
   let cur = a.nextElementSibling;
   for (let i = 0; cur && i < SCAN_HOPS; i++) {
     if (cur.tagName === 'A') break;
-    if (isImg(cur)) {
-      const r = tryImg(cur);
-      if (r) return r;
-    }
+    if (isImg(cur)) nearby.push(cur);
     // also look one level inside (e.g. <p><img></p>)
     const inner = cur.querySelector?.('img');
-    if (inner && !cur.querySelector?.('a[href]')) {
-      const r = tryImg(inner);
-      if (r) return r;
-    }
+    if (inner && !cur.querySelector?.('a[href]')) nearby.push(inner);
     cur = cur.nextElementSibling;
   }
   cur = a.previousElementSibling;
   for (let i = 0; cur && i < SCAN_HOPS; i++) {
     if (cur.tagName === 'A') break;
-    if (isImg(cur)) {
-      const r = tryImg(cur);
-      if (r) return r;
-    }
+    if (isImg(cur)) nearby.push(cur);
     cur = cur.previousElementSibling;
+  }
+  // Content images only. Like findFigureSiblingThumb's Tier C, nothing in the
+  // markup says these images play a thumbnail role — they merely sit near the
+  // anchor — so a logo/avatar neighbour is not promoted to card art.
+  for (const img of nearby.filter(isContentImage)) {
+    const r = tryImg(img);
+    if (r) return r;
   }
 
   // Step 2 — children of the immediate parent that are NOT inside any anchor.
@@ -823,6 +973,9 @@ function findAdjacentSiblingThumb(a, allAnchors, baseURL, claimedSet) {
       if (claimedSet && claimedSet.has(img)) continue;
       // Skip imgs inside any anchor — those are handled by extractImageFromAnchor.
       if (img.closest('a[href]')) continue;
+      // Same content-only rule as the sibling scan above: an unclassed image
+      // merely sharing a parent with the anchor is not automatically card art.
+      if (!isContentImage(img)) continue;
       // Skip if there's a closer anchor in the parent than `a`.
       let nearest = null;
       let nearestDist = Infinity;
@@ -831,7 +984,11 @@ function findAdjacentSiblingThumb(a, allAnchors, baseURL, claimedSet) {
         const cmp = img.compareDocumentPosition(other);
         // we only care about which anchor is textually closest — use a cheap
         // index-based proximity by walking the parent's children once.
-        if (cmp & Node.DOCUMENT_POSITION_PRECEDING || cmp & Node.DOCUMENT_POSITION_FOLLOWING) {
+        // Bitmask constants are read off the node itself, NOT a global `Node`:
+        // the browser has that global but a DOMParser polyfill under Node.js
+        // does not, and this branch threw a ReferenceError there — the module
+        // is documented to run identically in both.
+        if (cmp & img.DOCUMENT_POSITION_PRECEDING || cmp & img.DOCUMENT_POSITION_FOLLOWING) {
           // good enough — pick the closest by sibling-index difference
           const dist = Math.abs(
             Array.prototype.indexOf.call(parent.children, other.closest(':scope > *') || other) -
@@ -870,20 +1027,17 @@ function findSiblingVideo(a, baseURL) {
   // <video> with <source> or src attr
   const video = block.querySelector('video');
   if (video) {
-    const src =
-      video.getAttribute('src') ||
-      video.querySelector('source[src]')?.getAttribute('src') ||
-      video.querySelector('source[data-src]')?.getAttribute('data-src');
+    const src = pickVideoSource(video);
     if (src) {
       const resolved = safeURL(src, baseURL) || src;
-      return { videoInfo: { src: resolved, poster: video.getAttribute('poster') || null }, claimedEl: video };
+      return { videoInfo: { src: resolved, poster: pickVideoPoster(video) }, claimedEl: video };
     }
   }
   // Embedded iframe (YouTube/Vimeo/TikTok/Instagram embeds)
   const iframe = block.querySelector('iframe[src]');
   if (iframe) {
     const src = iframe.getAttribute('src');
-    if (src && /youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(src)) {
+    if (src && isVideoEmbedUrl(src, baseURL)) {
       const resolved = safeURL(src, baseURL) || src;
       return { videoInfo: { src: resolved }, claimedEl: iframe };
     }
@@ -896,6 +1050,50 @@ function findSiblingVideo(a, baseURL) {
 // ("1.2M", "4.5K views") instead of a real title. When that happens we want
 // to fall back to another anchor in the same bucket (image alt, aria-label,
 // nested heading) before settling. Returns true if the candidate looks bad.
+// Generic UI labels that are never the name of the thing being linked to.
+// These matter because they usually share an href with the real headline:
+// a card emits <a class="thumb">, <h3><a>Real headline</a></h3> and
+// <a class="cta">Read more →</a>, all pointing at the same URL, and whichever
+// anchor the DOM walk reaches first sets the bucket's title. Compared after
+// lowercasing and stripping surrounding punctuation/arrows, so "Read more →",
+// "READ MORE", and "read more..." all collapse to the same key.
+const JUNK_TITLE_LABELS = new Set([
+  'read more', 'read the full story', 'read full story', 'read story', 'read article',
+  'read', 'continue reading', 'keep reading', 'full story', 'full article',
+  'learn more', 'find out more', 'see more', 'view more', 'show more', 'more',
+  'click here', 'here', 'link', 'permalink', 'source', 'via',
+  'watch', 'watch now', 'watch video', 'watch the video', 'play', 'play video',
+  'listen', 'listen now', 'view', 'view gallery', 'see gallery', 'open',
+  'details', 'view details', 'preview', 'get started', 'sign up', 'sign in',
+  'log in', 'login', 'subscribe', 'share', 'download', 'buy now', 'shop now',
+  'next', 'previous', 'prev', 'back', 'home', 'menu',
+  'comments', 'view comments', 'image', 'photo', 'picture', 'video', 'gallery',
+  'untitled', 'no title',
+]);
+
+function looksLikeJunkTitle(s) {
+  const key = s
+    .toLowerCase()
+    .replace(/[\s.·•|:;,!?"'“”‘’\-–—>»›→⟶…]+$/u, '')
+    .replace(/^[\s«‹←]+/u, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return JUNK_TITLE_LABELS.has(key);
+}
+
+// Timestamps and reading-time chips. Same failure mode as the CTA labels: a
+// card's date anchor ("Sep 3, 2026") often shares the story's href, so without
+// this the date wins the title over the headline sitting one element away.
+function looksLikeTimestampTitle(s) {
+  if (/^\d{4}-\d{2}-\d{2}([ T].*)?$/.test(s)) return true;
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(s)) return true;
+  if (/^[a-z]{3,9}\.?\s+\d{1,2}(st|nd|rd|th)?,?\s+\d{4}$/i.test(s)) return true; // Sep 3, 2026
+  if (/^\d{1,2}\s+[a-z]{3,9}\.?,?\s+\d{4}$/i.test(s)) return true;               // 3 Sep 2026
+  if (/^\d+\s*(second|sec|minute|min|hour|hr|day|week|month|year)s?\s+ago$/i.test(s)) return true;
+  if (/^\d+\s*(min|mins|minute|minutes|hour|hours)\s+(read|listen)$/i.test(s)) return true;
+  return false;
+}
+
 function looksLikeBadTitle(t) {
   if (!t) return true;
   let s = String(t).trim();
@@ -918,6 +1116,10 @@ function looksLikeBadTitle(t) {
   if (new RegExp('^(video|watch|play|listen)[\\s•·–—:|]*\\d{1,2}:\\d{2}(:\\d{2})?(' + SRC + ')?$', 'i').test(s)) return true;
   if (new RegExp('^\\d{1,2}:\\d{2}(:\\d{2})?' + SRC + '$').test(s)) return true; // "0:39 CNN"
   if (looksLikeCode(s)) return true; // inline <script>/onerror handler bleeding through textContent
+  if (s.length < 2) return true; // a single glyph ("›", "1") is chrome, not a title
+  if (/^(https?:\/\/|www\.)\S+$/i.test(s)) return true; // the raw URL as its own link text
+  if (looksLikeJunkTitle(s)) return true; // "Read more", "Watch now", "Continue reading", …
+  if (looksLikeTimestampTitle(s)) return true; // "Sep 3, 2026", "4 hours ago", "5 min read"
   return false;
 }
 
@@ -991,6 +1193,31 @@ function getAnchorTitle(a) {
 
 const CARD_CONTAINER_SELECTOR = 'article, li, [class*="item" i], [class*="card" i], [class*="tile" i], [class*="post" i], figure';
 
+// Of several elements inside one container, which is "closest" to the anchor?
+// Ranked by how far up the anchor's ancestor chain their common ancestor sits,
+// so in
+//   <section class="post-list"><h2>Latest posts</h2>
+//     <div><a href="/a">…</a><h3>Post A</h3></div> …
+// the anchor picks up "Post A" instead of the list's own "Latest posts"
+// heading, which querySelector() (document order) would hand back for every
+// item in the list. With a single candidate this is a no-op.
+function nearestToAnchor(a, candidates) {
+  if (candidates.length < 2) return candidates[0] || null;
+  const depthOf = new Map();
+  let cur = a;
+  let depth = 0;
+  while (cur) { depthOf.set(cur, depth++); cur = cur.parentElement; }
+  let best = null;
+  let bestDepth = Infinity;
+  for (const c of candidates) {
+    let node = c;
+    while (node && !depthOf.has(node)) node = node.parentElement;
+    const d = node ? depthOf.get(node) : Infinity;
+    if (d < bestDepth) { bestDepth = d; best = c; } // ties keep document order
+  }
+  return best || candidates[0];
+}
+
 const TITLE_RULES = [
   {
     // BBC / Reuters / Medium: the image anchor comes first in the card and
@@ -1001,10 +1228,13 @@ const TITLE_RULES = [
       const container = a.closest(CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const out = [];
-      const ch = container.querySelector('h1, h2, h3, h4');
-      if (ch && !a.contains(ch)) out.push({ value: visibleText(ch), strategy: 'container-heading', label: `container <${ch.tagName.toLowerCase()}>` });
-      const cTitle = container.querySelector('[class*="title" i], [class*="headline" i]');
-      if (cTitle && !a.contains(cTitle) && cTitle !== ch) out.push({ value: visibleText(cTitle), strategy: 'container-title-class', label: 'container class=title' });
+      const headings = Array.from(container.querySelectorAll('h1, h2, h3, h4')).filter((h) => !a.contains(h));
+      const ch = nearestToAnchor(a, headings);
+      if (ch) out.push({ value: visibleText(ch), strategy: 'container-heading', label: `container <${ch.tagName.toLowerCase()}>` });
+      const titleEls = Array.from(container.querySelectorAll('[class*="title" i], [class*="headline" i]'))
+        .filter((el) => !a.contains(el) && el !== ch);
+      const cTitle = nearestToAnchor(a, titleEls);
+      if (cTitle) out.push({ value: visibleText(cTitle), strategy: 'container-title-class', label: 'container class=title' });
       return out;
     },
   },
@@ -1173,7 +1403,7 @@ const THUMB_RULES = [
     extract(a) {
       const container = a.closest(CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
-      const poster = container.querySelector('video[poster]')?.getAttribute('poster');
+      const poster = pickVideoPoster(container.querySelector('video[poster], video[data-poster]'));
       return poster ? [{ value: poster, strategy: 'container-video-poster', label: 'video poster' }] : [];
     },
   },
@@ -1244,10 +1474,15 @@ const VIDEO_HOVER_DATA_ATTRS = ['data-video', 'data-video-src', 'data-hover-vide
 
 const VIDEO_RULES = [
   {
+    // The anchor's own <video>/<iframe>. Note the shape translation: internally
+    // a video is { src, poster }, but candidates are keyed on `info.url` — so
+    // before this mapping existed, collectVideoCandidates silently dropped
+    // every anchor-owned video and the picker could never offer it.
     id: 'anchor-video',
-    extract(a) {
-      const v = extractVideoFromAnchor(a);
-      return v ? [{ info: v, strategy: 'anchor-video', label: 'anchor <video>' }] : [];
+    extract(a, baseURL) {
+      const v = extractVideoFromAnchor(a, baseURL);
+      if (!v?.src) return [];
+      return [{ info: { url: v.src, poster: v.poster || null, kind: 'anchor' }, strategy: 'anchor-video', label: 'anchor <video>' }];
     },
   },
   {
@@ -1257,8 +1492,26 @@ const VIDEO_RULES = [
       if (!container || container === a) return [];
       const containerVid = container.querySelector('video');
       if (!containerVid) return [];
-      const src = containerVid.getAttribute('src') || containerVid.querySelector('source')?.getAttribute('src');
-      return src ? [{ info: { url: src, kind: 'inline' }, strategy: 'container-video', label: 'container <video>' }] : [];
+      const src = pickVideoSource(containerVid);
+      return src ? [{ info: { url: src, poster: pickVideoPoster(containerVid), kind: 'inline' }, strategy: 'container-video', label: 'container <video>' }] : [];
+    },
+  },
+  {
+    // Container <iframe> from an allowlisted video vendor — the embed shape
+    // used by Substack/Medium/blog posts, where the anchor is the post link
+    // and the player sits beside it in the same card.
+    id: 'container-iframe-embed',
+    extract(a, baseURL) {
+      const container = a.closest(VIDEO_CONTAINER_SELECTOR);
+      if (!container || container === a) return [];
+      const out = [];
+      container.querySelectorAll('iframe[src]').forEach((f) => {
+        const src = f.getAttribute('src');
+        if (src && isVideoEmbedUrl(src, baseURL)) {
+          out.push({ info: { url: src, kind: 'embed' }, strategy: 'container-iframe-embed', label: 'container <iframe> embed' });
+        }
+      });
+      return out;
     },
   },
   {
@@ -1678,7 +1931,7 @@ function resolveBucketTitle(bucket) {
 
 function resolveBucketVideo(bucket, baseURL, claims) {
   for (const a of bucket.anchors) {
-    const v = extractVideoFromAnchor(a);
+    const v = extractVideoFromAnchor(a, baseURL);
     if (v) return v;
   }
   for (const a of bucket.anchors) {
@@ -1708,10 +1961,11 @@ function resolveBucketThumbnail(bucket, baseURL, claims, rawAnchors) {
   for (const a of bucket.anchors) {
     const cand = extractImageFromAnchor(a);
     if (cand) {
-      // mark the <img> we picked so the standalone walk doesn't re-emit it
-      const innerImg = a.querySelector('img');
-      if (innerImg) claims.imgs.add(innerImg);
-      return safeURL(cand, baseURL) || cand;
+      // Mark the <img> we actually used (not merely the anchor's first one)
+      // so the standalone walk doesn't re-emit it and a neighbouring bucket
+      // doesn't claim it a second time.
+      if (cand.el) claims.imgs.add(cand.el);
+      return safeURL(cand.url, baseURL) || cand.url;
     }
   }
   // figure-sibling fallback — covers Time.com and similar.
@@ -1881,9 +2135,17 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
 
     // Promote video.poster to the thumbnail immediately if we found one;
     // otherwise fall through Tiers 2-3 in resolveBucketThumbnail.
-    let thumb = (video && video.poster)
+    // A poster attribute is not automatically a usable image: players ship
+    // `poster="…/blank.gif"` (or a base64 pixel) as a first-paint stand-in, and
+    // promoting that over the card's real artwork produced blank thumbnails.
+    // Such a poster is demoted to last-resort rather than dropped.
+    const posterURL = (video && video.poster)
       ? (safeURL(video.poster, baseURL) || video.poster)
-      : resolveBucketThumbnail(bucket, baseURL, claims, rawAnchors);
+      : null;
+    const usablePoster = posterURL && !looksLikeLazyLoadPlaceholder(posterURL) ? posterURL : null;
+    let thumb = usablePoster
+      || resolveBucketThumbnail(bucket, baseURL, claims, rawAnchors)
+      || posterURL;
 
     // Collect ALL candidates for title/thumb/video across every anchor in the
     // bucket so the Review-step picker can offer alternatives. Defaults stay
@@ -2006,6 +2268,22 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     (img) => !img.closest('a[href]') && !synthesizedFromArticles.has(img) && !claimedImgs.has(img) && isLikelyContentMediaElement(img)
   );
   for (const img of standaloneImgs) {
+    // "Image" is a non-title. Alt text first, then the surrounding markup
+    // (figcaption, card heading, class=title) via the same rule list the
+    // anchor walk uses — the rules only read an element's DOM neighborhood,
+    // so they work just as well from an <img> as from an <a>.
+    const derivedTitle =
+      img.getAttribute('alt')?.trim() ||
+      collectTitleCandidates(img).find((c) => !looksLikeBadTitle(c.value))?.value ||
+      null;
+    // An explicitly EMPTY alt (alt="", not a missing alt) is the HTML spec's
+    // way of saying "this image is decorative, ignore it" — badges, rule
+    // lines, spacer glyphs. Combined with "and nothing nearby names it", that
+    // is enough to keep it from becoming a card of its own. A gallery photo
+    // carrying its caption in a <figcaption> still has a name, so it stays.
+    // Neither check disqualifies the image from being some link's thumbnail,
+    // where the markup does tie it to real content.
+    if (!derivedTitle && img.hasAttribute('alt') && !img.getAttribute('alt').trim()) continue;
     // Use pickImgSrc so we honor lazy-load conventions AND its last-ditch
     // fallback (returns raw src even when every candidate looks like a
     // placeholder). Trust the markup: if it's an <img>, it's an image.
@@ -2020,7 +2298,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     const imgKey = canonicalHref(normalizedSrc);
     if (seen.has(imgKey)) continue;
     seen.add(imgKey);
-    const altTitle = img.getAttribute('alt')?.trim() || 'Image';
+    const altTitle = derivedTitle || 'Image';
     items.push({
       id: uid(),
       sourceName,
@@ -2051,11 +2329,20 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     const normalizedSrc = normalizeURL(resolvedSrc);
     const videoKey = canonicalHref(normalizedSrc);
     if (seen.has(videoKey)) continue;
-    // only count actual video sources
-    if (!isVideoHref(normalizedSrc) && !(v.tagName === 'VIDEO')) continue;
+    // only count actual video sources. isVideoEmbedUrl covers the player
+    // domains that aren't destinations you'd link to directly (the
+    // youtube-nocookie / brightcove / kaltura embed hosts), which VIDEO_HOSTS
+    // deliberately doesn't list.
+    if (!isVideoHref(normalizedSrc) && !isVideoEmbedUrl(normalizedSrc, baseURL) && !(v.tagName === 'VIDEO')) continue;
     seen.add(videoKey);
-    const vTitle = v.getAttribute('title') || 'Video';
-    const vPoster = v.getAttribute('poster') || null;
+    // Same treatment as standalone images: a bare "Video" tells the user
+    // nothing, and an embedded player almost always sits inside a card that
+    // names it (heading, figcaption, aria-label on the iframe).
+    const vTitle =
+      v.getAttribute('title')?.trim() ||
+      collectTitleCandidates(v).find((c) => !looksLikeBadTitle(c.value))?.value ||
+      'Video';
+    const vPoster = pickVideoPoster(v);
     items.push({
       id: uid(),
       sourceName,
@@ -2217,8 +2504,8 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   const poster = art.querySelector('img[data-testid*="poster"], img[class*="poster"], img[class*="thumb"]');
   if (poster) thumb = pickImgSrc(poster);
   if (!thumb) {
-    const vid = art.querySelector('video[poster]');
-    if (vid) thumb = vid.getAttribute('poster');
+    const vid = art.querySelector('video[poster], video[data-poster]');
+    if (vid) thumb = pickVideoPoster(vid);
   }
   if (!thumb) {
     const pic = art.querySelector('picture source[srcset]');
@@ -2228,7 +2515,8 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
     }
   }
   if (!thumb) {
-    const anyImg = art.querySelector('img');
+    const imgs = Array.from(art.querySelectorAll('img'));
+    const anyImg = imgs.find(isContentImage) || imgs[0];
     if (anyImg) thumb = pickImgSrc(anyImg);
   }
   if (!thumb) {
@@ -2247,19 +2535,14 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   let videoInfo = null;
   const video = art.querySelector('video');
   if (video) {
-    // Find the highest-quality MP4 source; prefer non-HLS for direct linking.
-    const sources = Array.from(video.querySelectorAll('source'));
-    let best = sources.find((s) => /video\/mp4/i.test(s.getAttribute('type') || '') && !/m3u8/i.test(s.getAttribute('src') || ''));
-    if (!best) best = sources.find((s) => /\.mp4/i.test(s.getAttribute('src') || ''));
-    if (!best) best = sources[0];
-    if (best) {
-      const src = best.getAttribute('src');
-      if (src) {
-        const resolved = safeURL(src, baseURL) || src;
-        if (/^https?:/i.test(resolved)) {
-          href = resolved;
-          videoInfo = { src: resolved, poster: thumb || null };
-        }
+    // Highest-quality progressive source; HLS/DASH manifests lose to an MP4
+    // sibling so the linked URL is one a browser can actually open.
+    const src = pickVideoSource(video);
+    if (src) {
+      const resolved = safeURL(src, baseURL) || src;
+      if (/^https?:/i.test(resolved)) {
+        href = resolved;
+        videoInfo = { src: resolved, poster: thumb || null };
       }
     }
   }
@@ -2291,7 +2574,7 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
     if (resolved && /^https?:/i.test(resolved)) {
       let iframeHref = resolved;
       let iframeVideoInfo = null;
-      if (/youtube|vimeo|tiktok|wistia|dailymotion|twitch|instagram/i.test(resolved)) {
+      if (isVideoEmbedUrl(resolved, baseURL)) {
         iframeVideoInfo = { src: resolved };
       }
 
