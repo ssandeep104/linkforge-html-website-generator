@@ -1,0 +1,68 @@
+name: Activate Neo-Tech directly
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/activate-neo-tech-direct.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Load Neo-Tech stylesheet directly
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          html = path.read_text(encoding='utf-8')
+          base = '    <link rel="stylesheet" href="./style.css" />'
+          neo = '    <link rel="stylesheet" href="./neo-tech-shell.css" />'
+
+          if neo not in html:
+              if base not in html:
+                  raise SystemExit('Could not find the base stylesheet link in index.html')
+              html = html.replace(base, base + '\n' + neo, 1)
+              path.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Remove CSS routing workarounds
+        run: |
+          cat > vercel.json <<'JSON'
+          {
+            "$schema": "https://openapi.vercel.sh/vercel.json",
+            "version": 2,
+            "outputDirectory": ".",
+            "cleanUrls": true,
+            "trailingSlash": false,
+            "headers": [
+              {
+                "source": "/(.*)",
+                "headers": [
+                  { "key": "X-Content-Type-Options", "value": "nosniff" },
+                  { "key": "Referrer-Policy", "value": "no-referrer" }
+                ]
+              }
+            ]
+          }
+          JSON
+
+      - name: Commit direct integration
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html vercel.json
+          git commit -m 'Load Neo-Tech stylesheet directly in production'
+          git push
