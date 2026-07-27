@@ -93,63 +93,146 @@ function previewCoverage(group) {
   return Math.round((preview / total) * 100);
 }
 
-const SOURCE_TABS_CSS = `
+// Source filter bar — "All sources" plus one chip per source, shown at the top
+// of every template. Clicking a chip hides every block that doesn't belong to
+// that source, which is the point: a collection with a few hundred links is an
+// unreadable single scroll otherwise.
+//
+// This CSS ships from shell(), not from the individual templates. It used to
+// live in a constant that nothing referenced, so the tab markup and its click
+// handler reached the page while the rules that hide the inactive content did
+// not — the bar rendered, the buttons toggled classes, and nothing on the page
+// changed. Keeping it in shell() means a template cannot forget it.
+//
+// Class names (.tab-nav / .tab-btn / .tab-btn__title / .tab-btn__meta) are the
+// original ones so the per-theme overrides in each template still apply.
+const SOURCE_FILTER_CSS = `
   .tab-shell { display: grid; gap: 24px; }
-  .tab-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tab-panels { display: grid; gap: 24px; }
+  .tab-nav {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 20px;
+    padding: 12px 0;
+    background: var(--tab-nav-bg, transparent);
+  }
   .tab-btn {
-    min-width: 170px;
     display: grid;
-    gap: 4px;
-    padding: 12px 16px;
-    border-radius: var(--lf-radius-md);
-    border: 1.5px solid var(--tab-border, rgba(24,24,27,0.15));
-    background: var(--tab-bg, rgba(255,255,255,0.72));
+    gap: 3px;
+    padding: 9px 15px;
+    border: 1px solid var(--tab-border, rgba(128,128,128,0.45));
+    border-radius: var(--lf-radius-full);
+    background: var(--tab-bg, transparent);
     color: var(--tab-text, inherit);
-    box-shadow: none;
-    cursor: pointer;
+    font: inherit;
     text-align: left;
-    transition: all .2s ease;
+    cursor: pointer;
+    transition: background-color var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
   }
-  .tab-btn:hover {
-    transform: translateY(-1px);
-    border-color: var(--tab-border-hover, rgba(24,24,27,0.3));
-    background: var(--tab-bg-hover, rgba(255,255,255,0.9));
-  }
+  .tab-btn:hover { border-color: var(--tab-border-hover, currentColor); }
   .tab-btn.active {
-    transform: none;
-    border-color: var(--tab-active-border, #111);
-    background: var(--tab-active-bg, #fff);
-    color: var(--tab-active-text, #111);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: var(--tab-active-border, var(--tab-active-bg, currentColor));
+    background: var(--tab-active-bg, currentColor);
+    color: var(--tab-active-text, #fff);
   }
-  .tab-btn:focus-visible { outline: 2px solid var(--tab-active-border, currentColor); outline-offset: 4px; }
-  .tab-btn__title { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 14px; line-weight: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+  .tab-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+  .tab-btn__title { font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 13px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
   .tab-btn__meta { font-family: 'IBM Plex Mono', monospace; font-size: 9px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tab-meta, inherit); opacity: 0.75; }
-  .tab-panels { position: relative; }
-  .tab-panel {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    max-height: 0;
-    overflow: hidden;
-    transform: translateY(12px) scale(0.99);
-    transform-origin: top center;
-    transition: opacity .24s ease, transform .24s ease, max-height .3s ease, visibility 0s linear .24s;
-  }
-  .tab-panel.active {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    max-height: 12000px;
-    overflow: visible;
-    transform: none;
-    transition: opacity .3s ease, transform .3s ease, max-height .4s ease;
-  }
+  /* Templates set display:grid/flex on the blocks being filtered, which beats
+     the UA's [hidden] rule on specificity — hence !important. */
+  .lf-template [hidden] { display: none !important; }
   @media (max-width: 700px) {
-    .tab-nav { display: grid; grid-template-columns: 1fr; gap: 6px; }
-    .tab-btn { width: 100%; min-width: 0; }
+    .tab-nav { gap: 6px; padding: 10px 0; }
+    .tab-btn { padding: 8px 12px; }
+    .tab-btn__title { font-size: 12px; }
   }
 `;
+
+function sourceFilterCount(group) {
+  return (group?.previewItems || []).length + (group?.linkItems || []).length;
+}
+
+// The bar itself. Returns '' for a single-source page, where filtering to "the
+// one source" and to "all" are the same view.
+function sourceFilterNav(groups, prefix) {
+  if (!groups || groups.length < 2) return '';
+  const chip = (key, label, count, active) => `<button
+      type="button"
+      class="tab-btn${active ? ' active' : ''}"
+      data-source-filter-key="${attr(key)}"
+      aria-pressed="${active ? 'true' : 'false'}"
+    >
+      <span class="tab-btn__title">${esc(label)}</span>
+      <span class="tab-btn__meta">${count} ${count === 1 ? 'item' : 'items'}</span>
+    </button>`;
+  const total = groups.reduce((sum, group) => sum + sourceFilterCount(group), 0);
+  // "All" is the default so the page still reads as one whole collection on
+  // open, and so the export degrades to today's behavior without JavaScript.
+  return `<nav class="tab-nav" data-source-filter="${attr(prefix)}" aria-label="Filter by source">
+    ${chip('all', 'All sources', total, true)}
+    ${groups.map((group) => chip(group.key, srcLabel(group), sourceFilterCount(group), false)).join('')}
+  </nav>`;
+}
+
+// Filtering contract for template markup:
+//   data-source-key="<key>"  — a block belonging to exactly one source.
+//   data-source-scope        — a wrapper (e.g. a "More links" section with its
+//                              own heading) that should disappear when every
+//                              keyed block inside it is hidden.
+function sourceFilterScript(prefix) {
+  return `<script>
+  (function () {
+    var nav = document.querySelector('[data-source-filter="${prefix}"]');
+    if (!nav) return;
+    var btns = Array.prototype.slice.call(nav.querySelectorAll('.tab-btn'));
+    var targets = Array.prototype.slice.call(document.querySelectorAll('[data-source-key]'));
+    var scopes = Array.prototype.slice.call(document.querySelectorAll('[data-source-scope]'));
+
+    function apply(key) {
+      targets.forEach(function (el) {
+        el.hidden = key !== 'all' && el.getAttribute('data-source-key') !== key;
+      });
+      scopes.forEach(function (scope) {
+        var kids = scope.querySelectorAll('[data-source-key]');
+        var anyVisible = false;
+        for (var i = 0; i < kids.length; i++) {
+          if (!kids[i].hidden) { anyVisible = true; break; }
+        }
+        scope.hidden = kids.length > 0 && !anyVisible;
+      });
+      btns.forEach(function (btn) {
+        var on = btn.getAttribute('data-source-filter-key') === key;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+
+    btns.forEach(function (btn, index) {
+      btn.addEventListener('click', function () {
+        apply(btn.getAttribute('data-source-filter-key'));
+        // Filtering from halfway down a long page can leave the viewport past
+        // the end of the now-shorter content, which reads as a blank screen.
+        if (nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ block: 'start' });
+      });
+      btn.addEventListener('keydown', function (event) {
+        var keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+        if (keys.indexOf(event.key) === -1) return;
+        event.preventDefault();
+        var next = index;
+        if (event.key === 'ArrowRight') next = (index + 1) % btns.length;
+        if (event.key === 'ArrowLeft') next = (index - 1 + btns.length) % btns.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = btns.length - 1;
+        btns[next].focus();
+      });
+    });
+  })();
+  </script>`;
+}
 
 // Items with a usable thumbnail get card treatment; items without get sent
 // to the "More links" tail. We treat empty/falsy thumbnails as no-preview.
@@ -246,74 +329,24 @@ function buildSourceTabs(sourceGroups) {
   return tabs.filter((group) => group.previewItems.length || group.linkItems.length);
 }
 
+// Renders the filter bar plus one section per source, stacked. Every section
+// is visible under "All sources"; picking a source hides the rest.
+//
+// This replaces a one-panel-at-a-time tab widget that could only ever show a
+// single source — there was no way to see the whole collection, and the
+// inactive panels were hidden with `max-height: 0`, which clipped rather than
+// removed any source taller than the cap.
 function renderSourceTabs(groups, renderPanel, { prefix = 'source-tabs', emptyHtml = '' } = {}) {
   if (!groups.length) return emptyHtml;
 
-  const tabs = `<nav class="tab-nav" role="tablist" aria-label="Source tabs">${groups.map((group, index) => `
-    <button
-      class="tab-btn${index === 0 ? ' active' : ''}"
-      type="button"
-      role="tab"
-      id="${prefix}-tab-${index}"
-      aria-selected="${index === 0 ? 'true' : 'false'}"
-      aria-controls="${prefix}-panel-${index}"
-      data-tab-target="${prefix}-panel-${index}"
-    >
-      <span class="tab-btn__title">${esc(srcLabel(group))}</span>
-      <span class="tab-btn__meta">${group.previewItems.length} ${group.previewItems.length === 1 ? 'preview' : 'previews'} · ${group.linkItems.length} ${group.linkItems.length === 1 ? 'link' : 'links'}</span>
-    </button>
-  `).join('')}</nav>`;
-
+  const nav = sourceFilterNav(groups, prefix);
   const panels = `<div class="tab-panels">${groups.map((group, index) => `
-    <section
-      class="tab-panel${index === 0 ? ' active' : ''}"
-      id="${prefix}-panel-${index}"
-      role="tabpanel"
-      aria-labelledby="${prefix}-tab-${index}"
-      aria-hidden="${index === 0 ? 'false' : 'true'}"
-    >
+    <section class="tab-panel" data-source-key="${attr(group.key)}" aria-label="${attr(srcLabel(group))}">
       ${renderPanel(group, index)}
     </section>
   `).join('')}</div>`;
 
-  const script = `<script>
-  (function() {
-    var shell = document.querySelector('[data-tab-shell="${prefix}"]');
-    if (!shell) return;
-    var btns = Array.prototype.slice.call(shell.querySelectorAll('.tab-btn'));
-    var panels = Array.prototype.slice.call(shell.querySelectorAll('.tab-panel'));
-    function activate(btn) {
-      var target = btn.getAttribute('data-tab-target');
-      btns.forEach(function(node) {
-        var active = node === btn;
-        node.classList.toggle('active', active);
-        node.setAttribute('aria-selected', active ? 'true' : 'false');
-      });
-      panels.forEach(function(panel) {
-        var active = panel.id === target;
-        panel.classList.toggle('active', active);
-        panel.setAttribute('aria-hidden', active ? 'false' : 'true');
-      });
-    }
-
-    btns.forEach(function(btn, index) {
-      btn.addEventListener('click', function() { activate(btn); });
-      btn.addEventListener('keydown', function(event) {
-        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-        event.preventDefault();
-        var nextIndex = index;
-        if (event.key === 'ArrowRight') nextIndex = (index + 1) % btns.length;
-        if (event.key === 'ArrowLeft') nextIndex = (index - 1 + btns.length) % btns.length;
-        if (event.key === 'Home') nextIndex = 0;
-        if (event.key === 'End') nextIndex = btns.length - 1;
-        btns[nextIndex].focus();
-        activate(btns[nextIndex]);
-      });
-    });
-  })();
-  </script>`;
-
-  return `<div class="tab-shell" data-tab-shell="${prefix}">${tabs}${panels}</div>${script}`;
+  return `<div class="tab-shell" data-tab-shell="${prefix}">${nav}${panels}</div>${nav ? sourceFilterScript(prefix) : ''}`;
 }
 
 // Shared "More links" section. Same markup for every template — only the
@@ -543,12 +576,17 @@ function shell({ title, tagline, today, body, css, bodyClass = '' }) {
     inset: -2px;
     pointer-events: none;
     opacity: 0;
-    background: linear-gradient(120deg, transparent 25%, rgba(255,255,255,0.28) 50%, transparent 75%);
+    /* Opt-out hook: templates whose chips are borderless text (Flux, Pop
+       Shelf) set --tab-sheen: none, where a translucent slab sweeping across
+       bare text reads as a rendering artifact rather than a flourish. */
+    background: var(--tab-sheen, linear-gradient(120deg, transparent 25%, rgba(255,255,255,0.28) 50%, transparent 75%));
     transform: translateX(-60%);
     transition: opacity var(--dur-base) var(--ease-out);
   }
-  .lf-template .tab-btn:hover::after,
-  .lf-template .tab-btn.active::after {
+  /* Hover-only. This used to stay at opacity:1 on the selected chip too, which
+     parked a translucent white slab over it — invisible while the active class
+     styled nothing, obvious once selection started rendering. */
+  .lf-template .tab-btn:hover::after {
     opacity: 1;
     animation: lf-tab-sheen .9s ease;
   }
@@ -629,6 +667,7 @@ function shell({ title, tagline, today, body, css, bodyClass = '' }) {
       transform: none !important;
     }
   }
+${SOURCE_FILTER_CSS}
 ${css}
 </style>
 </head>
@@ -877,9 +916,11 @@ function buildEditorial(ctx) {
 // 2) TUBE GRID — compact 16:9 cards with channel-style source headers
 // =====================================================
 function buildYoutube(ctx) {
-  const { previewGroups, linkGroups } = partitionGroups(ctx.sourceGroups);
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const previewGroups = groups.filter((group) => group.previewItems.length);
+  const linkGroups = groups.filter((group) => group.linkItems.length);
   const firstGroup = previewGroups[0];
-  const hero = firstGroup?.items[0] || null;
+  const hero = firstGroup?.previewItems[0] || null;
 
   const image = (item, className = '') => `<img
     class="${className}"
@@ -897,9 +938,9 @@ function buildYoutube(ctx) {
 
   const sections = previewGroups.map((group, groupIndex) => {
     const source = srcLabel(group);
-    const items = groupIndex === 0 && hero ? group.items.slice(1) : group.items;
+    const items = groupIndex === 0 && hero ? group.previewItems.slice(1) : group.previewItems;
     if (!items.length) return '';
-    return `<section class="creator-section">
+    return `<section class="creator-section" data-source-key="${attr(group.key)}">
       <div class="creator-section__head">
         <h2>${esc(source)}</h2>
         <span aria-hidden="true"></span>
@@ -908,7 +949,7 @@ function buildYoutube(ctx) {
     </section>`;
   }).join('');
 
-  const heroHtml = hero ? `<a class="creator-hero" href="${attr(hero.href)}" target="_blank" rel="noopener noreferrer">
+  const heroHtml = hero ? `<a class="creator-hero" href="${attr(hero.href)}" target="_blank" rel="noopener noreferrer" data-source-key="${attr(firstGroup.key)}">
     <div class="creator-hero__media">${image(hero)}</div>
     <div class="creator-hero__shade"></div>
     <div class="creator-hero__copy">
@@ -917,14 +958,14 @@ function buildYoutube(ctx) {
     </div>
   </a>` : '';
 
-  const linksHtml = linkGroups.length ? `<section class="creator-links">
+  const linksHtml = linkGroups.length ? `<section class="creator-links" data-source-scope>
     <div class="creator-section__head">
       <h2>More links</h2>
       <span aria-hidden="true"></span>
     </div>
-    <div class="creator-links__groups">${linkGroups.map((group) => `<section>
+    <div class="creator-links__groups">${linkGroups.map((group) => `<section data-source-key="${attr(group.key)}">
       <h3>${esc(srcLabel(group))}</h3>
-      <ul>${group.items.map((item) => `<li><a href="${attr(item.href)}" target="_blank" rel="noopener noreferrer">
+      <ul>${group.linkItems.map((item) => `<li><a href="${attr(item.href)}" target="_blank" rel="noopener noreferrer">
         <span>${esc(item.title || item.href)}</span>
         ${item.domain ? `<small>${esc(item.domain)}</small>` : ''}
       </a></li>`).join('')}</ul>
@@ -932,7 +973,9 @@ function buildYoutube(ctx) {
   </section>` : '';
 
   const css = `
-  :root { --creator-bg: #0b1014; --creator-panel: #12171c; --creator-line: #2a3035; --creator-text: #f4f1eb; --creator-muted: #92989e; --creator-accent: #ff5b3d; }
+  :root { --creator-bg: #0b1014; --creator-panel: #12171c; --creator-line: #2a3035; --creator-text: #f4f1eb; --creator-muted: #92989e; --creator-accent: #ff5b3d;
+    --tab-nav-bg: #0b1014; --tab-border: #2a3035; --tab-border-hover: #4a545c; --tab-text: var(--creator-muted);
+    --tab-active-bg: var(--creator-accent); --tab-active-text: #0b1014; }
   body { background: var(--creator-bg); color: var(--creator-text); font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.4; }
   .creator-wrap { width: min(100%, 1600px); margin: 0 auto; padding: 18px 24px 72px; }
   .creator-masthead { display: flex; align-items: center; min-height: 52px; padding: 0 20px; border-bottom: 1px solid #1c2227; }
@@ -993,13 +1036,15 @@ function buildYoutube(ctx) {
     .creator-card h3 { font-size: 12px; }
   }`;
 
+  const filterNav = sourceFilterNav(groups, 'creator-sources');
   const body = `<div class="creator-wrap">
     <header class="creator-masthead"><h1>${esc(ctx.title)}</h1></header>
+    ${filterNav}
     ${heroHtml}
     ${sections}
     ${linksHtml}
     ${!heroHtml && !sections && !linksHtml ? '<div class="creator-empty">No links selected.</div>' : ''}
-  </div>`;
+  </div>${filterNav ? sourceFilterScript('creator-sources') : ''}`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'creator-theme' });
 }
@@ -1076,13 +1121,17 @@ function buildConsole(ctx) {
 // 5) WALL — uniform image grid (only items with previews), list below
 // =====================================================
 function buildWall(ctx) {
-  const groups = (ctx.sourceGroups || []).map((group) => {
+  const groups = (ctx.sourceGroups || []).map((group, index) => {
     const split = splitItems(group.items || []);
-    return { ...group, previewItems: split.withPreview, linkItems: split.linkOnly };
+    // Key mirrors partitionGroups' fallback so the filter chips line up with
+    // the same sources the other templates show.
+    return { ...group, key: group.key || `src-${index}`, previewItems: split.withPreview, linkItems: split.linkOnly };
   }).filter((group) => group.previewItems.length || group.linkItems.length);
 
   const css = `
-  :root { --ink: #171715; --muted: #77746d; --line: #d9d6cf; --paper: #f7f6f2; --accent: #b4452f; }
+  :root { --ink: #171715; --muted: #77746d; --line: #d9d6cf; --paper: #f7f6f2; --accent: #b4452f;
+    --tab-nav-bg: var(--paper); --tab-border: var(--line); --tab-border-hover: var(--ink); --tab-text: var(--muted);
+    --tab-active-bg: var(--ink); --tab-active-text: var(--paper); }
   body { background: var(--paper); color: var(--ink); font-family: "Inter", system-ui, -apple-system, sans-serif; }
   .wall { max-width: 1440px; margin: 0 auto; padding: 34px clamp(18px, 3vw, 52px) 72px; }
   .site-head { padding: 0 0 26px; margin-bottom: clamp(42px, 7vw, 88px); border-bottom: 1px solid var(--ink); }
@@ -1148,7 +1197,7 @@ function buildWall(ctx) {
       </a>
     </li>`).join('')}</ul>` : '';
     const count = group.previewItems.length;
-    return `<section class="source">
+    return `<section class="source" data-source-key="${attr(group.key)}">
       <header class="source-head">
         <h2 class="source-name">${esc(srcLabel(group))}</h2>
         <span class="source-rule" aria-hidden="true"></span>
@@ -1159,10 +1208,12 @@ function buildWall(ctx) {
     </section>`;
   }).join('');
 
+  const filterNav = sourceFilterNav(groups, 'wall-sources');
   const body = `<main class="wall">
     <header class="site-head"><h1>${esc(ctx.title)}</h1></header>
+    ${filterNav}
     ${sections || '<div class="empty">No selected items to show.</div>'}
-  </main>`;
+  </main>${filterNav ? sourceFilterScript('wall-sources') : ''}`;
 
   return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
 }
@@ -1371,7 +1422,7 @@ function buildFlux(ctx) {
     ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}`
     : esc(ctx.title);
   const css = `
-  :root { --flux-bg:#080c0e; --flux-panel:#10171a; --flux-line:#263238; --flux-text:#edf5f4; --flux-muted:#89979b; --flux-mint:#86f4d3; --flux-ice:#bceafa; --lf-focus-color:var(--flux-mint); }
+  :root { --flux-bg:#080c0e; --flux-panel:#10171a; --flux-line:#263238; --flux-text:#edf5f4; --flux-muted:#89979b; --flux-mint:#86f4d3; --flux-ice:#bceafa; --lf-focus-color:var(--flux-mint); --tab-nav-bg:var(--flux-bg); --tab-sheen:none; }
   body { background:var(--flux-bg); color:var(--flux-text); font-family:"Manrope",system-ui,sans-serif; }
   .flux-shell { max-width:1480px; margin:0 auto; padding:28px 42px 48px; }
   .flux-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--flux-line); }
@@ -1437,7 +1488,7 @@ function buildShelf(ctx) {
     ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}`
     : esc(ctx.title);
   const css = `
-  :root { --shelf-bg:#f7f8f8; --shelf-text:#172126; --shelf-muted:#6e7b80; --shelf-line:#d9e0e2; --shelf-blue:#4f76e8; --shelf-ice:#dff4fb; --lf-focus-color:var(--shelf-blue); }
+  :root { --shelf-bg:#f7f8f8; --shelf-text:#172126; --shelf-muted:#6e7b80; --shelf-line:#d9e0e2; --shelf-blue:#4f76e8; --shelf-ice:#dff4fb; --lf-focus-color:var(--shelf-blue); --tab-nav-bg:var(--shelf-bg); --tab-sheen:none; }
   body { background:var(--shelf-bg); color:var(--shelf-text); font-family:"Manrope",system-ui,sans-serif; }
   .shelf-shell { max-width:1460px; margin:0 auto; padding:24px 30px 44px; }
   .shelf-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:18px; border-bottom:1px solid var(--shelf-line); }
