@@ -14,10 +14,13 @@
       "title": "Aerial Views of Iceland — 4K",
       "href": "https://vidshare.example/videos/998877",
       "thumbnail": "https://i.vidsharecdn.example/998877_640.jpg",
-      "video": null,
+      "video": {
+        "src": "https://vidshare.example/videos/998877",
+        "poster": null
+      },
       "description": null,
       "domain": "vidshare.example",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"video-card\">",
       "titleCandidates": [
@@ -50,10 +53,13 @@
       "title": "Street Food Tour: Bangkok",
       "href": "https://vidshare.example/videos/998878",
       "thumbnail": "https://i.vidsharecdn.example/998878_640.jpg",
-      "video": null,
+      "video": {
+        "src": "https://vidshare.example/videos/998878",
+        "poster": null
+      },
       "description": null,
       "domain": "vidshare.example",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"video-card\">",
       "titleCandidates": [

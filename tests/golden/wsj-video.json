@@ -14,10 +14,13 @@
       "title": "Markets Rally After Fed Signals Two Rate Cuts in 2026",
       "href": "https://www.wsj.com/video/series/markets-hub/market-reaction-to-rate-decision-june-2026/AB1234CD-5678-EFGH-IJKL-MN9012OPQRST",
       "thumbnail": "https://images.wsj.net/im-12345678?width=700&height=394",
-      "video": null,
+      "video": {
+        "src": "https://www.wsj.com/video/series/markets-hub/market-reaction-to-rate-decision-june-2026/AB1234CD-5678-EFGH-IJKL-MN9012OPQRST",
+        "poster": null
+      },
       "description": null,
       "domain": "wsj.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
       "titleCandidates": [
@@ -75,10 +78,13 @@
       "title": "EV Market Faces Reckoning as Sales Growth Slows",
       "href": "https://www.wsj.com/video/series/journal-report/future-of-electric-vehicles-2026-outlook/EF5678GH-9012-IJKL-MNOP-QR3456STUVWX",
       "thumbnail": "https://images.wsj.net/im-23456789?width=700&height=394",
-      "video": null,
+      "video": {
+        "src": "https://www.wsj.com/video/series/journal-report/future-of-electric-vehicles-2026-outlook/EF5678GH-9012-IJKL-MNOP-QR3456STUVWX",
+        "poster": null
+      },
       "description": null,
       "domain": "wsj.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
       "titleCandidates": [
@@ -121,10 +127,13 @@
       "title": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall",
       "href": "https://www.wsj.com/video/series/the-economics-of/why-housing-remains-unaffordable-june-2026/GH9012IJ-3456-KLMN-OPQR-ST7890UVWXYZ",
       "thumbnail": "https://images.wsj.net/im-34567890?width=700&height=394",
-      "video": null,
+      "video": {
+        "src": "https://www.wsj.com/video/series/the-economics-of/why-housing-remains-unaffordable-june-2026/GH9012IJ-3456-KLMN-OPQR-ST7890UVWXYZ",
+        "poster": null
+      },
       "description": null,
       "domain": "wsj.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
       "titleCandidates": [

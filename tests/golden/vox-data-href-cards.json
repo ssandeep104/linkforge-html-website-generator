@@ -1,0 +1,115 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://www.theverge.com",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "The new foldable finally fixes the crease",
+      "href": "https://www.theverge.com/2026/06/10/foldable-phone-review",
+      "thumbnail": "https://cdn.vox-cdn.com/thumbor/abc123/foldable.jpg",
+      "video": null,
+      "description": null,
+      "domain": "theverge.com",
+      "category": "article",
+      "pageSection": "Latest",
+      "pattern": "<div class=\"duet--content-cards--content-card\">",
+      "titleCandidates": [
+        {
+          "value": "The new foldable finally fixes the crease",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "The new foldable finally fixes the crease By A. Writer",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.vox-cdn.com/thumbor/abc123/foldable.jpg",
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "We let a robot vacuum map our office for a week",
+      "href": "https://www.theverge.com/2026/06/10/robot-vacuum-video",
+      "thumbnail": "https://cdn.vox-cdn.com/thumbor/def456/vacuum.jpg",
+      "video": {
+        "src": "https://www.theverge.com/2026/06/10/robot-vacuum-video",
+        "poster": null
+      },
+      "description": null,
+      "domain": "theverge.com",
+      "category": "video",
+      "pageSection": "Latest",
+      "pattern": "<div class=\"duet--content-cards--content-card\">",
+      "titleCandidates": [
+        {
+          "value": "We let a robot vacuum map our office for a week",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "We let a robot vacuum map our office for a week 6:12",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.vox-cdn.com/thumbor/def456/vacuum.jpg",
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Why the chip shortage is back",
+      "href": "https://www.theverge.com/2026/06/10/chip-shortage-explainer",
+      "thumbnail": "https://cdn.vox-cdn.com/thumbor/ghi789/chips.jpg",
+      "video": null,
+      "description": null,
+      "domain": "theverge.com",
+      "category": "article",
+      "pageSection": "Latest",
+      "pattern": "<div class=\"duet--content-cards--content-card\">",
+      "titleCandidates": [
+        {
+          "value": "Why the chip shortage is back",
+          "strategy": "anchor-heading",
+          "label": "<h2>"
+        },
+        {
+          "value": "Wafer close-up",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://cdn.vox-cdn.com/thumbor/ghi789/chips.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://cdn.vox-cdn.com/thumbor/ghi789/chips.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

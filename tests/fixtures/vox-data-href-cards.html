@@ -1,0 +1,40 @@
+<!--
+  Vox Media–style river (The Verge / Eater / SB Nation shape) — synthesized representative sample
+  Pattern: the whole card is <div role="link" data-href="…"> (no <a href>); the
+  thumbnail is lazy-loaded through lazysizes' data-bg attribute; video cards
+  carry a duration chip. One card ALSO wraps a real <a href> — the anchor must
+  win and the card must not double-emit. A bare play control
+  (<button data-video-id> with no label) is UI, not content.
+  Expected: 3 items — 2 articles + 1 video (the duration-chip card) — titles
+  from the <h2>, thumbs from data-bg / inline style, no item for the play button.
+-->
+<html>
+<head>
+  <meta property="og:url" content="https://www.theverge.com/tech">
+</head>
+<body>
+<main>
+  <section class="river-section" aria-label="Latest">
+    <div class="duet--content-cards--content-card" role="link" tabindex="0" data-href="/2026/06/10/foldable-phone-review">
+      <div class="card-image lazyload" data-bg="https://cdn.vox-cdn.com/thumbor/abc123/foldable.jpg"></div>
+      <h2 class="card-title">The new foldable finally fixes the crease</h2>
+      <span class="byline">By A. Writer</span>
+    </div>
+
+    <div class="duet--content-cards--content-card" role="link" tabindex="0" data-href="https://www.theverge.com/2026/06/10/robot-vacuum-video">
+      <div class="card-image" style="background-image: url(&quot;https://cdn.vox-cdn.com/thumbor/def456/vacuum.jpg&quot;)"></div>
+      <h2 class="card-title">We let a robot vacuum map our office for a week</h2>
+      <span class="card-duration">6:12</span>
+      <button class="play-control" data-video-id="vx-778899" aria-hidden="true"></button>
+    </div>
+
+    <div class="duet--content-cards--content-card" role="link" tabindex="0" data-href="/2026/06/10/chip-shortage-explainer">
+      <a href="https://www.theverge.com/2026/06/10/chip-shortage-explainer">
+        <img src="https://cdn.vox-cdn.com/thumbor/ghi789/chips.jpg" alt="Wafer close-up">
+        <h2>Why the chip shortage is back</h2>
+      </a>
+    </div>
+  </section>
+</main>
+</body>
+</html>
