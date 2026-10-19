@@ -420,3 +420,54 @@ test('video cards stay videos through the review step', async () => {
     await page.close();
   }
 });
+
+// WS3: measure the rendered grids. At desktop, tablet and phone widths every
+// row of cards must reach the grid's right edge (no orphan row), and the page
+// must not scroll sideways.
+test('generated grids have no orphan rows or horizontal overflow at any width', async () => {
+  const { page, pageErrors } = await openApp();
+  try {
+    await loadSampleAndReview(page);
+    const exports = await page.evaluate(() => {
+      const out = {};
+      for (const key of Object.keys(window.LINKFORGE_TEMPLATES)) {
+        __lfState.site.template = key;
+        out[key] = buildGeneratedSite();
+      }
+      return out;
+    });
+    for (const [key, html] of Object.entries(exports)) {
+      for (const width of [1440, 1000, 390]) {
+        const out = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: 'reduce' });
+        try {
+          await out.setContent(html, { waitUntil: 'domcontentloaded' });
+          const report = await out.evaluate(() => {
+            const grids = document.querySelectorAll('.creator-grid, .gallery, .flux-grid, .shelf-grid');
+            const gaps = [];
+            for (const grid of grids) {
+              if (!grid.offsetParent) continue; // inside a hidden tab
+              const right = grid.getBoundingClientRect().right;
+              const rows = new Map();
+              for (const card of grid.children) {
+                const r = card.getBoundingClientRect();
+                const top = Math.round(r.top);
+                rows.set(top, Math.max(rows.get(top) || 0, r.right));
+              }
+              for (const [top, rowRight] of rows) {
+                if (right - rowRight > 2) gaps.push(`${grid.className} row@${top}: ${Math.round(right - rowRight)}px short`);
+              }
+            }
+            return { gaps, overflow: document.documentElement.scrollWidth - window.innerWidth };
+          });
+          assert.deepEqual(report.gaps, [], `${key} @${width}px`);
+          assert.ok(report.overflow <= 0, `${key} @${width}px scrolls sideways by ${report.overflow}px`);
+        } finally {
+          await out.close();
+        }
+      }
+    }
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});

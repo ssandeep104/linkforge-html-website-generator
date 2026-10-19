@@ -21,6 +21,10 @@ const esc = (s) =>
 const attr = esc;
 
 // ---------- shared helpers ----------
+// A failed thumbnail hides itself and flags its frame (.is-broken) so the
+// template can show a fallback panel. The card stays: removing it would leave
+// a hole in a planned grid row and drop the link from the page silently.
+const BROKEN_IMG_ONERROR = `onerror="this.hidden=true;this.parentElement.classList.add('is-broken')"`;
 function thumbImg(item, extraAttrs = '') {
   if (!item || !item.thumbnail) return '';
   return `<img src="${attr(item.thumbnail)}" alt="" loading="lazy" ${extraAttrs}/>`;
@@ -50,6 +54,86 @@ function mediaFrame(item, { className = 'media-frame', imageAttrs = '' } = {}) {
     ${kind === 'video' ? `<span class="${className}__play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>` : ''}
   </div>`;
 }
+
+// ---------- balanced grids (issue #3 and every fixed-column grid) ----------
+// A grid of N cards in C columns leaves an orphan row whenever N % C != 0. The
+// fix here is editorial, not masonry (no grid-auto-flow: dense, which reorders
+// cards): each grid declares the ROW SHAPES it allows, and planRows() picks a
+// sequence of rows that holds exactly N cards, every row filled edge to edge.
+//
+//   A shape is { spans: [...], cost }. Spans are in grid-column units and must
+//   sum to the grid's column count. Plain rows cost 0; promoted rows (a wide
+//   feature card, a full-row hero) cost more, so they are used only as much as
+//   needed to absorb the remainder. A one-card shape must exist so any N works.
+//
+//   Rows come out round-robin in the order shapes are declared, so promoted
+//   rows lead and are spaced out between plain rows — the NYT / Guardian front:
+//   Editorial, 7 cards  -> [hero] [1 1 1] [1 1 1]          (1 hero + 6)
+//   Editorial, 11 cards -> [hero] [1 1 1] [hero] [1 1 1] [1 1 1]
+//                          (2 heroes + 9, heroes at positions 1 and 5)
+//
+// Plans are made per breakpoint and handed to CSS as --s-lg / --s-md / --s-sm
+// on each card; the grid's CSS picks the one for the current width.
+function planRows(n, shapes) {
+  const best = new Array(n + 1).fill(Infinity);
+  const pick = new Array(n + 1).fill(-1);
+  best[0] = 0;
+  for (let i = 1; i <= n; i++) {
+    shapes.forEach((shape, si) => {
+      const k = shape.spans.length;
+      if (k > i || best[i - k] === Infinity) return;
+      const cost = best[i - k] + (shape.cost || 0);
+      if (cost < best[i] - 1e-9) { best[i] = cost; pick[i] = si; }
+    });
+  }
+  if (n > 0 && pick[n] === -1) throw new Error(`planRows: no shape sequence fits ${n} items`);
+  const counts = shapes.map(() => 0);
+  for (let i = n; i > 0; i -= shapes[pick[i]].spans.length) counts[pick[i]]++;
+  const spans = [];
+  while (spans.length < n) {
+    shapes.forEach((shape, si) => {
+      if (!counts[si]) return;
+      counts[si]--;
+      spans.push(...shape.spans);
+    });
+  }
+  return spans;
+}
+
+// Per card: an inline style carrying its span at each breakpoint (--s-lg …,
+// for span arithmetic such as span-proportional aspect ratios) and classes
+// naming it (lf-lg-x2 …), because CSS cannot select on a custom property's
+// value and a wide card usually needs a different inner layout.
+// `layout` maps breakpoint name -> shapes, e.g. { lg: [...], md: [...], sm: [...] }.
+function balancedSpanStyles(n, layout) {
+  const plans = Object.entries(layout).map(([bp, shapes]) => [bp, planRows(n, shapes)]);
+  return Array.from({ length: n }, (_, i) => ({
+    style: plans.map(([bp, spans]) => `--s-${bp}:${spans[i]}`).join(';'),
+    cls: plans.map(([bp, spans]) => `lf-${bp}-x${spans[i]}`).join(' '),
+  }));
+}
+
+// Common shape sets.
+const SHAPES = {
+  // C single cards, or one card promoted to a 2-column "wide" card per row.
+  wideCards(cols) {
+    const out = [{ spans: Array(cols).fill(1), cost: 0 }];
+    if (cols === 1) return out;
+    if (cols === 2) return [{ spans: [2], cost: 1 }, ...out];
+    for (let wide = 1; wide <= Math.floor(cols / 2); wide++) {
+      out.unshift({ spans: [...Array(wide).fill(2), ...Array(cols - 2 * wide).fill(1)], cost: wide });
+    }
+    // A lone card on a page still needs somewhere to go.
+    out.push({ spans: [cols], cost: cols });
+    return out;
+  },
+  // Editorial: C single cards, or one full-row hero (issue #3).
+  heroRows(cols) {
+    return cols === 1
+      ? [{ spans: [1], cost: 0 }]
+      : [{ spans: [cols], cost: 1 }, { spans: Array(cols).fill(1), cost: 0 }];
+  },
+};
 
 function smartLinksSection(linkGroups, { heading = 'More links' } = {}) {
   if (!linkGroups || !linkGroups.length) return '';
@@ -194,6 +278,9 @@ const THEME_TOGGLE_CSS = `
     -webkit-backdrop-filter: blur(8px);
   }
   .lf-theme-toggle:hover { border-color: currentColor; }
+  /* Clearance so the floating toggle never sits on the page's last row. */
+  body.lf-template { padding-bottom: 72px; }
+  @media print { .lf-theme-toggle { display: none; } body.lf-template { padding-bottom: 0; } }
 `;
 
 const THEME_TOGGLE_BUTTON = `<button type="button" class="lf-theme-toggle" data-lf-theme-toggle aria-pressed="false" aria-label="Switch between dark and light theme"><span class="lf-theme-toggle__label">Theme</span></button>`;
@@ -589,7 +676,7 @@ function shell({ title, tagline, today, body, css, bodyClass = '', defaultTheme 
   .lf-template h1,
   .lf-template h2,
   .lf-template h3,
-  .lf-template h4 { text-wrap: balance; }
+  .lf-template h4 { text-wrap: balance; overflow-wrap: break-word; }
   .lf-template p,
   .lf-template .tagline { text-wrap: pretty; }
   .lf-template a:focus-visible,
@@ -1000,7 +1087,10 @@ function buildYoutube(ctx) {
     onerror="this.hidden=true;this.parentElement.classList.add('is-broken')"
   />`;
 
-  const card = (item, source) => `<a class="creator-card" href="${attr(item.href)}" target="_blank" rel="noopener noreferrer">
+  // 6 / 4 / 2 columns; the remainder is absorbed by wide (2-column) cards
+  // near the top instead of an orphan row at the bottom.
+  const gridLayout = { lg: SHAPES.wideCards(6), md: SHAPES.wideCards(4), sm: SHAPES.wideCards(2) };
+  const card = (item, source, span) => `<a class="creator-card ${span.cls}" style="${span.style}" href="${attr(item.href)}" target="_blank" rel="noopener noreferrer">
     <div class="creator-card__media">${image(item)}</div>
     <h3>${esc(item.title || item.href)}</h3>
     <div class="creator-card__source">${esc(source)}</div>
@@ -1015,7 +1105,7 @@ function buildYoutube(ctx) {
         <h2>${esc(source)}</h2>
         <span aria-hidden="true"></span>
       </div>
-      <div class="creator-grid">${items.map((item) => card(item, source)).join('')}</div>
+      <div class="creator-grid">${((spans) => items.map((item, i) => card(item, source, spans[i])).join(''))(balancedSpanStyles(items.length, gridLayout))}</div>
     </section>`;
   }).join('');
 
@@ -1084,7 +1174,13 @@ function buildYoutube(ctx) {
   .creator-section__head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
   .creator-section__head h2 { flex: 0 0 auto; margin: 0; color: #f3f0ea; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
   .creator-section__head span { width: 100%; height: 1px; background: var(--creator-line); }
-  .creator-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 28px 14px; }
+  .creator-grid { --cols: 6; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 28px 14px; }
+  .creator-card { --s: var(--s-lg, 1); grid-column: span var(--s); }
+  /* Wide cards sit image-left / text-right so they keep a single card's
+     height and the row stays level. */
+  .creator-card.lf-lg-x2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 14px; align-content: start; }
+  .creator-card.lf-lg-x2 .creator-card__media { grid-row: 1 / span 2; }
+  .creator-card.lf-lg-x2 h3 { margin-top: 0; font-size: 15px; -webkit-line-clamp: 4; }
   .creator-card { display: block; min-width: 0; }
   .creator-card__media { aspect-ratio: 1.72 / 1; overflow: hidden; background: var(--creator-panel); border: 1px solid #20272c; }
   .creator-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 350ms var(--ease-out), opacity 180ms ease; }
@@ -1097,17 +1193,26 @@ function buildYoutube(ctx) {
 
   .creator-links { margin-top: 48px; padding-top: 4px; }
   .creator-links__groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 40px; }
+  .creator-links__groups > section { min-width: 0; }
   .creator-links__groups h3 { margin: 0 0 8px; color: #c4c5c5; font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
   .creator-links ul { list-style: none; margin: 0; padding: 0; }
   .creator-links li { border-bottom: 1px solid #1e2429; }
   .creator-links li:last-child { border-bottom: 0; }
   .creator-links a { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; color: #cfd0cf; font-size: 12px; }
-  .creator-links a > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .creator-links a > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .creator-links small { flex: 0 0 auto; color: #727980; font-size: 9px; }
   .creator-links a:hover, .creator-links a:focus-visible { color: var(--creator-accent); }
   .creator-empty { margin: 64px 0; padding: 40px 20px; border-block: 1px solid var(--creator-line); color: var(--creator-muted); text-align: center; }
 
-  @media (max-width: 1180px) { .creator-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 1180px) {
+    .creator-grid { --cols: 4; }
+    .creator-card { --s: var(--s-md, 1); }
+    .creator-card.lf-lg-x2 { display: block; }
+    .creator-card.lf-lg-x2 h3 { margin-top: 10px; font-size: 13px; -webkit-line-clamp: 2; }
+    .creator-card.lf-md-x2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 14px; align-content: start; }
+    .creator-card.lf-md-x2 .creator-card__media { grid-row: 1 / span 2; }
+    .creator-card.lf-md-x2 h3 { margin-top: 0; font-size: 15px; -webkit-line-clamp: 4; }
+  }
   @media (max-width: 780px) {
     .creator-wrap { padding: 12px 14px 56px; }
     .creator-masthead { min-height: 48px; padding: 0 4px 12px; }
@@ -1115,8 +1220,14 @@ function buildYoutube(ctx) {
     .creator-hero__shade { background: linear-gradient(0deg, rgba(5,8,10,.94) 0%, rgba(5,8,10,.22) 70%); }
     .creator-hero__copy { left: 22px; bottom: 24px; width: calc(100% - 44px); }
     .creator-hero__copy h2 { font-size: clamp(34px, 10vw, 52px); }
-    .creator-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 10px; }
-    .creator-links__groups { grid-template-columns: 1fr; gap: 24px; }
+    .creator-grid { --cols: 2; gap: 22px 10px; }
+    .creator-card { --s: var(--s-sm, 1); }
+    .creator-card.lf-md-x2 { display: block; }
+    .creator-card.lf-md-x2 h3 { margin-top: 10px; font-size: 13px; -webkit-line-clamp: 2; }
+    .creator-card.lf-sm-x2 { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 12px; align-content: start; }
+    .creator-card.lf-sm-x2 .creator-card__media { grid-row: 1 / span 2; }
+    .creator-card.lf-sm-x2 h3 { margin-top: 0; font-size: 14px; -webkit-line-clamp: 4; }
+    .creator-links__groups { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   }
   @media (max-width: 420px) {
     .creator-hero { min-height: 310px; }
@@ -1236,15 +1347,13 @@ function buildWall(ctx) {
   .source-name { min-width: 0; font-size: 12px; line-height: 1.2; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
   .source-count { flex: 0 0 auto; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 10px; }
   .source-rule { height: 1px; flex: 1; background: var(--line); }
-  .gallery { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(14px, 1.7vw, 26px); align-items: start; }
-  .work { grid-column: span 4; display: block; color: inherit; min-width: 0; }
-  .work:nth-child(8n + 1), .work:nth-child(8n + 2) { grid-column: span 6; }
-  .work:nth-child(8n + 4), .work:nth-child(8n + 7) { grid-column: span 5; }
-  .work:nth-child(8n + 5), .work:nth-child(8n + 8) { grid-column: span 3; }
-  .media { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: #e8e5de; }
-  .work:nth-child(8n + 1) .media, .work:nth-child(8n + 2) .media { aspect-ratio: 16 / 10; }
-  .work:nth-child(8n + 4) .media, .work:nth-child(8n + 7) .media { aspect-ratio: 5 / 4; }
-  .work:nth-child(8n + 5) .media, .work:nth-child(8n + 8) .media { aspect-ratio: 3 / 4; }
+.gallery { --cols: 12; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: clamp(14px, 1.7vw, 26px); align-items: start; }
+  /* Justified rows: each row is planned to fill the 12 columns exactly
+     (balancedSpanStyles), and an image's aspect ratio grows with its span
+     (span / 3), so every image in a row comes out the same height whatever
+     its width — no ragged row bottoms, no orphan tail. */
+  .work { --s: var(--s-lg, 4); --ar: calc(var(--s) / 3); grid-column: span var(--s); display: block; color: inherit; min-width: 0; }
+  .media { position: relative; aspect-ratio: var(--ar); overflow: hidden; background: #e8e5de; }
   .media img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; transition: transform 500ms cubic-bezier(.2,.7,.2,1), filter 220ms ease; }
   .media-fallback { position: absolute; z-index: 0; inset: 0; display: grid; place-items: center; color: #918d84; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
   .work:hover .media img, .work:focus-visible .media img { transform: scale(1.025); filter: saturate(1.04); }
@@ -1256,28 +1365,31 @@ function buildWall(ctx) {
   .plain-links li { min-width: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
   .plain-links a { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; color: var(--ink); font-size: 12px; line-height: 1.35; }
   .plain-links a:hover, .plain-links a:focus-visible { color: var(--accent); }
-  .plain-links__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plain-links__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .plain-links__domain { flex: 0 0 auto; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 9px; }
   .empty { padding: 44px 0; color: var(--muted); border-top: 1px solid var(--line); font-size: 13px; }
   @media (max-width: 860px) {
-    .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .work, .work:nth-child(n) { grid-column: span 1; }
-    .work:nth-child(n) .media { aspect-ratio: 4 / 3; }
-    .work:nth-child(4n + 1) { grid-column: 1 / -1; }
-    .work:nth-child(4n + 1) .media { aspect-ratio: 16 / 9; }
+    .gallery { --cols: 2; }
+    .work { --s: var(--s-md, 1); --ar: calc(var(--s) * 4 / 3); }
   }
   @media (max-width: 560px) {
     .wall { padding-top: 24px; }
     .site-head { margin-bottom: 48px; }
-    .gallery { grid-template-columns: 1fr; gap: 28px; }
-    .work, .work:nth-child(n) { grid-column: 1; }
-    .work:nth-child(n) .media { aspect-ratio: 4 / 3; }
+    .gallery { --cols: 1; gap: 28px; }
+    .work { --s: 1; --ar: 4 / 3; }
     .source-head { gap: 9px; }
     .plain-links { grid-template-columns: 1fr; }
   }`;
 
+  // Rows of two (6+6) or three (4+5+3) on desktop; on tablets pairs, with a
+  // full-width image only when the count is odd. A lone image spans the row.
+  const wallLayout = {
+    lg: [{ spans: [6, 6], cost: 0.1 }, { spans: [4, 5, 3], cost: 0 }, { spans: [12], cost: 5 }],
+    md: SHAPES.wideCards(2),
+  };
   const sections = groups.map((group) => {
-    const works = group.previewItems.map((item) => `<a class="work" href="${attr(item.href)}" target="_blank" rel="noopener">
+    const spans = balancedSpanStyles(group.previewItems.length, wallLayout);
+    const works = group.previewItems.map((item, i) => `<a class="work ${spans[i].cls}" style="${spans[i].style}" href="${attr(item.href)}" target="_blank" rel="noopener">
       <div class="media">
         <span class="media-fallback" aria-hidden="true">Image unavailable</span>
         <img src="${attr(item.thumbnail)}" alt="" loading="lazy" onerror="this.remove()" />
@@ -1296,7 +1408,7 @@ function buildWall(ctx) {
       <header class="source-head">
         <h2 class="source-name">${esc(srcLabel(group))}</h2>
         <span class="source-rule" aria-hidden="true"></span>
-        <span class="source-count">${count} ${count === 1 ? 'image' : 'images'}</span>
+        <span class="source-count">${count} ${count === 1 ? 'item' : 'items'}</span>
       </header>
       ${works ? `<div class="gallery">${works}</div>` : '<div class="empty">No images available for this source.</div>'}
       ${links}
@@ -1541,19 +1653,18 @@ function buildFlux(ctx) {
   .tab-btn.active { color:var(--flux-mint); }
   .tab-btn__title { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
   .tab-btn__meta { display:none; }
-  .flux-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:12px; }
-  .flux-card { grid-column:span 3; min-width:0; overflow:hidden; border:1px solid var(--flux-line); border-radius:3px; background:var(--flux-panel); }
-  .flux-card:nth-child(1),.flux-card:nth-child(2) { grid-column:span 6; }
-  .flux-card:nth-child(6n+4) { grid-column:span 4; }
-  .flux-card:nth-child(6n+5) { grid-column:span 5; }
-  .flux-card:nth-child(6n+6) { grid-column:span 3; }
-  .flux-card__media { position:relative; aspect-ratio:4/3; overflow:hidden; background:#172126; }
-  .flux-card:nth-child(1) .flux-card__media,.flux-card:nth-child(2) .flux-card__media { aspect-ratio:16/9; }
+  /* Balanced rows (balancedSpanStyles): pairs, threes and fours that fill the
+     12 columns exactly; media aspect grows with span (span / 3) so a row's
+     images share one height. */
+  .flux-grid { --cols:12; display:grid; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); gap:12px; align-items:start; }
+  .flux-card { --s:var(--s-lg,4); --ar:calc(var(--s) / 3); grid-column:span var(--s); min-width:0; overflow:hidden; border:1px solid var(--flux-line); border-radius:3px; background:var(--flux-panel); }
+  .flux-card__media { position:relative; aspect-ratio:var(--ar); overflow:hidden; background:#172126; }
+  .flux-card__media.is-broken::after { content:"Preview unavailable"; position:absolute; inset:0; display:grid; place-items:center; color:var(--flux-muted); font:400 10px "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
   .flux-card__media img { width:100%; height:100%; object-fit:cover; filter:saturate(.82) contrast(1.04); transition:transform .4s var(--ease-out),filter .25s ease; }
   .flux-card:hover img { transform:scale(1.025); filter:saturate(1); }
   .flux-card__kind { position:absolute; left:12px; bottom:12px; padding:5px 7px; border:1px solid rgba(134,244,211,.45); background:rgba(8,12,14,.82); color:var(--flux-mint); font:600 9px/1 "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
   .flux-card__body { display:grid; gap:7px; padding:12px; border-top:1px solid var(--flux-line); }
-  .flux-card h2 { margin:0; overflow:hidden; font-size:14px; font-weight:500; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
+  .flux-card h2 { display:-webkit-box; margin:0; overflow:hidden; font-size:14px; font-weight:500; line-height:1.3; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
   .flux-card__meta { color:var(--flux-muted); font:400 9px/1.3 "IBM Plex Mono",monospace; }
   .flux-card:hover h2 { color:var(--flux-mint); }
   .flux-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px; }
@@ -1561,12 +1672,20 @@ function buildFlux(ctx) {
   .flux-links a::after { content:"↗"; color:var(--flux-mint); }
   .flux-links a:hover { border-color:#527067; color:var(--flux-text); }
   .flux-empty { padding:36px 0; color:var(--flux-muted); font:400 11px "IBM Plex Mono",monospace; }
-  @media(max-width:900px){ .flux-shell{padding:24px}.flux-hero{grid-template-columns:1fr}.flux-signal{display:none}.flux-card,.flux-card:nth-child(n){grid-column:span 6}.flux-links{grid-template-columns:1fr 1fr} }
-  @media(max-width:600px){ .flux-shell{padding:20px 14px 36px}.flux-top{padding-bottom:18px}.flux-hero{min-height:132px;padding:28px 0 18px}.flux-hero h1{font-size:clamp(42px,17vw,72px)}.flux-card,.flux-card:nth-child(n){grid-column:span 12}.flux-card__media,.flux-card:nth-child(n) .flux-card__media{aspect-ratio:16/10}.flux-links{grid-template-columns:1fr}.tab-btn{padding-right:18px} }
+  @media(max-width:900px){ .flux-shell{padding:24px}.flux-hero{grid-template-columns:1fr}.flux-signal{display:none}.flux-grid{--cols:2}.flux-card{--s:var(--s-md,1);--ar:calc(var(--s) * 4 / 3)}.flux-links{grid-template-columns:1fr 1fr} }
+  @media(max-width:600px){ .flux-shell{padding:20px 14px 36px}.flux-top{padding-bottom:18px}.flux-hero{min-height:132px;padding:28px 0 18px}.flux-hero h1{font-size:clamp(40px,14vw,72px)}.flux-grid{--cols:1}.flux-card{--s:1;--ar:16 / 10}.flux-links{grid-template-columns:1fr}.tab-btn{padding-right:18px} }
   `;
+  const fluxLayout = {
+    lg: [{ spans: [6, 6], cost: 0.1 }, { spans: [4, 4, 4], cost: 0 }, { spans: [3, 3, 3, 3], cost: 0.1 }, { spans: [12], cost: 5 }],
+    md: SHAPES.wideCards(2),
+  };
   const content = renderSourceTabs(groups, (group) => {
-    const cards = group.previewItems.map((item) => `<a class="flux-card" href="${attr(item.href)}" target="_blank" rel="noopener">
-      <div class="flux-card__media">${thumbImg(item, 'decoding="async" onerror="this.parentElement.parentElement.remove()"')}<span class="flux-card__kind">${esc(itemKindLabel(item))}</span></div>
+    const spans = balancedSpanStyles(group.previewItems.length, fluxLayout);
+    // A failed image keeps its card (with a "Preview unavailable" panel):
+    // removing the card used to punch a hole in the planned rows and drop
+    // the link from the page without a trace.
+    const cards = group.previewItems.map((item, i) => `<a class="flux-card ${spans[i].cls}" style="${spans[i].style}" href="${attr(item.href)}" target="_blank" rel="noopener">
+      <div class="flux-card__media">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}<span class="flux-card__kind">${esc(itemKindLabel(item))}</span></div>
       <div class="flux-card__body"><h2>${esc(item.title || item.href)}</h2><span class="flux-card__meta">${esc(item.domain || srcLabel(group))}</span></div>
     </a>`).join('');
     const links = group.linkItems.map((item) => `<a href="${attr(item.href)}" target="_blank" rel="noopener"><span>${esc(item.title || item.href)}</span></a>`).join('');
@@ -1612,11 +1731,14 @@ function buildShelf(ctx) {
   .tab-btn.active { border-color:transparent; background:var(--shelf-ice); color:#2459c4; box-shadow:none; }
   .tab-btn__title { font-size:11px; font-weight:600; }
   .tab-btn__meta { display:none; }
-  .shelf-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-auto-flow:dense; gap:8px; }
-  .shelf-card { grid-column:span 4; min-width:0; overflow:hidden; border:1px solid var(--shelf-line); border-radius:4px; background:var(--shelf-panel); }
-  .shelf-card:nth-child(1){grid-column:span 7}.shelf-card:nth-child(2){grid-column:span 5}.shelf-card:nth-child(3){grid-column:span 5}.shelf-card:nth-child(4){grid-column:span 7}.shelf-card:nth-child(7n){grid-column:span 8}
-  .shelf-card__media { position:relative; aspect-ratio:4/3; overflow:hidden; background:#e9eef0; }
-  .shelf-card:nth-child(1) .shelf-card__media,.shelf-card:nth-child(4) .shelf-card__media,.shelf-card:nth-child(7n) .shelf-card__media{aspect-ratio:16/9}
+  /* Balanced rows (7+5, 4+4+4, 5+7, 8+4) planned to fill 12 columns in
+     source order — this used to rely on dense auto-placement, which reorders
+     cards and still left a ragged tail. Media aspect grows with span
+     (span / 3) so each row's images share one height. */
+  .shelf-grid { --cols:12; display:grid; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); gap:8px; align-items:start; }
+  .shelf-card { --s:var(--s-lg,4); --ar:calc(var(--s) / 3); grid-column:span var(--s); min-width:0; overflow:hidden; border:1px solid var(--shelf-line); border-radius:4px; background:var(--shelf-panel); }
+  .shelf-card__media { position:relative; aspect-ratio:var(--ar); overflow:hidden; background:#e9eef0; }
+  .shelf-card__media.is-broken::after { content:"Preview unavailable"; position:absolute; inset:0; display:grid; place-items:center; color:var(--shelf-muted); font:400 10px "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
   .shelf-card__media img { width:100%; height:100%; object-fit:cover; filter:saturate(.9); transition:transform .45s var(--ease-out),filter .25s ease; }
   .shelf-card:hover img { transform:scale(1.025); filter:saturate(1.05); }
   .shelf-card__body { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; padding:12px; }
@@ -1631,11 +1753,15 @@ function buildShelf(ctx) {
   .shelf-links a:hover { background:#f0f7fa; color:#2459c4; }
   .shelf-empty { padding:40px 0; color:var(--shelf-muted); font-size:13px; }
   @media(max-width:900px){.shelf-layout{grid-template-columns:1fr}.shelf-intro{position:static;min-height:0}.shelf-intro h1{margin:18px 0 8px}.shelf-index{display:none}}
-  @media(max-width:620px){.shelf-shell{padding:18px 12px 36px}.shelf-date{display:none}.shelf-layout{padding-top:20px}.shelf-intro h1{font-size:clamp(44px,16vw,68px)}.shelf-card,.shelf-card:nth-child(n){grid-column:span 12}.shelf-card__media,.shelf-card:nth-child(n) .shelf-card__media{aspect-ratio:16/10}}
+  @media(max-width:620px){.shelf-shell{padding:18px 12px 36px}.shelf-date{display:none}.shelf-layout{padding-top:20px}.shelf-intro h1{font-size:clamp(44px,16vw,68px)}.shelf-grid{--cols:1}.shelf-card{--s:1;--ar:16 / 10}}
   `;
+  const shelfLayout = {
+    lg: [{ spans: [7, 5], cost: 0 }, { spans: [4, 4, 4], cost: 0 }, { spans: [5, 7], cost: 0 }, { spans: [8, 4], cost: 0 }, { spans: [12], cost: 5 }],
+  };
   const content = renderSourceTabs(groups, (group) => {
-    const cards = group.previewItems.map((item) => `<a class="shelf-card" href="${attr(item.href)}" target="_blank" rel="noopener">
-      <div class="shelf-card__media">${thumbImg(item, 'decoding="async" onerror="this.parentElement.parentElement.remove()"')}</div>
+    const spans = balancedSpanStyles(group.previewItems.length, shelfLayout);
+    const cards = group.previewItems.map((item, i) => `<a class="shelf-card ${spans[i].cls}" style="${spans[i].style}" href="${attr(item.href)}" target="_blank" rel="noopener">
+      <div class="shelf-card__media">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}</div>
       <div class="shelf-card__body"><div><h2>${esc(item.title || item.href)}</h2><span class="shelf-card__meta">${esc(itemKindLabel(item))} · ${esc(item.domain || srcLabel(group))}</span></div><span class="shelf-card__arrow" aria-hidden="true">↗</span></div>
     </a>`).join('');
     const links = group.linkItems.map((item) => `<a href="${attr(item.href)}" target="_blank" rel="noopener"><span>${esc(item.title || item.href)}</span></a>`).join('');
@@ -1746,5 +1872,5 @@ if (typeof window !== 'undefined') {
   window.LINKFORGE_SUGGEST_TEMPLATE = suggestTemplate;
 }
 if (typeof module !== 'undefined') {
-  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups };
+  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups, planRows, balancedSpanStyles, SHAPES };
 }
