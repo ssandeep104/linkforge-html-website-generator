@@ -838,9 +838,14 @@ function applySourceStrategy(src) {
       const pick = it.thumbCandidates?.find((c) => c.strategy === strat.thumb);
       it.thumbnail = pick ? pick.value : null;
     }
+    // A parsed video whose src is the item's own destination says what the
+    // item IS (a video page: Bloomberg/NBC/duration-chip cards), not an
+    // optional inline preview, so the default "no preview" choice keeps it.
+    if (it._parsedVideo === undefined) it._parsedVideo = it.video || null;
     if (strat.video) {
       const pick = it.videoCandidates?.find((c) => c.strategy === strat.video);
-      it.video = pick ? (pick.info || { url: pick.value }) : null;
+      const destinationVideo = it._parsedVideo && it._parsedVideo.src === it.href ? it._parsedVideo : null;
+      it.video = pick ? (pick.info || { url: pick.value }) : destinationVideo;
     }
     refreshItemCategory(it);
   }

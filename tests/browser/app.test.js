@@ -44,7 +44,12 @@ before(async () => {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   await waitForServer();
-  browser = await chromium.launch({ headless: true });
+  // PLAYWRIGHT_CHROMIUM_PATH lets an environment with a preinstalled Chromium
+  // whose revision differs from the pinned playwright package still run.
+  browser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+  });
 });
 
 after(async () => {
@@ -388,6 +393,28 @@ test('sources can be reordered with the move up / down controls', async () => {
     await page.locator('.source-card').nth(1).locator('[data-move="up"]').click();
     assert.deepEqual(await order(), ['bbc.com', 'nytimes.com'], 'moving the 2nd source up swaps the order');
 
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
+// WS2: the review step defaults every pattern's video PREVIEW to "none". A
+// card whose destination IS the video (Bloomberg data-video-url, duration-chip
+// cards) must survive that default and still count as a video.
+test('video cards stay videos through the review step', async () => {
+  const { page, pageErrors } = await openApp();
+  try {
+    const html = await import('node:fs').then((fs) => fs.readFileSync('tests/fixtures/bloomberg-video.html', 'utf8'));
+    await page.locator('.source-card textarea').first().fill(html);
+    await page.locator('#btn-parse').click();
+    await page.locator('#step-review.screen--active').waitFor();
+    const kinds = () => page.evaluate(() => __lfState.items.map((it) => it.category));
+    assert.deepEqual(await kinds(), ['video', 'video', 'video']);
+    // "Reset source" re-applies the seeded defaults (video preview: none) —
+    // the path that used to strip the video semantics.
+    await page.locator('[data-reset-review-source]').click();
+    assert.deepEqual(await kinds(), ['video', 'video', 'video']);
     assert.deepEqual(pageErrors, []);
   } finally {
     await page.close();

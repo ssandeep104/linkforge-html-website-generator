@@ -1,0 +1,91 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://news.example",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Storm season starts early on the coast",
+      "href": "https://news.example/2026/storm-season",
+      "thumbnail": "https://img.news.example/storm.jpg",
+      "video": null,
+      "description": null,
+      "domain": "news.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<li class=\"story-card\">",
+      "titleCandidates": [
+        {
+          "value": "Storm season starts early on the coast",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
+        {
+          "value": "Read more",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://img.news.example/storm.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://img.news.example/storm.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "City council approves the new bridge",
+      "href": "https://news.example/2026/bridge-vote",
+      "thumbnail": "https://img.news.example/bridge.jpg",
+      "video": null,
+      "description": null,
+      "domain": "news.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<li class=\"story-card\">",
+      "titleCandidates": [
+        {
+          "value": "City council approves the new bridge",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
+        {
+          "value": "Bridge at dusk",
+          "strategy": "anchor-img-alt",
+          "label": "image alt"
+        },
+        {
+          "value": "Read more",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://img.news.example/bridge.jpg",
+          "strategy": "img-src",
+          "label": "<img src>"
+        },
+        {
+          "value": "https://img.news.example/bridge.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        }
+      ],
+      "videoCandidates": []
+    }
+  ]
+}

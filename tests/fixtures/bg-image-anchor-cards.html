@@ -1,0 +1,27 @@
+<!--
+  Background-image anchor cards — synthesized representative sample
+  Pattern: portfolio / streaming tiles where the artwork is CSS, not <img>:
+    1. the anchor itself carries style="background-image:url(…)"
+    2. a lazy-load wrapper inside the anchor carries data-background-image (Lozad)
+    3. a card whose ONLY background image is the 32px channel logo — furniture,
+       so the card must come out without a thumbnail rather than with the logo.
+  Expected: 3 items; thumbs = tile-1.jpg, tile-2.jpg, none.
+-->
+<html>
+<head><base href="https://tiles.example/"></head>
+<body>
+<div class="tile-grid">
+  <a class="tile" href="/work/harbor-lights" style="background-image:url('https://img.tiles.example/tile-1.jpg'); background-size: cover">
+    <h3 class="tile__title">Harbor Lights</h3>
+  </a>
+  <a class="tile" href="/work/quiet-dunes">
+    <div class="tile__art lozad" data-background-image="https://img.tiles.example/tile-2.jpg"></div>
+    <h3 class="tile__title">Quiet Dunes</h3>
+  </a>
+  <a class="tile" href="/work/late-train">
+    <span class="channel-logo" style="background-image:url(https://img.tiles.example/logo-32.png)"></span>
+    <h3 class="tile__title">Late Train</h3>
+  </a>
+</div>
+</body>
+</html>

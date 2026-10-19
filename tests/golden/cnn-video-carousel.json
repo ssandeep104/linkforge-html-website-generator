@@ -14,10 +14,13 @@
       "title": "Space debris lights up night sky over Pacific Northwest",
       "href": "https://www.cnn.com/videos/us/2026/06/10/space-debris-reentry-orig-dp.cnn",
       "thumbnail": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-2215088888.jpg?c=16x9&q=h_438,w_780,c_fill",
-      "video": null,
+      "video": {
+        "src": "https://www.cnn.com/videos/us/2026/06/10/space-debris-reentry-orig-dp.cnn",
+        "poster": null
+      },
       "description": null,
       "domain": "cnn.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
       "titleCandidates": [
@@ -55,10 +58,13 @@
       "title": "Senate passes sweeping infrastructure package 67-33",
       "href": "https://www.cnn.com/videos/politics/2026/06/10/senate-vote-infrastructure-orig-jm.cnn",
       "thumbnail": "https://media.cnn.com/api/v1/images/stellar/prod/gettyimages-senate-floor.jpg?c=16x9&q=h_438,w_780,c_fill",
-      "video": null,
+      "video": {
+        "src": "https://www.cnn.com/videos/politics/2026/06/10/senate-vote-infrastructure-orig-jm.cnn",
+        "poster": null
+      },
       "description": null,
       "domain": "cnn.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
       "titleCandidates": [
@@ -96,10 +102,13 @@
       "title": "Massive tornado tears through Texas Panhandle, dozens injured",
       "href": "https://www.cnn.com/videos/weather/2026/06/10/tornado-texas-panhandle-orig-na.cnn",
       "thumbnail": "https://media.cnn.com/api/v1/images/stellar/prod/tornado-funnel-cloud.jpg?c=16x9&q=h_438,w_780,c_fill",
-      "video": null,
+      "video": {
+        "src": "https://www.cnn.com/videos/weather/2026/06/10/tornado-texas-panhandle-orig-na.cnn",
+        "poster": null
+      },
       "description": null,
       "domain": "cnn.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
       "titleCandidates": [
@@ -137,10 +146,13 @@
       "title": "OpenAI unveils new reasoning model at surprise event",
       "href": "https://www.cnn.com/videos/tech/2026/06/10/openai-new-model-demo-orig-bk.cnn",
       "thumbnail": "https://media.cnn.com/api/v1/images/stellar/prod/openai-model-demo.jpg?c=16x9&q=h_438,w_780,c_fill",
-      "video": null,
+      "video": {
+        "src": "https://www.cnn.com/videos/tech/2026/06/10/openai-new-model-demo-orig-bk.cnn",
+        "poster": null
+      },
       "description": null,
       "domain": "cnn.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
       "titleCandidates": [

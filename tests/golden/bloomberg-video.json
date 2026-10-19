@@ -21,7 +21,7 @@
       "description": null,
       "domain": "bloomberg.com",
       "category": "video",
-      "pageSection": "Other",
+      "pageSection": "Videos",
       "pattern": "<button class=\"video-card__trigger\">",
       "titleCandidates": [
         {
@@ -71,7 +71,7 @@
       "description": null,
       "domain": "bloomberg.com",
       "category": "video",
-      "pageSection": "Other",
+      "pageSection": "Videos",
       "pattern": "<button class=\"video-card__trigger\">",
       "titleCandidates": [
         {
@@ -121,7 +121,7 @@
       "description": null,
       "domain": "bloomberg.com",
       "category": "video",
-      "pageSection": "Other",
+      "pageSection": "Videos",
       "pattern": "<button class=\"video-card__trigger\">",
       "titleCandidates": [
         {

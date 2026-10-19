@@ -1,0 +1,27 @@
+<!--
+  Three-anchor card with URL variants — synthesized representative sample
+  Pattern (#5 extended): image link, headline link and "Read more" link all
+  point at the same story, but spelled three ways (trailing slash, #comments
+  fragment, http vs https / www). The author byline links elsewhere.
+  Expected: 2 items (one per story) — never 6, never a byline item; title from
+  the headline, thumbnail from the image link.
+-->
+<html>
+<head><link rel="canonical" href="https://news.example/latest"></head>
+<body>
+<ul class="story-list">
+  <li class="story-card">
+    <a href="https://news.example/2026/storm-season"><img src="https://img.news.example/storm.jpg" alt=""></a>
+    <h3><a href="https://news.example/2026/storm-season/">Storm season starts early on the coast</a></h3>
+    <p>By <a class="byline" href="https://news.example/authors/r-diaz">R. Diaz</a></p>
+    <a class="more" href="http://www.news.example/2026/storm-season#comments">Read more</a>
+  </li>
+  <li class="story-card">
+    <a href="https://news.example/2026/bridge-vote"><img src="https://img.news.example/bridge.jpg" alt="Bridge at dusk"></a>
+    <h3><a href="https://news.example/2026/bridge-vote/">City council approves the new bridge</a></h3>
+    <p>By <a class="byline" href="https://news.example/authors/k-lee">K. Lee</a></p>
+    <a class="more" href="https://www.news.example/2026/bridge-vote/#comments">Read more</a>
+  </li>
+</ul>
+</body>
+</html>

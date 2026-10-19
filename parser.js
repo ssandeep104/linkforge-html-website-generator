@@ -697,12 +697,10 @@ function extractImageFromAnchor(a) {
     const picked = pickImgSrc(anyImg);
     if (picked) return { url: picked, el: anyImg };
   }
-  // background-image inline style
-  const styled = Array.from(a.querySelectorAll('[style*="background"]'));
-  for (const el of styled) {
-    const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/i);
-    if (m) return { url: m[1], el: null };
-  }
+  // background-image (inline style or lazy-load data attribute), on the
+  // anchor itself or inside it.
+  const bg = findBackgroundImage(a);
+  if (bg) return { url: bg.url, el: null };
   return null;
 }
 
@@ -721,6 +719,167 @@ function extractVideoFromAnchor(a, baseURL) {
     }
   }
   return null;
+}
+
+// ---------- card identification (WS2) ----------
+// A "card" is whatever the publisher made clickable, plus the media and text
+// that sit with it. Rather than one pass per publisher shape, every shape is
+// reduced to a CLICK TARGET that the single bucket pipeline below handles:
+//
+//   <a href>                                  — the classic anchor card
+//   button / [role=button] / [role=link] carrying a URL in a data attribute
+//                                             — Bloomberg <button data-video-url> (#4),
+//                                               Vox-style <div role="link" data-href>
+//   button / [role=button] / [role=link] carrying only a content ID
+//                                             — NBC <div role="button" data-contentid> (#9)
+//
+// Titles, thumbnails and videos for all of them come from the same rule lists
+// (TITLE_RULES / THUMB_RULES / VIDEO_RULES), and two halves of one card that
+// point at the same destination (#5) still merge by canonical href.
+const CLICK_URL_ATTRS = ['data-href', 'data-url', 'data-video-url', 'data-link', 'data-permalink'];
+const CLICK_ID_ATTRS = ['data-contentid', 'data-content-id', 'data-video-id'];
+const CLICKABLE_HOSTS = ['button', '[role="button"]', '[role="link"]'];
+const CLICK_TARGET_SELECTOR = ['a[href]']
+  .concat(CLICKABLE_HOSTS.flatMap((host) => CLICK_URL_ATTRS.concat(CLICK_ID_ATTRS).map((attr) => `${host}[${attr}]`)))
+  .join(', ');
+
+function clickTargetUrl(el) {
+  if (el.tagName === 'A') return el.getAttribute('href');
+  for (const attr of CLICK_URL_ATTRS) {
+    const v = el.getAttribute(attr)?.trim();
+    if (v) return v;
+  }
+  return null;
+}
+
+function clickTargetId(el) {
+  if (el.tagName === 'A') return null;
+  for (const attr of CLICK_ID_ATTRS) {
+    const v = el.getAttribute(attr)?.trim();
+    if (v) return v;
+  }
+  return null;
+}
+
+// Every click target in document order. A non-anchor clickable is dropped
+// when it:
+//   - sits inside, or wraps, a real <a href> — the anchor is the publisher's
+//     own statement of where the card goes, and keeping both double-emits;
+//   - sits inside another click target — it is a control ON that card (a play
+//     or mute button), not a card of its own;
+//   - is aria-hidden — a decorative or duplicate control by declaration.
+function collectClickTargets(doc) {
+  return Array.from(doc.querySelectorAll(CLICK_TARGET_SELECTOR)).filter((el) => {
+    if (el.tagName === 'A') return true;
+    if (el.closest('a[href]') || el.querySelector('a[href]')) return false;
+    if (el.parentElement?.closest(CLICK_TARGET_SELECTOR)) return false;
+    if (el.closest('[aria-hidden="true"]')) return false;
+    return true;
+  });
+}
+
+// An ID-only card carries no URL at all. The destination is built from the
+// page's own origin when we know it; failing that, from the one publisher
+// pattern the #9 fixture documents (NBC imagery on an nbcnews.com CDN host).
+// Anything else stays unresolved and is surfaced through unresolvedCount.
+function idTargetHref(el, id, baseURL) {
+  if (baseURL) {
+    try { return `${new URL(baseURL).origin}/video/${encodeURIComponent(id)}`; } catch {}
+  }
+  const bg = findBackgroundImage(el);
+  if (bg) {
+    try {
+      // NBC serves card imagery from media-cldnry.s-nbcnews.com — the
+      // publisher domain sits behind a hyphenated CDN label, not a dot.
+      if (/(^|[-.])nbcnews\.com$/.test(new URL(bg.url).hostname.toLowerCase())) {
+        return `https://www.nbcnews.com/now/video/${encodeURIComponent(id)}`;
+      }
+    } catch {}
+  }
+  return null;
+}
+
+// ---------- background-image thumbnails ----------
+// One reader for every place a card can hide its artwork in CSS: inline
+// `background` / `background-image`, and the lazy-load attributes the common
+// libraries use before JS swaps them into the style (lazysizes data-bg,
+// Lozad data-background-image, ...).
+const BG_DATA_ATTRS = ['data-bg', 'data-bg-src', 'data-background', 'data-background-image'];
+const BG_SELECTOR = ['[style*="background"]'].concat(BG_DATA_ATTRS.map((a) => `[${a}]`)).join(', ');
+
+function backgroundImageUrl(el) {
+  const style = el.getAttribute?.('style') || '';
+  const m = style.match(/background(?:-image)?\s*:[^;]*?url\(\s*(['"]?)([^'")]+)\1\s*\)/i);
+  if (m) return m[2].trim();
+  for (const attr of BG_DATA_ATTRS) {
+    const v = el.getAttribute?.(attr)?.trim();
+    if (!v) continue;
+    const wrapped = v.match(/url\(\s*(['"]?)([^'")]+)\1\s*\)/i);
+    return wrapped ? wrapped[2].trim() : v;
+  }
+  return null;
+}
+
+// First usable background image at or under `root`. Furniture (avatars,
+// channel logos, badges) and lazy-load placeholders are skipped, the same
+// way the <img> paths skip them, so a card's 32px uploader logo never wins.
+function findBackgroundImage(root, { includeSelf = true } = {}) {
+  if (!root) return null;
+  const els = Array.from(root.querySelectorAll?.(BG_SELECTOR) || []);
+  if (includeSelf && root.matches?.(BG_SELECTOR)) els.unshift(root);
+  for (const el of els) {
+    const url = backgroundImageUrl(el);
+    if (!url || /^data:/i.test(url) || looksLikeLazyLoadPlaceholder(url)) continue;
+    if (!isLikelyContentMediaElement(el)) continue;
+    return { url, el };
+  }
+  return null;
+}
+
+// ---------- video-card signals ----------
+// A card whose destination IS a video page, even though the markup has no
+// <video>/<iframe>: the publisher says so with a duration chip ("0:48"), a
+// video-typed click target (data-video-url / data-video-id / content-ID
+// card), or a /video/ path segment. Those items get video semantics with the
+// destination as the video's src, which is what lets them count and render
+// as videos (#4).
+const DURATION_TEXT = /^\d{1,2}(?::\d{2}){1,2}$/;
+const DURATION_SELECTOR = '[data-testid*="duration" i], [class*="duration" i], time[datetime^="PT"]';
+const VIDEO_PATH = /\/videos?\//i;
+
+function cardDuration(root) {
+  for (const el of root?.querySelectorAll?.(DURATION_SELECTOR) || []) {
+    const text = visibleText(el).trim();
+    if (DURATION_TEXT.test(text)) return text;
+  }
+  return null;
+}
+
+// The card a click target belongs to, for reading its chips. Only returned
+// when it holds no OTHER destination, so a list wrapper's chips never leak
+// onto every item in the list.
+function soleCardOf(a, href) {
+  const container = a.closest(CARD_CONTAINER_SELECTOR);
+  if (!container || container === a) return null;
+  const key = canonicalHref(href);
+  for (const other of container.querySelectorAll(CLICK_TARGET_SELECTOR)) {
+    if (other === a) continue;
+    const raw = clickTargetUrl(other);
+    if (!raw) return null;
+    try {
+      if (canonicalHref(normalizeURL(new URL(raw, href).href)) !== key) return null;
+    } catch { return null; }
+  }
+  return container;
+}
+
+function isVideoCard(a, href) {
+  if (a.hasAttribute?.('data-video-url') || a.hasAttribute?.('data-video-id')) return true;
+  if (clickTargetId(a)) return true;
+  if (cardDuration(a)) return true;
+  if (cardDuration(soleCardOf(a, href))) return true;
+  try { if (VIDEO_PATH.test(new URL(href).pathname)) return true; } catch {}
+  return false;
 }
 
 // ---------- chrome / navigation anchor filter (issue #10) ----------
@@ -880,14 +1039,8 @@ function findFigureSiblingThumb(a, baseURL, claimedSet) {
   const tierA = fromCandidates(true) || fromCandidates(false);
   if (tierA) return tierA;
   // Tier B — block-level background-image (some CMSes inline the thumb as CSS).
-  const styled = block.querySelectorAll('[style*="background"]');
-  for (const el of styled) {
-    const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/i);
-    if (m) {
-      const resolved = safeURL(m[1], baseURL) || m[1];
-      return { thumb: resolved, claimedEl: el };
-    }
-  }
+  const bg = findBackgroundImage(block, { includeSelf: false });
+  if (bg) return { thumb: safeURL(bg.url, baseURL) || bg.url, claimedEl: bg.el };
   // Tier C — last-resort: ANY non-placeholder <img> anywhere in the block.
   // Catches arbitrary layouts (NBC, MSN, Bloomberg variants) where the thumb
   // lives in a wrapper with no class hint at all. Because this tier matches
@@ -1248,6 +1401,17 @@ const TITLE_RULES = [
     },
   },
   {
+    // Test-id'd titles (React design systems: NBC's [data-testid="card-title"],
+    // #9). Ranked with the heading rules: a test id names the element's role
+    // explicitly, which a class substring only guesses at.
+    id: 'card-title-testid',
+    extract(a) {
+      const el = Array.from(a.querySelectorAll('[data-testid*="title" i]'))
+        .find((t) => !/subtitle/i.test(t.getAttribute('data-testid')));
+      return el ? [{ value: visibleText(el), strategy: 'card-title-testid', label: '[data-testid=title]' }] : [];
+    },
+  },
+  {
     id: 'anchor-title-class',
     extract(a) {
       const heading = a.querySelector('h1, h2, h3, h4, h5, h6');
@@ -1319,10 +1483,6 @@ function collectTitleCandidates(a) {
   return out;
 }
 
-function extractBackgroundImageUrl(el) {
-  const m = (el.getAttribute('style') || '').match(/background-image\s*:\s*url\((['"]?)([^)'"]+)\1\)/i);
-  return m ? m[2] : null;
-}
 
 const THUMB_RULES = [
   {
@@ -1333,8 +1493,14 @@ const THUMB_RULES = [
     // user picks via the strategy dropdown; we don't pre-decide.
     id: 'anchor-img-picture',
     extract(a) {
-      const innerImg = a.querySelector('img');
-      const innerPicture = a.querySelector('picture');
+      // Furniture (badges, icons, avatars) is skipped when the card has real
+      // artwork elsewhere — NBC's "FOR SUBSCRIBERS" asterisk was offered
+      // ahead of the card's background-image thumbnail (#9). It is still
+      // offered when it is the card's only image.
+      const imgs = Array.from(a.querySelectorAll('img'));
+      const hasBgArt = !!findBackgroundImage(a);
+      const innerImg = imgs.find(isLikelyContentMediaElement) || (hasBgArt ? null : imgs[0] || null);
+      const innerPicture = innerImg ? innerImg.closest('picture') || a.querySelector('picture') : (hasBgArt ? null : a.querySelector('picture'));
       if (!innerImg && !innerPicture) return [];
       return expandImageCandidates(innerImg, innerPicture);
     },
@@ -1342,10 +1508,8 @@ const THUMB_RULES = [
   {
     id: 'anchor-bg-image',
     extract(a) {
-      const bgEl = a.matches?.('[style*="background-image"]') ? a : a.querySelector('[style*="background-image"]');
-      if (!bgEl) return [];
-      const url = extractBackgroundImageUrl(bgEl);
-      return url ? [{ value: url, strategy: 'anchor-bg-image', label: 'background-image' }] : [];
+      const bg = findBackgroundImage(a);
+      return bg ? [{ value: bg.url, strategy: 'anchor-bg-image', label: 'background-image' }] : [];
     },
   },
   {
@@ -1432,10 +1596,8 @@ const THUMB_RULES = [
     extract(a) {
       const container = a.closest(CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
-      const cBg = container.querySelector('[style*="background-image"]');
-      if (!cBg) return [];
-      const url = extractBackgroundImageUrl(cBg);
-      return url ? [{ value: url, strategy: 'container-bg-image', label: 'container background-image' }] : [];
+      const bg = findBackgroundImage(container, { includeSelf: false });
+      return bg ? [{ value: bg.url, strategy: 'container-bg-image', label: 'container background-image' }] : [];
     },
   },
   {
@@ -1525,6 +1687,16 @@ const VIDEO_RULES = [
       const img = a.querySelector('img');
       const poster = img ? pickImgSrc(img) : null;
       return [{ info: { url: val, poster: poster || null, kind: 'data-attr' }, strategy: 'data-attr-video-url', label: 'data-video-url attribute' }];
+    },
+  },
+  {
+    // ID-only click target (NBC, #9): the card's destination is the video.
+    id: 'card-contentid',
+    extract(a, baseURL) {
+      const id = clickTargetId(a);
+      if (!id || clickTargetUrl(a)) return [];
+      const url = idTargetHref(a, id, baseURL);
+      return url ? [{ info: { url, poster: findBackgroundImage(a)?.url || null }, strategy: 'card-contentid', label: '[data-contentid] video target' }] : [];
     },
   },
   {
@@ -1619,7 +1791,7 @@ function buildSectionMap(doc) {
         const sibLvl = +sib.tagName[1];
         if (sibLvl <= lvl) break;
       }
-      sib.querySelectorAll?.('a[href], img, iframe, video').forEach((el) => {
+      sib.querySelectorAll?.(`${CLICK_TARGET_SELECTOR}, img, iframe, video`).forEach((el) => {
         if (!map.has(el)) map.set(el, label);
       });
       sib = sib.nextElementSibling;
@@ -1627,7 +1799,7 @@ function buildSectionMap(doc) {
   }
 
   // Walk all anchors/images/videos and find their nearest tagged-section ancestor.
-  const targets = Array.from(doc.querySelectorAll('a[href], img, iframe, video'));
+  const targets = Array.from(doc.querySelectorAll(`${CLICK_TARGET_SELECTOR}, img, iframe, video`));
   for (const t of targets) {
     if (map.has(t)) continue;
     let cur = t.parentElement;
@@ -1947,26 +2119,23 @@ function resolveBucketVideo(bucket, baseURL, claims) {
     const v = extractVideoFromAnchor(a, baseURL);
     if (v) return v;
   }
-  // Issue #4 residual — a clickable whose data-video-url IS the destination
-  // (Bloomberg's <button data-video-url>) is a video card, not an article
-  // that happens to link to a video page: the attribute is the publisher
-  // declaring "this card plays a video". Without this the item carried
-  // video: null and could not be counted or presented as a video, even
-  // though href/headline/poster all resolved correctly. The video's src is
-  // the card's own destination URL; its poster is the card's image.
+  // A click target that DECLARES itself a video — <button data-video-url>
+  // (Bloomberg, #4), a data-video-id clickable, or an ID-only card (NBC, #9)
+  // — is a video whose src is the card's own destination. Its poster is the
+  // card's artwork: a content <img> (claimed, because the caller promotes the
+  // poster to the thumbnail and skips resolveBucketThumbnail, so an unclaimed
+  // <img> would be re-emitted by the standalone image walk) or a
+  // background-image.
   for (const a of bucket.anchors) {
-    const dv = a.getAttribute?.('data-video-url');
-    if (!dv) continue;
-    const resolved = safeURL(dv, baseURL) || dv;
-    if (!/^https?:/i.test(resolved)) continue;
-    const img = a.querySelector('img');
-    const poster = img ? pickImgSrc(img) : null;
-    // Claim the poster <img>: the caller promotes video.poster to the
-    // thumbnail and short-circuits resolveBucketThumbnail, so without this
-    // claim the standalone image walk would re-emit the card's own image
-    // as a duplicate orphan item.
-    if (img && poster) claims.imgs.add(img);
-    return { src: normalizeURL(resolved), poster: poster || null };
+    if (a.tagName === 'A') continue;
+    if (!a.hasAttribute('data-video-url') && !a.hasAttribute('data-video-id') && !clickTargetId(a)) continue;
+    const imgs = Array.from(a.querySelectorAll('img'));
+    const img = imgs.find(isContentImage) || (findBackgroundImage(a) ? null : imgs[0]);
+    const imgSrc = img ? pickImgSrc(img) : null;
+    if (img && imgSrc) claims.imgs.add(img);
+    const bg = imgSrc ? null : findBackgroundImage(a);
+    const poster = imgSrc || (bg ? safeURL(bg.url, baseURL) || bg.url : null);
+    return { src: bucket.href, poster: poster || null };
   }
   for (const a of bucket.anchors) {
     const found = findSiblingVideo(a, baseURL);
@@ -1978,6 +2147,15 @@ function resolveBucketVideo(bucket, baseURL, claims) {
       }
       return found.videoInfo;
     }
+  }
+  // Weaker, markup-level signals (duration chip, /video/ path) — checked last
+  // so a real <video>/<iframe> beside the card always wins. No poster: the
+  // thumbnail comes from the normal tiers.
+  // Destinations on a known video host are videos by URL already (classify);
+  // a video object there would only restate the href.
+  if (isVideoHref(bucket.href)) return null;
+  for (const a of bucket.anchors) {
+    if (isVideoCard(a, bucket.href)) return { src: bucket.href, poster: null };
   }
   return null;
 }
@@ -2112,13 +2290,24 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // page — trailing slash, #comments, www, http/https, param order — merge into
   // ONE bucket instead of repeating. `href` is the verbatim link we display.
   const buckets = new Map(); // canonicalKey -> { anchors: [a, ...], firstAnchor: a, href }
-  const rawAnchors = Array.from(doc.querySelectorAll('a[href], button[data-href], button[data-url], button[data-video-url], button[data-link], [role="link"][data-href]'));
+  const rawAnchors = collectClickTargets(doc);
 
   // Card-level grouping (the "byline-anchor" / uploader fix) — see
   // detectDemotedBylineAnchors below for the full explanation.
   const demotedAnchors = detectDemotedBylineAnchors(doc, baseURL);
   for (const a of rawAnchors) {
-    const rawHref = a.getAttribute('href') || a.getAttribute('data-href') || a.getAttribute('data-url') || a.getAttribute('data-video-url') || a.getAttribute('data-link');
+    let rawHref = clickTargetUrl(a);
+    if (!rawHref) {
+      // ID-only card: no URL in the markup at all. A card without a usable
+      // title is a UI control (play, mute, menu), not content — skip it
+      // before it can count as unresolved.
+      const targetId = clickTargetId(a);
+      if (!targetId) continue;
+      const t = getAnchorTitle(a);
+      if (!t || looksLikeBadTitle(t)) continue;
+      rawHref = idTargetHref(a, targetId, baseURL);
+      if (!rawHref) { unresolvedCount++; continue; }
+    }
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) continue;
     const rawHrefResolved = safeURL(rawHref, baseURL);
     if (!rawHrefResolved) {
@@ -2267,7 +2456,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       descriptionCandidates,
       jsonLd: jsonLdEntry || null,
       domain: domainOf(href),
-      pageSection: sectionFor.get(bucket.firstAnchor) || 'Other',
+      // Non-anchor video cards fall back to 'Videos', matching the standalone
+      // <video>/<iframe> and <article> synthesis passes.
+      pageSection: sectionFor.get(bucket.firstAnchor) || (video && bucket.firstAnchor.tagName !== 'A' ? 'Videos' : 'Other'),
       pattern: getPatternSignature(bucket.firstAnchor),
     };
     item.category = classify(item);
@@ -2294,91 +2485,6 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     }
     // Mark all images & videos inside this article so standalone walks skip them.
     art.querySelectorAll('img, video, iframe, source').forEach((el) => synthesizedFromArticles.add(el));
-  }
-
-  // 1.75) Non-anchor video cards (issue #9) — NBC's vertical-video feed has
-  // NO <a href>, <video> or <iframe> per card at all: the click target is a
-  // <div role="button" data-contentid="…">, the title lives in
-  // [data-testid="card-title"], the thumbnail is an inline background-image,
-  // and a [data-testid="card-duration"] chip + play caret mark it as video.
-  // Every existing pass keys off anchors/media elements, so these cards were
-  // completely invisible (the fixture parsed to 0 items). This pass builds
-  // items directly from that card shape:
-  //   title:     [data-testid="card-title"] text (aria-label fallback)
-  //   thumbnail: inline background-image URL inside the card
-  //   target:    a direct data-href/data-url/data-video-url/data-link if the
-  //              card carries one; else a watch URL synthesized from the
-  //              content id — on the known base origin when we have one, or
-  //              NBC's canonical /now/video/<id> when the card's own imagery
-  //              is served from an nbcnews.com host (the pattern the fixture
-  //              specifies). With neither, the card counts as unresolved and
-  //              is skipped rather than given an invented destination.
-  const contentIdCards = Array.from(doc.querySelectorAll('[role="button"][data-contentid]'));
-  for (const card of contentIdCards) {
-    const contentId = (card.getAttribute('data-contentid') || '').trim();
-    if (!contentId) continue;
-
-    const titleEl = card.querySelector('[data-testid="card-title"]');
-    let cardTitle = titleEl ? visibleText(titleEl) : '';
-    if (!cardTitle || looksLikeBadTitle(cardTitle)) {
-      const aria = (card.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim();
-      if (aria && !looksLikeBadTitle(aria)) cardTitle = aria;
-    }
-    if (!cardTitle || looksLikeBadTitle(cardTitle)) continue;
-
-    let cardThumb = null;
-    const bgEl = card.querySelector('[style*="background-image"]');
-    if (bgEl) {
-      const bgUrl = extractBackgroundImageUrl(bgEl);
-      if (bgUrl) cardThumb = safeURL(bgUrl, baseURL) || bgUrl;
-    }
-    if (cardThumb && !/^https?:/i.test(cardThumb)) cardThumb = null;
-
-    const directTarget = card.getAttribute('data-href') || card.getAttribute('data-url')
-      || card.getAttribute('data-video-url') || card.getAttribute('data-link');
-    let cardHref = null;
-    if (directTarget) {
-      cardHref = safeURL(directTarget, baseURL) || directTarget;
-    } else if (baseURL) {
-      try { cardHref = `${new URL(baseURL).origin}/video/${contentId}`; } catch {}
-    } else if (cardThumb) {
-      try {
-        const thumbHost = new URL(cardThumb).hostname.toLowerCase();
-        // NBC serves card imagery from media-cldnry.s-nbcnews.com — the
-        // publisher domain sits behind a hyphenated CDN label, not a dot.
-        if (/(^|[-.])nbcnews\.com$/.test(thumbHost)) {
-          cardHref = `https://www.nbcnews.com/now/video/${contentId}`;
-        }
-      } catch {}
-    }
-    if (!cardHref || !/^https?:/i.test(cardHref)) { unresolvedCount++; continue; }
-    cardHref = normalizeURL(cardHref);
-    const cardKey = canonicalHref(cardHref);
-    if (seen.has(cardKey)) continue;
-    seen.add(cardKey);
-
-    // Claim the card's <img>s (e.g. a subscriber badge) so the standalone
-    // image walk below doesn't re-emit them as orphan items.
-    card.querySelectorAll('img').forEach((el) => claimedImgs.add(el));
-
-    const cardItem = {
-      id: uid(),
-      sourceName,
-      href: cardHref,
-      title: cardTitle.slice(0, 280),
-      thumbnail: cardThumb,
-      video: { src: cardHref, poster: cardThumb },
-      description: null,
-      titleCandidates: [{ value: cardTitle.slice(0, 280), strategy: 'card-title-testid', label: '[data-testid="card-title"]' }],
-      thumbCandidates: cardThumb ? [{ value: cardThumb, strategy: 'card-bg-image', label: 'card background-image' }] : [],
-      videoCandidates: [{ value: cardHref, strategy: 'card-contentid', label: '[data-contentid] video target', info: { url: cardHref, poster: cardThumb } }],
-      descriptionCandidates: [],
-      domain: domainOf(cardHref),
-      pageSection: sectionFor.get(card) || 'Videos',
-      pattern: getPatternSignature(card),
-    };
-    cardItem.category = classify(cardItem);
-    items.push(cardItem);
   }
 
   // 2) Standalone images on the page (often used in galleries)

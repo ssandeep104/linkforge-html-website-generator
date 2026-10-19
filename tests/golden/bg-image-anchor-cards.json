@@ -1,0 +1,86 @@
+{
+  "unresolvedCount": 0,
+  "hasBase": true,
+  "baseURL": "https://tiles.example/",
+  "jsonLdMeta": {
+    "scriptCount": 0,
+    "parsedCount": 0,
+    "entryCount": 0,
+    "matchedCount": 0,
+    "orphanCount": 0
+  },
+  "items": [
+    {
+      "title": "Harbor Lights",
+      "href": "https://tiles.example/work/harbor-lights",
+      "thumbnail": "https://img.tiles.example/tile-1.jpg",
+      "video": null,
+      "description": null,
+      "domain": "tiles.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"tile\">",
+      "titleCandidates": [
+        {
+          "value": "Harbor Lights",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://img.tiles.example/tile-1.jpg",
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Quiet Dunes",
+      "href": "https://tiles.example/work/quiet-dunes",
+      "thumbnail": "https://img.tiles.example/tile-2.jpg",
+      "video": null,
+      "description": null,
+      "domain": "tiles.example",
+      "category": "article",
+      "pageSection": "Other",
+      "pattern": "<a class=\"tile\">",
+      "titleCandidates": [
+        {
+          "value": "Quiet Dunes",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [
+        {
+          "value": "https://img.tiles.example/tile-2.jpg",
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
+        }
+      ],
+      "videoCandidates": []
+    },
+    {
+      "title": "Late Train",
+      "href": "https://tiles.example/work/late-train",
+      "thumbnail": null,
+      "video": null,
+      "description": null,
+      "domain": "tiles.example",
+      "category": "link",
+      "pageSection": "Other",
+      "pattern": "<a class=\"tile\">",
+      "titleCandidates": [
+        {
+          "value": "Late Train",
+          "strategy": "anchor-heading",
+          "label": "<h3>"
+        }
+      ],
+      "thumbCandidates": [],
+      "videoCandidates": []
+    }
+  ]
+}

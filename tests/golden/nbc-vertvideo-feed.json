@@ -27,14 +27,19 @@
         {
           "value": "Rare baby hippo makes appearance at Berlin Zoo",
           "strategy": "card-title-testid",
-          "label": "[data-testid=\"card-title\"]"
+          "label": "[data-testid=title]"
+        },
+        {
+          "value": "Rare baby hippo makes appearance at Berlin Zoo 00:44",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
         }
       ],
       "thumbCandidates": [
         {
           "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/baby_hippo-afw9z1.jpg",
-          "strategy": "card-bg-image",
-          "label": "card background-image"
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
         }
       ],
       "videoCandidates": [
@@ -66,14 +71,19 @@
         {
           "value": "Are the UFC fights at the White House unprecedented?",
           "strategy": "card-title-testid",
-          "label": "[data-testid=\"card-title\"]"
+          "label": "[data-testid=title]"
+        },
+        {
+          "value": "FORSUBSCRIBERS Are the UFC fights at the White House unprecedented? 01:39",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
         }
       ],
       "thumbCandidates": [
         {
           "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/gabe_thumb2-lef1r4.jpg",
-          "strategy": "card-bg-image",
-          "label": "card background-image"
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
         }
       ],
       "videoCandidates": [
@@ -105,14 +115,19 @@
         {
           "value": "Russian authorities investigate two car bombings in Moscow",
           "strategy": "card-title-testid",
-          "label": "[data-testid=\"card-title\"]"
+          "label": "[data-testid=title]"
+        },
+        {
+          "value": "Russian authorities investigate two car bombings in Moscow 00:20",
+          "strategy": "anchor-visible-text",
+          "label": "anchor text"
         }
       ],
       "thumbCandidates": [
         {
           "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/Russia_Thumb_Vert-gzj8sk.jpg",
-          "strategy": "card-bg-image",
-          "label": "card background-image"
+          "strategy": "anchor-bg-image",
+          "label": "background-image"
         }
       ],
       "videoCandidates": [
