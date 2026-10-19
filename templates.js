@@ -152,6 +152,73 @@ const SOURCE_FILTER_CSS = `
   }
 `;
 
+// ---------- generated-output theme toggle (issue #2) ----------
+// Generated pages used to ship a single fixed palette per template: there
+// was no data-theme scoping anywhere in templates.js, so a theme toggle in
+// the export had nothing to switch — cards and body could never restyle.
+// The machinery now lives in shell(), next to the source-filter bar, for the
+// same reason: a template cannot forget it.
+//
+// Contract:
+//   - shell() stamps <html data-theme="…"> with the template's native theme
+//     (dark-native templates: Creator Grid, Flux Index; light-native: Photo
+//     Wall, Pop Shelf) and renders one toggle button + one small script on
+//     every generated page.
+//   - Each template's CSS carries a `:root[data-theme="…"]` block for the
+//     OPPOSITE theme that reassigns its palette variables (plus overrides
+//     for the hard-coded colors variables don't reach), so flipping the
+//     attribute genuinely re-skins body, cards, headings and links.
+//   - The script only flips the attribute. No localStorage: an export is a
+//     standalone file the reader may open anywhere, and the issue's
+//     validator explicitly ruled persistence out.
+const THEME_TOGGLE_CSS = `
+  :root[data-theme="dark"] { color-scheme: dark; }
+  :root[data-theme="light"] { color-scheme: light; }
+  .lf-theme-toggle {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 80;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 9px 15px;
+    border: 1px solid rgba(127, 127, 127, 0.5);
+    border-radius: 999px;
+    background: rgba(127, 127, 127, 0.16);
+    color: inherit;
+    font: 600 12px/1 system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .lf-theme-toggle:hover { border-color: currentColor; }
+`;
+
+const THEME_TOGGLE_BUTTON = `<button type="button" class="lf-theme-toggle" data-lf-theme-toggle aria-pressed="false" aria-label="Switch between dark and light theme"><span class="lf-theme-toggle__label">Theme</span></button>`;
+
+function themeToggleScript() {
+  return `<script>
+  (function () {
+    var btn = document.querySelector('[data-lf-theme-toggle]');
+    if (!btn) return;
+    var root = document.documentElement;
+    function sync() {
+      var dark = root.getAttribute('data-theme') === 'dark';
+      btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      var label = btn.querySelector('.lf-theme-toggle__label');
+      if (label) label.textContent = dark ? 'Light' : 'Dark';
+    }
+    btn.addEventListener('click', function () {
+      root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+      sync();
+    });
+    sync();
+  })();
+  </script>`;
+}
+
 function sourceFilterCount(group) {
   return (group?.previewItems || []).length + (group?.linkItems || []).length;
 }
@@ -479,10 +546,10 @@ const MORE_LINKS_CSS_DARK = `
   }
 `;
 
-function shell({ title, tagline, today, body, css, bodyClass = '' }) {
+function shell({ title, tagline, today, body, css, bodyClass = '', defaultTheme = 'light' }) {
   const bodyClasses = ['lf-template', bodyClass].filter(Boolean).join(' ');
   return `<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="${defaultTheme === 'dark' ? 'dark' : 'light'}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -668,11 +735,14 @@ function shell({ title, tagline, today, body, css, bodyClass = '' }) {
     }
   }
 ${SOURCE_FILTER_CSS}
+${THEME_TOGGLE_CSS}
 ${css}
 </style>
 </head>
 <body class="${bodyClasses}">
 ${body}
+${THEME_TOGGLE_BUTTON}
+${themeToggleScript()}
 </body>
 </html>`;
 }
@@ -976,6 +1046,23 @@ function buildYoutube(ctx) {
   :root { --creator-bg: #0b1014; --creator-panel: #12171c; --creator-line: #2a3035; --creator-text: #f4f1eb; --creator-muted: #92989e; --creator-accent: #ff5b3d;
     --tab-nav-bg: #0b1014; --tab-border: #2a3035; --tab-border-hover: #4a545c; --tab-text: var(--creator-muted);
     --tab-active-bg: var(--creator-accent); --tab-active-text: #0b1014; }
+  /* Issue #2: light theme for this dark-native template. The palette
+     variables re-skin body/cards/tab bar; the rules below replace the
+     hard-coded dark hexes the variables don't reach (masthead, section
+     headings, card titles, link tail). Hero copy stays white on purpose:
+     it sits on the hero image's shade, not on the page background. */
+  :root[data-theme="light"] { --creator-bg: #f6f4ef; --creator-panel: #ffffff; --creator-line: #ddd8cf; --creator-text: #1c1a17; --creator-muted: #6f6a61;
+    --tab-nav-bg: #f6f4ef; --tab-border: #ddd8cf; --tab-border-hover: #b9b2a6; --tab-active-text: #ffffff; }
+  :root[data-theme="light"] .creator-masthead { border-bottom-color: var(--creator-line); }
+  :root[data-theme="light"] .creator-masthead h1 { color: var(--creator-text); }
+  :root[data-theme="light"] .creator-section__head h2 { color: var(--creator-text); }
+  :root[data-theme="light"] .creator-card h3 { color: var(--creator-text); }
+  :root[data-theme="light"] .creator-card__media { border-color: var(--creator-line); }
+  :root[data-theme="light"] .creator-card__media.is-broken { background: var(--creator-panel); }
+  :root[data-theme="light"] .creator-links__groups h3 { color: var(--creator-text); }
+  :root[data-theme="light"] .creator-links li { border-bottom-color: var(--creator-line); }
+  :root[data-theme="light"] .creator-links a { color: var(--creator-text); }
+  :root[data-theme="light"] .creator-links small { color: var(--creator-muted); }
   body { background: var(--creator-bg); color: var(--creator-text); font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.4; }
   .creator-wrap { width: min(100%, 1600px); margin: 0 auto; padding: 18px 24px 72px; }
   .creator-masthead { display: flex; align-items: center; min-height: 52px; padding: 0 20px; border-bottom: 1px solid #1c2227; }
@@ -1046,7 +1133,7 @@ function buildYoutube(ctx) {
     ${!heroHtml && !sections && !linksHtml ? '<div class="creator-empty">No links selected.</div>' : ''}
   </div>${filterNav ? sourceFilterScript('creator-sources') : ''}`;
 
-  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'creator-theme' });
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'creator-theme', defaultTheme: 'dark' });
 }
 
 // =====================================================
@@ -1132,6 +1219,14 @@ function buildWall(ctx) {
   :root { --ink: #171715; --muted: #77746d; --line: #d9d6cf; --paper: #f7f6f2; --accent: #b4452f;
     --tab-nav-bg: var(--paper); --tab-border: var(--line); --tab-border-hover: var(--ink); --tab-text: var(--muted);
     --tab-active-bg: var(--ink); --tab-active-text: var(--paper); }
+  /* Issue #2: dark theme for this light-native template. Nearly every
+     surface already reads var(--paper)/var(--ink)/var(--line), so the
+     variable swap does the work; only the media placeholder wells carry
+     hard-coded light hexes. */
+  :root[data-theme="dark"] { --ink: #f0ede6; --muted: #9d988e; --line: #45423a; --paper: #161512;
+    --tab-nav-bg: var(--paper); }
+  :root[data-theme="dark"] .media { background: #26241f; }
+  :root[data-theme="dark"] .media-fallback { color: var(--muted); }
   body { background: var(--paper); color: var(--ink); font-family: "Inter", system-ui, -apple-system, sans-serif; }
   .wall { max-width: 1440px; margin: 0 auto; padding: 34px clamp(18px, 3vw, 52px) 72px; }
   .site-head { padding: 0 0 26px; margin-bottom: clamp(42px, 7vw, 88px); border-bottom: 1px solid var(--ink); }
@@ -1423,6 +1518,11 @@ function buildFlux(ctx) {
     : esc(ctx.title);
   const css = `
   :root { --flux-bg:#080c0e; --flux-panel:#10171a; --flux-line:#263238; --flux-text:#edf5f4; --flux-muted:#89979b; --flux-mint:#86f4d3; --flux-ice:#bceafa; --lf-focus-color:var(--flux-mint); --tab-nav-bg:var(--flux-bg); --tab-sheen:none; }
+  /* Issue #2: light theme for this dark-native template. */
+  :root[data-theme="light"] { --flux-bg:#f4f6f6; --flux-panel:#ffffff; --flux-line:#d5dde0; --flux-text:#14201f; --flux-muted:#5f6f72; --tab-nav-bg:var(--flux-bg); --tab-border:#d5dde0; --tab-border-hover:#a7b6ba; --tab-text:var(--flux-muted); }
+  :root[data-theme="light"] .flux-card__media { background:#e3eaec; }
+  :root[data-theme="light"] .flux-signal i { background:#c3ced1; }
+  :root[data-theme="light"] .flux-links a { color:var(--flux-text); }
   body { background:var(--flux-bg); color:var(--flux-text); font-family:"Manrope",system-ui,sans-serif; }
   .flux-shell { max-width:1480px; margin:0 auto; padding:28px 42px 48px; }
   .flux-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--flux-line); }
@@ -1475,7 +1575,7 @@ function buildFlux(ctx) {
   const bars = [42,68,30,84,54,36,72,24,62,46,78,34,58,88].map((h) => `<i style="--h:${h}%"></i>`).join('');
   const total = groups.reduce((sum, group) => sum + group.previewItems.length + group.linkItems.length, 0);
   const body = `<div class="flux-shell"><header class="flux-top"><span class="flux-mark">Flux index</span><span class="flux-count">${total} curated ${total === 1 ? 'item' : 'items'}</span></header><section class="flux-hero"><h1>${displayTitle}</h1><div class="flux-signal" aria-hidden="true">${bars}</div></section><main>${content}</main></div>`;
-  return shell({ title:ctx.title, tagline:ctx.tagline, today:ctx.today, body, css, bodyClass:'flux-theme' });
+  return shell({ title:ctx.title, tagline:ctx.tagline, today:ctx.today, body, css, bodyClass:'flux-theme', defaultTheme:'dark' });
 }
 
 // =====================================================
@@ -1488,7 +1588,14 @@ function buildShelf(ctx) {
     ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}`
     : esc(ctx.title);
   const css = `
-  :root { --shelf-bg:#f7f8f8; --shelf-text:#172126; --shelf-muted:#6e7b80; --shelf-line:#d9e0e2; --shelf-blue:#4f76e8; --shelf-ice:#dff4fb; --lf-focus-color:var(--shelf-blue); --tab-nav-bg:var(--shelf-bg); --tab-sheen:none; }
+  :root { --shelf-bg:#f7f8f8; --shelf-panel:#ffffff; --shelf-text:#172126; --shelf-muted:#6e7b80; --shelf-line:#d9e0e2; --shelf-blue:#4f76e8; --shelf-ice:#dff4fb; --lf-focus-color:var(--shelf-blue); --tab-nav-bg:var(--shelf-bg); --tab-sheen:none; }
+  /* Issue #2: dark theme for this light-native template. Card/link
+     surfaces read var(--shelf-panel) (below) so the swap reaches them. */
+  :root[data-theme="dark"] { --shelf-bg:#101619; --shelf-panel:#171e22; --shelf-text:#eef3f4; --shelf-muted:#93a1a6; --shelf-line:#2c363b; --shelf-ice:#1d3038; --tab-nav-bg:var(--shelf-bg); --tab-border:#2c363b; --tab-text:var(--shelf-muted); }
+  :root[data-theme="dark"] .shelf-card__media { background:#232d31; }
+  :root[data-theme="dark"] .tab-btn:hover { background:#1c262a; }
+  :root[data-theme="dark"] .shelf-card:hover h2 { color:#8fb0ff; }
+  :root[data-theme="dark"] .shelf-links a:hover { background:#16232b; color:#8fb0ff; }
   body { background:var(--shelf-bg); color:var(--shelf-text); font-family:"Manrope",system-ui,sans-serif; }
   .shelf-shell { max-width:1460px; margin:0 auto; padding:24px 30px 44px; }
   .shelf-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:18px; border-bottom:1px solid var(--shelf-line); }
@@ -1506,7 +1613,7 @@ function buildShelf(ctx) {
   .tab-btn__title { font-size:11px; font-weight:600; }
   .tab-btn__meta { display:none; }
   .shelf-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-auto-flow:dense; gap:8px; }
-  .shelf-card { grid-column:span 4; min-width:0; overflow:hidden; border:1px solid var(--shelf-line); border-radius:4px; background:#fff; }
+  .shelf-card { grid-column:span 4; min-width:0; overflow:hidden; border:1px solid var(--shelf-line); border-radius:4px; background:var(--shelf-panel); }
   .shelf-card:nth-child(1){grid-column:span 7}.shelf-card:nth-child(2){grid-column:span 5}.shelf-card:nth-child(3){grid-column:span 5}.shelf-card:nth-child(4){grid-column:span 7}.shelf-card:nth-child(7n){grid-column:span 8}
   .shelf-card__media { position:relative; aspect-ratio:4/3; overflow:hidden; background:#e9eef0; }
   .shelf-card:nth-child(1) .shelf-card__media,.shelf-card:nth-child(4) .shelf-card__media,.shelf-card:nth-child(7n) .shelf-card__media{aspect-ratio:16/9}
@@ -1517,7 +1624,7 @@ function buildShelf(ctx) {
   .shelf-card__meta { display:block; margin-top:5px; color:var(--shelf-muted); font:400 9px "IBM Plex Mono",monospace; }
   .shelf-card__arrow { color:var(--shelf-blue); font:500 14px "IBM Plex Mono",monospace; }
   .shelf-card:hover h2 { color:#2459c4; }
-  .shelf-links { margin-top:8px; border:1px solid var(--shelf-line); border-radius:4px; background:#fff; }
+  .shelf-links { margin-top:8px; border:1px solid var(--shelf-line); border-radius:4px; background:var(--shelf-panel); }
   .shelf-links a { display:grid; grid-template-columns:1fr auto; gap:18px; padding:13px 14px; border-bottom:1px solid var(--shelf-line); font-size:12px; }
   .shelf-links a:last-child { border-bottom:0; }
   .shelf-links a::after { content:"↗"; color:var(--shelf-blue); font-family:"IBM Plex Mono",monospace; }

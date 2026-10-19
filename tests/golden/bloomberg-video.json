@@ -14,10 +14,13 @@
       "title": "Fed Holds Rates Steady as Inflation Data Cools",
       "href": "https://www.bloomberg.com/news/videos/2026-06-10/fed-rate-decision-analysis",
       "thumbnail": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
-      "video": null,
+      "video": {
+        "src": "https://www.bloomberg.com/news/videos/2026-06-10/fed-rate-decision-analysis",
+        "poster": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg"
+      },
       "description": null,
       "domain": "bloomberg.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<button class=\"video-card__trigger\">",
       "titleCandidates": [
@@ -44,16 +47,30 @@
           "label": "<img src>"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://www.bloomberg.com/news/videos/2026-06-10/fed-rate-decision-analysis",
+          "strategy": "data-attr-video-url",
+          "label": "data-video-url attribute",
+          "info": {
+            "url": "https://www.bloomberg.com/news/videos/2026-06-10/fed-rate-decision-analysis",
+            "poster": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
+            "kind": "data-attr"
+          }
+        }
+      ]
     },
     {
       "title": "Big Tech Earnings: What to Expect This Week",
       "href": "https://www.bloomberg.com/news/videos/2026-06-10/tech-earnings-preview",
       "thumbnail": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
-      "video": null,
+      "video": {
+        "src": "https://www.bloomberg.com/news/videos/2026-06-10/tech-earnings-preview",
+        "poster": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg"
+      },
       "description": null,
       "domain": "bloomberg.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<button class=\"video-card__trigger\">",
       "titleCandidates": [
@@ -80,16 +97,30 @@
           "label": "<img src>"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://www.bloomberg.com/news/videos/2026-06-10/tech-earnings-preview",
+          "strategy": "data-attr-video-url",
+          "label": "data-video-url attribute",
+          "info": {
+            "url": "https://www.bloomberg.com/news/videos/2026-06-10/tech-earnings-preview",
+            "poster": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
+            "kind": "data-attr"
+          }
+        }
+      ]
     },
     {
       "title": "OPEC+ Cuts Output Again: Oil Prices React",
       "href": "https://www.bloomberg.com/news/videos/2026-06-10/oil-markets-opec-decision",
       "thumbnail": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
-      "video": null,
+      "video": {
+        "src": "https://www.bloomberg.com/news/videos/2026-06-10/oil-markets-opec-decision",
+        "poster": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg"
+      },
       "description": null,
       "domain": "bloomberg.com",
-      "category": "article",
+      "category": "video",
       "pageSection": "Other",
       "pattern": "<button class=\"video-card__trigger\">",
       "titleCandidates": [
@@ -116,7 +147,18 @@
           "label": "<img src>"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://www.bloomberg.com/news/videos/2026-06-10/oil-markets-opec-decision",
+          "strategy": "data-attr-video-url",
+          "label": "data-video-url attribute",
+          "info": {
+            "url": "https://www.bloomberg.com/news/videos/2026-06-10/oil-markets-opec-decision",
+            "poster": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
+            "kind": "data-attr"
+          }
+        }
+      ]
     }
   ]
 }
