@@ -442,7 +442,7 @@ test('generated grids have no orphan rows or horizontal overflow at any width', 
         try {
           await out.setContent(html, { waitUntil: 'domcontentloaded' });
           const report = await out.evaluate(() => {
-            const grids = document.querySelectorAll('.creator-grid, .gallery, .flux-grid, .shelf-grid');
+            const grids = document.querySelectorAll('[data-lf-grid]');
             const gaps = [];
             for (const grid of grids) {
               if (!grid.offsetParent) continue; // inside a hidden tab
@@ -471,3 +471,27 @@ test('generated grids have no orphan rows or horizontal overflow at any width', 
     await page.close();
   }
 });
+
+// WS4: the new templates are offered in the picker and go through the same
+// generate -> preview path as the original four.
+for (const key of ['editorial', 'reading', 'mosaic']) {
+  test(`the ${key} template is selectable and generates a preview`, async () => {
+    const { page, pageErrors } = await openApp();
+    try {
+      await loadSampleAndReview(page);
+      const card = page.locator(`.template-card[data-template="${key}"]`);
+      assert.equal(await card.count(), 1, `${key} is offered in the picker`);
+      await card.click();
+      assert.equal(await card.getAttribute('aria-pressed'), 'true');
+      await page.locator('#btn-generate').click();
+      await page.locator('#step-output.screen--active').waitFor();
+      const preview = page.frameLocator('#preview-frame');
+      await preview.locator('body.lf-ds').waitFor();
+      assert.ok(await preview.locator('a[href^="http"]').count() > 0, 'generated site links out');
+      assert.equal(await preview.locator('[data-lf-theme-toggle]').count(), 1, 'export ships the theme toggle');
+      assert.deepEqual(pageErrors, []);
+    } finally {
+      await page.close();
+    }
+  });
+}

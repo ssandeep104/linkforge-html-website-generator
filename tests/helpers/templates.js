@@ -18,7 +18,7 @@ const sandbox = { module: { exports: {} }, console };
 vm.createContext(sandbox);
 vm.runInContext(source, sandbox);
 
-export const { TEMPLATES, suggestTemplate, splitItems, partitionGroups, planRows, balancedSpanStyles, SHAPES } = sandbox.module.exports;
+export const { TEMPLATES, suggestTemplate, splitItems, partitionGroups, planRows, planGrid, SHAPES } = sandbox.module.exports;
 
 // Build one item. `thumbnail: null` routes the item to a template's link tail.
 export function item(source, index, { thumbnail = true } = {}) {
