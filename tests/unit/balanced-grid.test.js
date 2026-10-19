@@ -77,6 +77,8 @@ test('generated pages carry per-card spans and never use dense flow', () => {
     const built = tpl.build(ctx);
     const html = typeof built === 'string' ? built : built.html;
     assert.doesNotMatch(html, /grid-auto-flow:\s*dense/, `${key} uses dense flow`);
+    // Reading List is a single-column list by design: no grid, no orphans.
+    if (!html.includes('data-lf-grid')) continue;
     assert.equal((html.match(/--s-lg:\d+/g) || []).length >= 6, true, `${key} cards carry planned spans`);
   }
 });

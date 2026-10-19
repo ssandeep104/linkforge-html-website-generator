@@ -74,6 +74,10 @@ const PALETTES = {
   wall: { var: '--paper', native: 'light', dark: '#161512', light: '#f7f6f2' },
   flux: { var: '--flux-bg', native: 'dark', dark: '#080c0e', light: '#f4f6f6' },
   shelf: { var: '--shelf-bg', native: 'light', dark: '#101619', light: '#f7f8f8' },
+  // WS4 templates.
+  editorial: { var: '--front-bg', native: 'light', dark: '#141311', light: '#faf8f3' },
+  reading: { var: '--reading-bg', native: 'light', dark: '#121212', light: '#fbfbf9' },
+  mosaic: { var: '--mosaic-bg', native: 'dark', dark: '#0d0d0f', light: '#f3f2ee' },
 };
 
 const TWO_SOURCES = () => [

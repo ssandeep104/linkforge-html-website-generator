@@ -2,7 +2,7 @@
 
 Turn any pile of HTML into a site of your own.
 
-Paste raw HTML from web pages, portfolios, product lists, media libraries, or bookmarks. LinkForge pulls out every link, thumbnail, and preview, then lets you pick what goes in and generates a finished site in one of four responsive templates.
+Paste raw HTML from web pages, portfolios, product lists, media libraries, or bookmarks. LinkForge pulls out every link, thumbnail, and preview, then lets you pick what goes in and generates a finished site in one of seven responsive templates (Creator Grid, Photo Wall, Flux Index, Pop Shelf, Editorial Front, Reading List, Mosaic), each with light and dark themes.
 
 **Live editor:** [linkforge-omega.vercel.app](https://linkforge-omega.vercel.app)
 

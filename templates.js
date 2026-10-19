@@ -100,19 +100,6 @@ function planRows(n, shapes) {
   return spans;
 }
 
-// Per card: an inline style carrying its span at each breakpoint (--s-lg …,
-// for span arithmetic such as span-proportional aspect ratios) and classes
-// naming it (lf-lg-x2 …), because CSS cannot select on a custom property's
-// value and a wide card usually needs a different inner layout.
-// `layout` maps breakpoint name -> shapes, e.g. { lg: [...], md: [...], sm: [...] }.
-function balancedSpanStyles(n, layout) {
-  const plans = Object.entries(layout).map(([bp, shapes]) => [bp, planRows(n, shapes)]);
-  return Array.from({ length: n }, (_, i) => ({
-    style: plans.map(([bp, spans]) => `--s-${bp}:${spans[i]}`).join(';'),
-    cls: plans.map(([bp, spans]) => `lf-${bp}-x${spans[i]}`).join(' '),
-  }));
-}
-
 // Common shape sets.
 const SHAPES = {
   // C single cards, or one card promoted to a 2-column "wide" card per row.
@@ -545,7 +532,628 @@ function previewSvg(layout) {
     flux: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#090d0f"/><rect x="9" y="10" width="48" height="8" fill="#edf5f4"/><rect x="9" y="23" width="29" height="3" fill="#86f4d3"/><rect x="9" y="36" width="66" height="29" rx="3" fill="#172327"/><rect x="80" y="36" width="34" height="29" rx="3" fill="#bce7f5"/><rect x="119" y="36" width="32" height="29" rx="3" fill="#24363c"/><rect x="9" y="71" width="43" height="18" rx="3" fill="#162025"/><rect x="57" y="71" width="43" height="18" rx="3" fill="#162025"/><rect x="105" y="71" width="46" height="18" rx="3" fill="#162025"/></svg>`,
     shelf: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#f7f8f8"/><rect x="8" y="9" width="36" height="5" fill="#1b2428"/><rect x="8" y="27" width="38" height="25" rx="3" fill="#dfe7ea"/><rect x="51" y="18" width="64" height="34" rx="3" fill="#bde5f4"/><rect x="120" y="18" width="32" height="34" rx="3" fill="#263843"/><rect x="8" y="58" width="47" height="33" rx="3" fill="#9ebbd6"/><rect x="60" y="58" width="38" height="33" rx="3" fill="#e6e8e9"/><rect x="103" y="58" width="49" height="33" rx="3" fill="#d9d4eb"/></svg>`,
   };
+  layouts.front = `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#faf8f3"/><rect x="40" y="7" width="80" height="7" rx="1" fill="#121212"/><line x1="8" y1="18" x2="152" y2="18" stroke="#121212"/><rect x="8" y="24" width="88" height="34" fill="#cfc6b6"/><rect x="102" y="26" width="50" height="5" rx="1" fill="#121212"/><rect x="102" y="35" width="44" height="5" rx="1" fill="#121212"/><rect x="102" y="46" width="40" height="3" rx="1" fill="#8a8478"/><rect x="8" y="64" width="44" height="22" fill="#e1d9cb"/><rect x="58" y="64" width="44" height="22" fill="#e1d9cb"/><rect x="108" y="64" width="44" height="22" fill="#e1d9cb"/><rect x="8" y="90" width="36" height="3" rx="1" fill="#121212"/><rect x="58" y="90" width="36" height="3" rx="1" fill="#121212"/><rect x="108" y="90" width="36" height="3" rx="1" fill="#121212"/></svg>`;
+  layouts.reading = `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#fbfbf9"/><rect x="34" y="8" width="60" height="7" rx="1" fill="#1b1b1a"/><rect x="34" y="19" width="40" height="3" rx="1" fill="#3451c6"/><g fill="#1b1b1a"><rect x="34" y="32" width="70" height="4" rx="1"/><rect x="34" y="50" width="62" height="4" rx="1"/><rect x="34" y="68" width="74" height="4" rx="1"/><rect x="34" y="86" width="58" height="4" rx="1"/></g><g fill="#9a9994"><rect x="34" y="39" width="30" height="2" rx="1"/><rect x="34" y="57" width="26" height="2" rx="1"/><rect x="34" y="75" width="34" height="2" rx="1"/></g><rect x="110" y="30" width="16" height="12" rx="1" fill="#d9d8d2"/><rect x="110" y="66" width="16" height="12" rx="1" fill="#d9d8d2"/><g stroke="#e6e5e0"><line x1="34" y1="45" x2="126" y2="45"/><line x1="34" y1="63" x2="126" y2="63"/><line x1="34" y1="81" x2="126" y2="81"/></g></svg>`;
+  layouts.mosaic = `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg"><rect width="160" height="100" fill="#0d0d0f"/><rect x="8" y="7" width="58" height="10" fill="#f5f5f2"/><rect x="70" y="7" width="22" height="10" fill="#ffd23f"/><rect x="8" y="24" width="96" height="40" fill="#e63b2e"/><rect x="106" y="24" width="46" height="40" fill="#3b5bdb"/><rect x="8" y="66" width="46" height="26" fill="#17171a"/><rect x="56" y="66" width="47" height="26" fill="#ffd23f"/><rect x="105" y="66" width="47" height="26" fill="#2bb673"/></svg>`;
   return layouts[layout] || layouts.stream;
+}
+
+// =====================================================
+// LINKFORGE DESIGN SYSTEM (WS4)
+// Every registered template is a SKIN on one shared system:
+//   - scales: type (--t-*), spacing (--space-*, --gutter), radii
+//   - theme contract: each template supplies a light and a dark palette over
+//     the same token names (THEME_TOKENS); shell() scopes them to
+//     :root[data-theme], which the export's toggle flips (issue #2)
+//   - components: page, section head, planned grid, card (+ wide-row and
+//     hero variants), link tail — markup from the lf* helpers below, so a
+//     template only decides layout, palette and typographic voice.
+// =====================================================
+
+// Token names every palette must define. Templates may add their own
+// (e.g. legacy --paper / --flux-bg aliases, scrims) on top.
+const THEME_TOKENS = [
+  '--bg', '--surface', '--media', '--ink', '--ink-2', '--ink-3',
+  '--line', '--line-strong', '--accent', '--accent-ink', '--on-accent',
+];
+
+function themeBlocksCSS(themes) {
+  if (!themes) return '';
+  const block = (name) => Object.entries(themes[name]).map(([k, v]) => `${k}: ${v};`).join(' ');
+  return `
+  :root[data-theme="light"] { ${block('light')} }
+  :root[data-theme="dark"] { ${block('dark')} }`;
+}
+
+const DS_CSS = `
+  .lf-ds {
+    --gutter: clamp(16px, 3.2vw, 48px);
+    --page-max: 1440px;
+    --t-2xs: 10px; --t-xs: 11px; --t-sm: 13px; --t-base: 15px; --t-md: 17px;
+    --t-lg: clamp(18px, 1.35vw, 21px); --t-xl: clamp(21px, 1.9vw, 27px);
+    --t-2xl: clamp(26px, 3vw, 40px); --t-3xl: clamp(34px, 4.8vw, 64px);
+    --t-display: clamp(44px, 8vw, 112px);
+    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-display: var(--font-body);
+    --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-meta: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --radius-media: 6px;
+    --row-gap: 32px; --col-gap: 16px; --card-gap: 12px;
+    --title-font: var(--font-body); --title-size: var(--t-base); --title-weight: 600;
+    --title-lh: 1.3; --title-tracking: -0.01em; --title-clamp: 3;
+    --tab-nav-bg: var(--bg); --tab-border: var(--line); --tab-border-hover: var(--ink-3);
+    --tab-text: var(--ink-2); --tab-active-bg: var(--ink); --tab-active-text: var(--bg);
+    --lf-focus-color: var(--accent-ink);
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font-body); font-size: var(--t-base); line-height: 1.5;
+  }
+  .lf-ds .lf-page { max-width: var(--page-max); margin: 0 auto; padding: clamp(20px, 3vw, 40px) var(--gutter) 48px; }
+  .lf-ds .tab-panels { gap: clamp(48px, 6vw, 88px); }
+  .lf-ds .lf-section__head { display: flex; align-items: baseline; gap: 12px; margin: 0 0 20px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .lf-ds .lf-section__title { margin: 0; min-width: 0; font: 600 var(--t-xs)/1.25 var(--font-meta); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); overflow-wrap: anywhere; }
+  .lf-ds .lf-section__count { margin-left: auto; flex: none; font: 400 var(--t-xs)/1 var(--font-meta); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+  /* Planned grid: column counts and per-card spans come from planGrid(). */
+  .lf-ds .lf-grid { display: grid; grid-template-columns: repeat(var(--cols-lg), minmax(0, 1fr)); gap: var(--row-gap) var(--col-gap); align-items: start; }
+  .lf-ds .lf-card { --s: var(--s-lg, 1); --ar: var(--ar-lg, 16 / 10); grid-column: span var(--s); display: flex; flex-direction: column; gap: var(--card-gap); min-width: 0; color: inherit; }
+  @media (max-width: 1100px) {
+    .lf-ds .lf-grid { grid-template-columns: repeat(var(--cols-md), minmax(0, 1fr)); }
+    .lf-ds .lf-card { --s: var(--s-md, 1); --ar: var(--ar-md, 16 / 10); }
+  }
+  @media (max-width: 700px) {
+    .lf-ds { --row-gap: 26px; }
+    .lf-ds .lf-grid { grid-template-columns: repeat(var(--cols-sm), minmax(0, 1fr)); }
+    .lf-ds .lf-card { --s: var(--s-sm, 1); --ar: var(--ar-sm, 16 / 10); }
+  }
+  .lf-ds .lf-card__media { position: relative; flex: none; aspect-ratio: var(--ar); overflow: hidden; border-radius: var(--radius-media); background: var(--media); }
+  .lf-ds .lf-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-slow) var(--ease-out); }
+  .lf-ds .lf-card:hover .lf-card__media img { transform: scale(1.03); }
+  .lf-ds .lf-card__media.is-broken::after { content: "Preview unavailable"; position: absolute; inset: 0; display: grid; place-items: center; font: 400 var(--t-2xs)/1 var(--font-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .lf-ds .lf-card__play { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px 5px 7px; border-radius: 999px; background: rgba(0, 0, 0, .64); color: #fff; font: 600 var(--t-2xs)/1 var(--font-meta); letter-spacing: .08em; text-transform: uppercase; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .lf-ds .lf-card__play svg { width: 11px; height: 11px; }
+  .lf-ds .lf-card__body { display: grid; gap: 6px; min-width: 0; align-content: start; }
+  .lf-ds .lf-card__kicker { font: 600 var(--t-2xs)/1.2 var(--font-meta); letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); }
+  .lf-ds .lf-card__title { margin: 0; font-family: var(--title-font); font-size: var(--title-size); font-weight: var(--title-weight); line-height: var(--title-lh); letter-spacing: var(--title-tracking); color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--title-clamp); overflow: hidden; transition: color var(--dur-base) var(--ease-out); }
+  .lf-ds .lf-card:hover .lf-card__title, .lf-ds .lf-card:focus-visible .lf-card__title { color: var(--accent-ink); }
+  .lf-ds .lf-card__meta { font: 400 var(--t-xs)/1.4 var(--font-meta); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Wide-row card (a promoted card in a wideCards grid): image left, text
+     right, same height as its single neighbours so the row stays level. */
+  /* Each variant is scoped to its own width range: a card carries classes for
+     every breakpoint, and is only wide at the ones its plan promoted it. */
+  @media (min-width: 1101px) { .lf-ds .lf-card.lf-row-lg { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--col-gap); } .lf-ds .lf-card.lf-row-lg .lf-card__body { --title-size: var(--t-md); --title-clamp: 4; } }
+  @media (min-width: 701px) and (max-width: 1100px) { .lf-ds .lf-card.lf-row-md { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--col-gap); } .lf-ds .lf-card.lf-row-md .lf-card__body { --title-size: var(--t-md); --title-clamp: 4; } }
+  @media (max-width: 700px) { .lf-ds .lf-card.lf-row-sm { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 12px; } .lf-ds .lf-card.lf-row-sm .lf-card__body { --title-clamp: 4; } }
+
+  /* Hero card (a full-row promotion in a heroRows grid, issue #3). */
+  @media (min-width: 1101px) { .lf-ds .lf-card.lf-hero-lg { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); column-gap: clamp(20px, 2.4vw, 36px); align-items: center; } .lf-ds .lf-card.lf-hero-lg .lf-card__media { --ar: 16 / 9; } .lf-ds .lf-card.lf-hero-lg .lf-card__body { --title-size: var(--t-2xl); --title-lh: 1.12; --title-clamp: 5; gap: 12px; } }
+  @media (min-width: 701px) and (max-width: 1100px) { .lf-ds .lf-card.lf-hero-md { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); column-gap: 24px; align-items: center; } .lf-ds .lf-card.lf-hero-md .lf-card__body { --title-size: var(--t-xl); --title-lh: 1.15; --title-clamp: 5; } }
+
+  /* Link tail: items without a usable preview, still source-grouped. */
+  .lf-ds .lf-links { margin-top: 28px; }
+  .lf-ds .lf-links__heading { margin: 0 0 6px; font: 600 var(--t-2xs)/1.2 var(--font-meta); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .lf-ds .lf-links ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); column-gap: 32px; }
+  .lf-ds .lf-links li { min-width: 0; border-bottom: 1px solid var(--line); }
+  .lf-ds .lf-links a { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 12px 0; min-width: 0; }
+  .lf-ds .lf-links__title { min-width: 0; font-size: var(--t-sm); line-height: 1.4; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .lf-ds .lf-links__domain { flex: none; font: 400 var(--t-2xs)/1 var(--font-meta); color: var(--ink-3); }
+  .lf-ds .lf-links a:hover .lf-links__title, .lf-ds .lf-links a:focus-visible .lf-links__title { color: var(--accent-ink); }
+  .lf-ds .lf-empty { padding: 56px 20px; border-block: 1px solid var(--line); color: var(--ink-3); text-align: center; }
+  .lf-ds .lf-theme-toggle { border-color: var(--line-strong); background: color-mix(in srgb, var(--bg) 82%, transparent); color: var(--ink); }
+  .lf-ds .lf-theme-toggle:hover { border-color: var(--accent-ink); color: var(--accent-ink); }
+`;
+
+const PLAY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+
+// Plan a grid for n cards. `layout` maps breakpoint -> {
+//   cols,                  grid columns at that width
+//   shapes,                allowed row shapes (see planRows)
+//   ar: '16 / 9' | { perSpan: k }   fixed media ratio, or span / k so a
+//                          row of unequal spans shares one image height
+//   variant: 'row' | 'hero'   inner layout for promoted (span > 1) cards
+// }. Returns the grid's own style plus each card's classes and style.
+function planGrid(n, layout) {
+  const bps = Object.entries(layout);
+  const plans = bps.map(([bp, spec]) => [bp, spec, planRows(n, spec.shapes)]);
+  const gridStyle = bps.map(([bp, spec]) => `--cols-${bp}:${spec.cols}`).join(';');
+  const cards = Array.from({ length: n }, (_, i) => {
+    const cls = [];
+    const style = [];
+    for (const [bp, spec, spans] of plans) {
+      const s = spans[i];
+      style.push(`--s-${bp}:${s}`);
+      const ar = spec.ar && typeof spec.ar === 'object' ? `${s} / ${spec.ar.perSpan}` : spec.ar;
+      if (ar) style.push(`--ar-${bp}:${ar}`);
+      cls.push(`lf-${bp}-x${s}`);
+      if (s > 1 && spec.variant) cls.push(`lf-${spec.variant}-${bp}`);
+    }
+    return { cls: cls.join(' '), style: style.join(';') };
+  });
+  return { gridStyle, cards };
+}
+
+function lfMedia(item, { play = true } = {}) {
+  const isVideo = itemKind(item) === 'video';
+  return `<div class="lf-card__media">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}${
+    play && isVideo ? `<span class="lf-card__play">${PLAY_ICON}Video</span>` : ''}</div>`;
+}
+
+function lfCard(item, plan, { kicker = '', meta = '', extraClass = '', play = true } = {}) {
+  return `<a class="lf-card ${plan.cls}${extraClass ? ' ' + extraClass : ''}" style="${plan.style}" href="${attr(item.href)}" target="_blank" rel="noopener">
+    ${lfMedia(item, { play })}
+    <div class="lf-card__body">
+      ${kicker ? `<span class="lf-card__kicker">${esc(kicker)}</span>` : ''}
+      <h3 class="lf-card__title">${esc(item.title || item.href)}</h3>
+      ${meta ? `<span class="lf-card__meta">${esc(meta)}</span>` : ''}
+    </div>
+  </a>`;
+}
+
+function lfGrid(items, layout, renderCard) {
+  if (!items.length) return '';
+  const { gridStyle, cards } = planGrid(items.length, layout);
+  return `<div class="lf-grid" data-lf-grid style="${gridStyle}">${items.map((item, i) => renderCard(item, cards[i], i)).join('')}</div>`;
+}
+
+function lfSectionHead(group, label = 'items') {
+  const count = (group.previewItems || []).length + (group.linkItems || []).length;
+  return `<header class="lf-section__head">
+    <h2 class="lf-section__title">${esc(srcLabel(group))}</h2>
+    <span class="lf-section__count">${count} ${count === 1 ? label.replace(/s$/, '') : label}</span>
+  </header>`;
+}
+
+function lfLinks(group, heading = 'More links') {
+  if (!group.linkItems || !group.linkItems.length) return '';
+  return `<div class="lf-links">
+    <h3 class="lf-links__heading">${esc(heading)}</h3>
+    <ul>${group.linkItems.map((item) => `<li><a href="${attr(item.href)}" target="_blank" rel="noopener">
+      <span class="lf-links__title">${esc(item.title || item.href)}</span>
+      ${item.domain ? `<span class="lf-links__domain">${esc(item.domain)}</span>` : ''}
+    </a></li>`).join('')}</ul>
+  </div>`;
+}
+
+function totalItems(groups) {
+  return groups.reduce((sum, g) => sum + (g.previewItems || []).length + (g.linkItems || []).length, 0);
+}
+
+// ---------- palette helpers ----------
+// `extra` carries a template's own tokens (legacy aliases the tests and older
+// overrides read, scrims, signature colors) on top of THEME_TOKENS.
+function palette(base, extra = {}) {
+  return { ...base, ...extra };
+}
+
+
+// =====================================================
+// CREATOR GRID — video-first channel wall (dark native)
+// =====================================================
+function buildYoutube(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const themes = {
+    dark: palette({
+      '--bg': '#0b1014', '--surface': '#12181d', '--media': '#182027', '--ink': '#f2efe9', '--ink-2': '#b4b9bd', '--ink-3': '#8a9197',
+      '--line': '#232a30', '--line-strong': '#3a434b', '--accent': '#ff5b3d', '--accent-ink': '#ff7a60', '--on-accent': '#0b1014',
+    }, { '--creator-bg': '#0b1014' }),
+    light: palette({
+      '--bg': '#f6f4ef', '--surface': '#ffffff', '--media': '#e6e2da', '--ink': '#15181b', '--ink-2': '#4a5056', '--ink-3': '#686e74',
+      '--line': '#e1ddd4', '--line-strong': '#c9c3b8', '--accent': '#c93c1c', '--accent-ink': '#b5361a', '--on-accent': '#ffffff',
+    }, { '--creator-bg': '#f6f4ef' }),
+  };
+  const layout = {
+    lg: { cols: 6, shapes: SHAPES.wideCards(6), ar: '16 / 9', variant: 'row' },
+    md: { cols: 4, shapes: SHAPES.wideCards(4), ar: '16 / 9', variant: 'row' },
+    sm: { cols: 2, shapes: SHAPES.wideCards(2), ar: '16 / 9', variant: 'row' },
+  };
+  const css = `
+  .creator-theme { --font-display: var(--font-serif); --title-size: 14px; --title-weight: 500; --title-lh: 1.35; --title-clamp: 2; --col-gap: 14px; --row-gap: 28px; --radius-media: 4px;
+    --tab-active-bg: var(--accent); --tab-active-text: var(--on-accent); }
+  .creator-masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .creator-masthead h1 { margin: 0; font: 500 var(--t-3xl)/0.95 var(--font-display); letter-spacing: -0.035em; }
+  .creator-masthead p { margin: 10px 0 0; max-width: 56ch; color: var(--ink-2); font-size: var(--t-sm); }
+  .creator-masthead__count { flex: none; font: 400 var(--t-xs)/1 var(--font-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .creator-theme .tab-nav { margin-top: 8px; }
+  .creator-hero { position: relative; display: block; margin-bottom: 28px; overflow: hidden; border-radius: 6px; background: var(--media); isolation: isolate; aspect-ratio: 21 / 8; }
+  .creator-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 700ms var(--ease-out); }
+  .creator-hero:hover img { transform: scale(1.02); }
+  .creator-hero__shade { position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(5,8,10,.9) 0%, rgba(5,8,10,.55) 34%, rgba(5,8,10,0) 68%), linear-gradient(0deg, rgba(5,8,10,.5), transparent 55%); }
+  .creator-hero__copy { position: absolute; z-index: 2; left: clamp(20px, 3.4vw, 48px); bottom: clamp(20px, 3vw, 44px); width: min(560px, 62%); color: #fff; }
+  .creator-hero__copy .lf-card__kicker { color: #ffb4a3; }
+  .creator-hero__copy h2 { margin: 10px 0 0; font: 500 var(--t-2xl)/1.05 var(--font-display); letter-spacing: -0.03em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .creator-hero__copy span.creator-hero__meta { display: block; margin-top: 12px; font: 400 var(--t-xs)/1 var(--font-meta); color: rgba(255,255,255,.72); }
+  .creator-hero .lf-card__media { position: absolute; inset: 0; aspect-ratio: auto; border-radius: 0; }
+  .creator-theme .lf-section__title { color: var(--ink); }
+  @media (max-width: 1100px) { .creator-hero { aspect-ratio: 16 / 8; } }
+  @media (max-width: 700px) {
+    .creator-masthead { flex-direction: column; align-items: flex-start; }
+    .creator-hero { aspect-ratio: 4 / 5; }
+    .creator-hero__shade { background: linear-gradient(0deg, rgba(5,8,10,.92) 0%, rgba(5,8,10,.25) 62%, transparent); }
+    .creator-hero__copy { width: calc(100% - 40px); }
+  }`;
+  const hero = groups.find((g) => g.previewItems.length)?.previewItems[0] || null;
+  const content = renderSourceTabs(groups, (group) => {
+    const isHeroGroup = hero && group.previewItems[0] === hero;
+    const cardsItems = isHeroGroup ? group.previewItems.slice(1) : group.previewItems;
+    const heroHtml = isHeroGroup ? `<a class="creator-hero" href="${attr(hero.href)}" target="_blank" rel="noopener">
+      ${lfMedia(hero, { play: false })}
+      <div class="creator-hero__shade"></div>
+      <div class="creator-hero__copy">
+        <span class="lf-card__kicker">${itemKind(hero) === 'video' ? 'Featured video' : 'Featured'}</span>
+        <h2>${esc(hero.title || hero.href)}</h2>
+        <span class="creator-hero__meta">${esc(hero.domain || srcLabel(group))}</span>
+      </div>
+    </a>` : '';
+    return `${lfSectionHead(group)}${heroHtml}
+      ${lfGrid(cardsItems, layout, (item, plan) => lfCard(item, plan, { meta: item.domain || srcLabel(group) }))}
+      ${lfLinks(group)}`;
+  }, { prefix: 'creator-sources', emptyHtml: '<div class="lf-empty">No links selected.</div>' });
+  const total = totalItems(groups);
+  const body = `<div class="lf-page">
+    <header class="creator-masthead">
+      <div><h1>${esc(ctx.title)}</h1>${ctx.tagline ? `<p>${esc(ctx.tagline)}</p>` : ''}</div>
+      <span class="creator-masthead__count">${total} ${total === 1 ? 'pick' : 'picks'}</span>
+    </header>
+    ${content}
+  </div>`;
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'lf-ds creator-theme', defaultTheme: 'dark', themes });
+}
+
+// =====================================================
+// PHOTO WALL — justified gallery rows (light native)
+// =====================================================
+function buildWall(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const themes = {
+    light: palette({
+      '--bg': '#f7f6f2', '--surface': '#ffffff', '--media': '#e8e5de', '--ink': '#171715', '--ink-2': '#4d4a44', '--ink-3': '#6c6862',
+      '--line': '#dcd8cf', '--line-strong': '#171715', '--accent': '#b4452f', '--accent-ink': '#9e3a26', '--on-accent': '#ffffff',
+    }, { '--paper': '#f7f6f2' }),
+    dark: palette({
+      '--bg': '#161512', '--surface': '#1d1c19', '--media': '#26241f', '--ink': '#f0ede6', '--ink-2': '#c4c0b6', '--ink-3': '#9a958b',
+      '--line': '#34312b', '--line-strong': '#f0ede6', '--accent': '#e07a5f', '--accent-ink': '#ec8f75', '--on-accent': '#161512',
+    }, { '--paper': '#161512' }),
+  };
+  // Rows of two (6+6) or three (4+5+3); image ratio = span / 3 so every
+  // image in a row shares one height — a justified gallery, no ragged tails.
+  const layout = {
+    lg: { cols: 12, shapes: [{ spans: [6, 6], cost: 0.1 }, { spans: [4, 5, 3], cost: 0 }, { spans: [12], cost: 5 }], ar: { perSpan: 3 } },
+    md: { cols: 2, shapes: SHAPES.wideCards(2), ar: { perSpan: 0.75 } },
+    sm: { cols: 1, shapes: [{ spans: [1], cost: 0 }], ar: '4 / 5' },
+  };
+  const css = `
+  .wall-theme { --font-display: var(--font-serif); --radius-media: 2px; --col-gap: clamp(12px, 1.6vw, 24px); --row-gap: clamp(26px, 3vw, 40px); --card-gap: 10px;
+    --title-size: 14px; --title-weight: 500; --title-lh: 1.38; --title-clamp: 2; --tab-active-bg: var(--ink); --tab-active-text: var(--bg); }
+  .wall-masthead { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: clamp(8px, 2vw, 24px) 0 clamp(18px, 2.4vw, 28px); border-bottom: 1px solid var(--line-strong); }
+  .wall-masthead h1 { margin: 0; font: 300 var(--t-display)/0.9 var(--font-display); letter-spacing: -0.045em; }
+  .wall-masthead p { margin: 14px 0 0; max-width: 52ch; font: italic 400 var(--t-md)/1.45 var(--font-serif); color: var(--ink-2); }
+  .wall-masthead__meta { text-align: right; font: 400 var(--t-xs)/1.6 var(--font-meta); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .wall-theme .tab-nav { margin-top: 12px; }
+  .wall-theme .lf-card__meta { font-size: var(--t-2xs); }
+  @media (max-width: 700px) { .wall-masthead { grid-template-columns: 1fr; } .wall-masthead__meta { text-align: left; } }`;
+  const content = renderSourceTabs(groups, (group) => `${lfSectionHead(group)}
+    ${lfGrid(group.previewItems, layout, (item, plan) => lfCard(item, plan, { meta: item.domain || srcLabel(group) }))}
+    ${lfLinks(group)}`, { prefix: 'wall-sources', emptyHtml: '<div class="lf-empty">No selected items to show.</div>' });
+  const total = totalItems(groups);
+  const body = `<main class="lf-page">
+    <header class="wall-masthead">
+      <div><h1>${esc(ctx.title)}</h1>${ctx.tagline ? `<p>${esc(ctx.tagline)}</p>` : ''}</div>
+      <div class="wall-masthead__meta">${esc(ctx.today || '')}<br>${total} ${total === 1 ? 'work' : 'works'}</div>
+    </header>
+    ${content}
+  </main>`;
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'lf-ds wall-theme', defaultTheme: 'light', themes });
+}
+
+// =====================================================
+// FLUX INDEX — technical media index (dark native)
+// =====================================================
+function buildFlux(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const themes = {
+    dark: palette({
+      '--bg': '#080c0e', '--surface': '#10171a', '--media': '#172126', '--ink': '#edf5f4', '--ink-2': '#b5c2c3', '--ink-3': '#8a989b',
+      '--line': '#1f2a2e', '--line-strong': '#34454b', '--accent': '#86f4d3', '--accent-ink': '#86f4d3', '--on-accent': '#062019',
+    }, { '--flux-bg': '#080c0e', '--flux-ice': '#bceafa', '--flux-bar': '#2a363a' }),
+    light: palette({
+      '--bg': '#f4f6f6', '--surface': '#ffffff', '--media': '#e3eaec', '--ink': '#0f1a1c', '--ink-2': '#41504f', '--ink-3': '#5b6b6e',
+      '--line': '#d8e0e1', '--line-strong': '#b3c1c3', '--accent': '#0b7f62', '--accent-ink': '#0a7259', '--on-accent': '#ffffff',
+    }, { '--flux-bg': '#f4f6f6', '--flux-ice': '#2b7a99', '--flux-bar': '#c5d1d3' }),
+  };
+  const layout = {
+    lg: { cols: 12, shapes: [{ spans: [6, 6], cost: 0.1 }, { spans: [4, 4, 4], cost: 0 }, { spans: [3, 3, 3, 3], cost: 0.1 }, { spans: [12], cost: 5 }], ar: { perSpan: 3 } },
+    md: { cols: 2, shapes: SHAPES.wideCards(2), ar: { perSpan: 0.75 } },
+    sm: { cols: 1, shapes: [{ spans: [1], cost: 0 }], ar: '16 / 10' },
+  };
+  const titleWords = String(ctx.title || '').trim().split(/\s+/).filter(Boolean);
+  const displayTitle = titleWords.length > 1 ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}` : esc(ctx.title);
+  const css = `
+  .flux-theme { --font-body: "Manrope", system-ui, sans-serif; --font-display: "Space Grotesk", var(--font-body); --radius-media: 0; --col-gap: 12px; --row-gap: 12px; --card-gap: 0;
+    --title-size: 14px; --title-weight: 600; --title-lh: 1.32; --title-clamp: 2; --tab-sheen: none; }
+  .flux-top { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--line); font: 600 var(--t-2xs)/1 var(--font-meta); letter-spacing: .18em; text-transform: uppercase; }
+  .flux-top span:first-child { color: var(--accent-ink); }
+  .flux-top span:last-child { color: var(--ink-3); }
+  .flux-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .6fr); align-items: end; gap: 32px; padding: clamp(28px, 4vw, 48px) 0 clamp(20px, 3vw, 32px); border-bottom: 1px solid var(--line); }
+  .flux-hero h1 { margin: 0; font: 500 var(--t-display)/0.84 var(--font-display); letter-spacing: -0.06em; text-transform: uppercase; }
+  .flux-hero p { margin: 18px 0 0; max-width: 46ch; color: var(--ink-2); font-size: var(--t-sm); }
+  .flux-signal { display: grid; grid-template-columns: repeat(14, 1fr); gap: 7px; align-items: end; height: 72px; }
+  .flux-signal i { display: block; height: var(--h); background: var(--flux-bar); }
+  .flux-signal i:nth-child(4n+1) { background: var(--accent); }
+  .flux-signal i:nth-child(7n) { background: var(--flux-ice); }
+  .flux-theme .tab-nav { flex-wrap: nowrap; overflow-x: auto; gap: 0; margin-top: 4px; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+  .flux-theme .tab-btn { min-width: max-content; padding: 0 22px 12px 0; border: 0; border-radius: 0; background: transparent; color: var(--ink-3); }
+  .flux-theme .tab-btn:hover, .flux-theme .tab-btn.active { background: transparent; color: var(--ink); }
+  .flux-theme .tab-btn.active { color: var(--accent-ink); box-shadow: inset 0 -2px 0 var(--accent); }
+  .flux-theme .tab-btn__title { font: 600 var(--t-2xs)/1.2 var(--font-meta); letter-spacing: .14em; text-transform: uppercase; }
+  .flux-theme .tab-btn__meta { display: none; }
+  .flux-theme .lf-section__head { border-bottom-color: var(--line-strong); }
+  .flux-theme .lf-section__title { color: var(--accent-ink); }
+  .flux-theme .lf-card { border: 1px solid var(--line); background: var(--surface); transition: border-color var(--dur-base) var(--ease-out); }
+  .flux-theme .lf-card:hover { border-color: var(--line-strong); }
+  .flux-theme .lf-card__body { padding: 12px 14px 14px; border-top: 1px solid var(--line); }
+  .flux-theme .lf-card__media img { filter: saturate(.86) contrast(1.04); }
+  .flux-theme .lf-card:hover .lf-card__media img { filter: none; }
+  .flux-theme .lf-card__kicker::before { content: "▸ "; }
+  .flux-theme .lf-links ul { column-gap: 12px; row-gap: 12px; }
+  .flux-theme .lf-links li { border: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .flux-theme .lf-links a { padding: 13px 14px; }
+  .flux-theme .lf-links__title { font: 400 var(--t-xs)/1.45 var(--font-meta); }
+  .flux-theme .lf-links a::after { content: "↗"; flex: none; color: var(--accent-ink); }
+  .flux-theme .lf-links__domain { display: none; }
+  @media (max-width: 900px) { .flux-hero { grid-template-columns: 1fr; } .flux-signal { display: none; } }
+  @media (max-width: 700px) { .flux-hero h1 { font-size: clamp(40px, 14vw, 72px); } }`;
+  const content = renderSourceTabs(groups, (group) => `${lfSectionHead(group)}
+    ${lfGrid(group.previewItems, layout, (item, plan) => lfCard(item, plan, { kicker: itemKindLabel(item), meta: item.domain || srcLabel(group), play: false }))}
+    ${lfLinks(group, 'Index links')}`, { prefix: 'flux-tabs', emptyHtml: '<div class="lf-empty">No items selected for this export yet.</div>' });
+  const bars = [42, 68, 30, 84, 54, 36, 72, 24, 62, 46, 78, 34, 58, 88].map((h) => `<i style="--h:${h}%"></i>`).join('');
+  const total = totalItems(groups);
+  const body = `<div class="lf-page">
+    <header class="flux-top"><span>Flux index</span><span>${total} curated ${total === 1 ? 'item' : 'items'}</span></header>
+    <section class="flux-hero"><div><h1>${displayTitle}</h1>${ctx.tagline ? `<p>${esc(ctx.tagline)}</p>` : ''}</div><div class="flux-signal" aria-hidden="true">${bars}</div></section>
+    <main>${content}</main>
+  </div>`;
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'lf-ds flux-theme', defaultTheme: 'dark', themes });
+}
+
+// =====================================================
+// POP SHELF — airy showcase shelf with a sticky intro (light native)
+// =====================================================
+function buildShelf(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const themes = {
+    light: palette({
+      '--bg': '#f7f8f8', '--surface': '#ffffff', '--media': '#e9eef0', '--ink': '#172126', '--ink-2': '#44525a', '--ink-3': '#64717a',
+      '--line': '#dde3e5', '--line-strong': '#b9c4c8', '--accent': '#3f66db', '--accent-ink': '#2f5bd3', '--on-accent': '#ffffff',
+    }, { '--shelf-bg': '#f7f8f8', '--shelf-ice': '#dff4fb' }),
+    dark: palette({
+      '--bg': '#101619', '--surface': '#171e22', '--media': '#232d31', '--ink': '#eef3f4', '--ink-2': '#b9c4c8', '--ink-3': '#8f9ca1',
+      '--line': '#263035', '--line-strong': '#3a474d', '--accent': '#7d9cf5', '--accent-ink': '#9db4ff', '--on-accent': '#0b1220',
+    }, { '--shelf-bg': '#101619', '--shelf-ice': '#1d3038' }),
+  };
+  const layout = {
+    lg: { cols: 12, shapes: [{ spans: [7, 5], cost: 0 }, { spans: [4, 4, 4], cost: 0 }, { spans: [5, 7], cost: 0 }, { spans: [6, 6], cost: 0.05 }, { spans: [12], cost: 5 }], ar: { perSpan: 3 } },
+    md: { cols: 12, shapes: [{ spans: [7, 5], cost: 0 }, { spans: [5, 7], cost: 0 }, { spans: [6, 6], cost: 0 }, { spans: [12], cost: 5 }], ar: { perSpan: 3.6 } },
+    sm: { cols: 1, shapes: [{ spans: [1], cost: 0 }], ar: '16 / 10' },
+  };
+  const titleWords = String(ctx.title || '').trim().split(/\s+/).filter(Boolean);
+  const displayTitle = titleWords.length > 1 ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}` : esc(ctx.title);
+  const css = `
+  .shelf-theme { --font-body: "Manrope", system-ui, sans-serif; --radius-media: 0; --col-gap: 10px; --row-gap: 10px; --card-gap: 0;
+    --title-size: 14px; --title-weight: 600; --title-lh: 1.3; --title-clamp: 2; --tab-sheen: none; }
+  .shelf-top { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .shelf-brand { font-size: var(--t-sm); font-weight: 700; letter-spacing: .24em; text-transform: uppercase; }
+  .shelf-date { font: 400 var(--t-2xs)/1 var(--font-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .shelf-layout { display: grid; grid-template-columns: minmax(220px, .3fr) minmax(0, 1fr); gap: clamp(24px, 3vw, 44px); padding-top: 32px; }
+  .shelf-intro { position: sticky; top: 24px; align-self: start; display: grid; gap: 18px; }
+  .shelf-intro h1 { margin: 40px 0 0; font: 300 clamp(40px, 4.2vw, 64px)/0.92 var(--font-body); letter-spacing: -0.055em; text-transform: uppercase; }
+  .shelf-intro p { margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
+  .shelf-index { font: 400 var(--t-2xs)/1.6 var(--font-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .shelf-theme .tab-nav { flex-wrap: nowrap; overflow-x: auto; gap: 4px; margin: 0 0 8px; padding-top: 0; }
+  .shelf-theme .tab-btn { min-width: max-content; padding: 8px 12px; border: 0; border-radius: 4px; background: transparent; color: var(--ink-2); }
+  .shelf-theme .tab-btn:hover { background: var(--surface); }
+  .shelf-theme .tab-btn.active { background: var(--shelf-ice); color: var(--accent-ink); }
+  .shelf-theme .tab-btn__title { font-size: var(--t-xs); font-weight: 700; }
+  .shelf-theme .tab-btn__meta { display: none; }
+  .shelf-theme .lf-section__head { border-bottom: 0; margin-bottom: 10px; padding-bottom: 0; }
+  .shelf-theme .lf-card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .shelf-theme .lf-card__body { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; padding: 12px 14px 14px; }
+  .shelf-theme .lf-card__body::after { content: "↗"; grid-column: 2; grid-row: 1 / span 3; align-self: end; color: var(--accent-ink); font-family: var(--font-meta); }
+  .shelf-theme .lf-card__kicker, .shelf-theme .lf-card__title, .shelf-theme .lf-card__meta { grid-column: 1; }
+  .shelf-theme .lf-links { margin-top: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 4px 14px; }
+  .shelf-theme .lf-links li:last-child { border-bottom: 0; }
+  @media (max-width: 1100px) { .shelf-layout { grid-template-columns: 1fr; padding-top: 20px; } .shelf-intro { position: static; } .shelf-intro h1 { margin-top: 8px; } .shelf-index { display: none; } }
+  @media (max-width: 700px) { .shelf-date { display: none; } .shelf-intro h1 { font-size: clamp(40px, 14vw, 64px); } }`;
+  const content = renderSourceTabs(groups, (group) => `${lfSectionHead(group)}
+    ${lfGrid(group.previewItems, layout, (item, plan) => lfCard(item, plan, { meta: `${itemKindLabel(item)} · ${item.domain || srcLabel(group)}` }))}
+    ${lfLinks(group)}`, { prefix: 'shelf-tabs', emptyHtml: '<div class="lf-empty">No items selected for this export yet.</div>' });
+  const total = totalItems(groups);
+  const body = `<div class="lf-page">
+    <header class="shelf-top"><span class="shelf-brand">Pop shelf</span><span class="shelf-date">${esc(ctx.today || '')}</span></header>
+    <div class="shelf-layout">
+      <aside class="shelf-intro"><h1>${displayTitle}</h1>${ctx.tagline ? `<p>${esc(ctx.tagline)}</p>` : ''}<span class="shelf-index">${total} curated ${total === 1 ? 'pick' : 'picks'} / ${groups.length} ${groups.length === 1 ? 'source' : 'sources'}</span></aside>
+      <main>${content}</main>
+    </div>
+  </div>`;
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'lf-ds shelf-theme', defaultTheme: 'light', themes });
+}
+
+// =====================================================
+// EDITORIAL FRONT — newspaper front page with hero rows (light native, new)
+// Issue #3: the remainder of a 3-column grid is promoted to full-row heroes
+// (7 -> 1 hero + 6, 11 -> 2 heroes + 9), never back-filled masonry-style.
+// =====================================================
+function buildEditorialFront(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const themes = {
+    light: palette({
+      '--bg': '#faf8f3', '--surface': '#ffffff', '--media': '#e7e2d8', '--ink': '#121212', '--ink-2': '#3d3a35', '--ink-3': '#66625b',
+      '--line': '#d9d3c7', '--line-strong': '#121212', '--accent': '#a8201a', '--accent-ink': '#a8201a', '--on-accent': '#ffffff',
+    }, { '--front-bg': '#faf8f3' }),
+    dark: palette({
+      '--bg': '#141311', '--surface': '#1b1a17', '--media': '#262420', '--ink': '#eeeae2', '--ink-2': '#c8c2b7', '--ink-3': '#9b958a',
+      '--line': '#34312b', '--line-strong': '#eeeae2', '--accent': '#ff6b5e', '--accent-ink': '#ff8a7f', '--on-accent': '#141311',
+    }, { '--front-bg': '#141311' }),
+  };
+  const layout = {
+    lg: { cols: 3, shapes: SHAPES.heroRows(3), ar: '3 / 2', variant: 'hero' },
+    md: { cols: 2, shapes: SHAPES.heroRows(2), ar: '3 / 2', variant: 'hero' },
+    sm: { cols: 1, shapes: SHAPES.heroRows(1), ar: '3 / 2' },
+  };
+  const css = `
+  .front-theme { --font-display: var(--font-serif); --title-font: var(--font-serif); --title-size: var(--t-lg); --title-weight: 600; --title-lh: 1.22; --title-tracking: -0.012em; --title-clamp: 4;
+    --radius-media: 0; --col-gap: clamp(20px, 2.4vw, 36px); --row-gap: clamp(28px, 3vw, 44px); --card-gap: 12px;
+    --tab-active-bg: var(--ink); --tab-active-text: var(--bg); }
+  .front-masthead { text-align: center; padding: clamp(8px, 2vw, 20px) 0 0; }
+  .front-masthead__top { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; font: 400 var(--t-2xs)/1.2 var(--font-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .front-masthead h1 { margin: 0; padding: clamp(10px, 1.6vw, 18px) 0; border-block: 1px solid var(--line-strong); font: 800 clamp(40px, 7.4vw, 104px)/0.95 var(--font-display); letter-spacing: -0.035em; }
+  .front-masthead p { margin: 0; padding: 10px 0; border-bottom: 3px double var(--line-strong); font: italic 400 var(--t-md)/1.4 var(--font-serif); color: var(--ink-2); }
+  .front-theme .tab-nav { justify-content: center; margin-top: 14px; }
+  @media (max-width: 700px) { .front-theme .tab-nav { justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; } .front-theme .tab-btn { min-width: max-content; } }
+  .front-theme .tab-btn { border-radius: 0; border-color: transparent; padding: 7px 12px; }
+  .front-theme .tab-btn__title { font: 600 var(--t-xs)/1.2 var(--font-meta); letter-spacing: .1em; text-transform: uppercase; }
+  .front-theme .tab-btn__meta { display: none; }
+  .front-theme .lf-section__head { border-top: 3px solid var(--line-strong); border-bottom: 1px solid var(--line); padding: 10px 0 10px; }
+  .front-theme .lf-section__title { font: 700 var(--t-md)/1.2 var(--font-serif); letter-spacing: 0; text-transform: none; }
+  .front-theme .lf-card__meta { font-size: var(--t-2xs); letter-spacing: .04em; text-transform: uppercase; }
+  .front-theme .lf-card.lf-hero-lg, .front-theme .lf-card.lf-hero-md { padding-bottom: clamp(24px, 2.6vw, 36px); border-bottom: 1px solid var(--line); }
+  .front-theme .lf-links__heading { color: var(--accent-ink); }
+  .front-theme .lf-links__title { font: 500 var(--t-md)/1.35 var(--font-serif); }`;
+  const total = totalItems(groups);
+  const content = renderSourceTabs(groups, (group) => `${lfSectionHead(group, 'stories')}
+    ${lfGrid(group.previewItems, layout, (item, plan) => lfCard(item, plan, { meta: item.domain || srcLabel(group) }))}
+    ${lfLinks(group, 'Also in this section')}`, { prefix: 'front-sources', emptyHtml: '<div class="lf-empty">No stories selected.</div>' });
+  const body = `<div class="lf-page">
+    <header class="front-masthead">
+      <div class="front-masthead__top"><span>${esc(ctx.today || '')}</span><span>${total} ${total === 1 ? 'story' : 'stories'} · ${groups.length} ${groups.length === 1 ? 'source' : 'sources'}</span></div>
+      <h1>${esc(ctx.title)}</h1>
+      ${ctx.tagline ? `<p>${esc(ctx.tagline)}</p>` : ''}
+    </header>
+    ${content}
+  </div>`;
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'lf-ds front-theme', defaultTheme: 'light', themes });
+}
+
+// =====================================================
+// READING LIST — minimal single column (light native, new)
+// Previews and plain links share one numbered list per source, so a
+// link-heavy collection reads as a list rather than a short grid plus a
+// long "more links" tail.
+// =====================================================
+function buildReading(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const themes = {
+    light: palette({
+      '--bg': '#fbfbf9', '--surface': '#ffffff', '--media': '#ecebe6', '--ink': '#1b1b1a', '--ink-2': '#4a4a46', '--ink-3': '#6b6b66',
+      '--line': '#e6e5e0', '--line-strong': '#1b1b1a', '--accent': '#3b5bdb', '--accent-ink': '#3451c6', '--on-accent': '#ffffff',
+    }, { '--reading-bg': '#fbfbf9' }),
+    dark: palette({
+      '--bg': '#121212', '--surface': '#1a1a1a', '--media': '#232323', '--ink': '#ebeae6', '--ink-2': '#c2c1bc', '--ink-3': '#9a9994',
+      '--line': '#2a2a28', '--line-strong': '#ebeae6', '--accent': '#8ea2ff', '--accent-ink': '#a3b3ff', '--on-accent': '#121212',
+    }, { '--reading-bg': '#121212' }),
+  };
+  const css = `
+  .reading-theme { --font-display: var(--font-serif); --page-max: 760px; --tab-active-bg: var(--ink); --tab-active-text: var(--bg); }
+  .reading-masthead { padding: clamp(16px, 4vw, 48px) 0 clamp(18px, 2.4vw, 28px); border-bottom: 1px solid var(--line); }
+  .reading-masthead__kicker { font: 600 var(--t-2xs)/1 var(--font-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--accent-ink); }
+  .reading-masthead h1 { margin: 14px 0 0; font: 600 clamp(34px, 5vw, 52px)/1.04 var(--font-display); letter-spacing: -0.028em; }
+  .reading-masthead p { margin: 12px 0 0; font: 400 var(--t-md)/1.55 var(--font-serif); color: var(--ink-2); }
+  .reading-masthead__meta { margin-top: 16px; font: 400 var(--t-xs)/1 var(--font-meta); color: var(--ink-3); }
+  .reading-theme .tab-nav { gap: 6px; margin-top: 4px; }
+  .reading-theme .tab-btn { padding: 6px 12px; }
+  .reading-theme .tab-btn__title { font-size: var(--t-xs); font-family: var(--font-body); }
+  .reading-theme .tab-btn__meta { display: none; }
+  .reading-theme .tab-panels { gap: clamp(36px, 5vw, 56px); }
+  .reading-list { list-style: none; margin: 0; padding: 0; counter-reset: reading; }
+  .reading-list li { counter-increment: reading; border-bottom: 1px solid var(--line); }
+  .reading-item { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; column-gap: 14px; align-items: start; padding: 18px 0; color: inherit; }
+  .reading-item::before { content: counter(reading, decimal-leading-zero); padding-top: 4px; font: 400 var(--t-xs)/1 var(--font-meta); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .reading-item__title { margin: 0; font: 600 var(--t-lg)/1.3 var(--font-serif); letter-spacing: -0.01em; color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; transition: color var(--dur-base) var(--ease-out); }
+  .reading-item__meta { display: block; margin-top: 6px; font: 400 var(--t-xs)/1.4 var(--font-meta); color: var(--ink-3); }
+  .reading-item__meta b { font-weight: 600; color: var(--accent-ink); }
+  .reading-item__thumb { width: 112px; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; background: var(--media); }
+  .reading-item__thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .reading-item__thumb.is-broken { visibility: hidden; }
+  .reading-item:hover .reading-item__title, .reading-item:focus-visible .reading-item__title { color: var(--accent-ink); }
+  @media (max-width: 700px) { .reading-item { grid-template-columns: minmax(0, 1fr) auto; } .reading-item::before { display: none; } .reading-item__thumb { width: 84px; } .reading-item__title { font-size: var(--t-md); } }`;
+  const row = (item, group) => {
+    const kind = itemKind(item);
+    const label = kind === 'video' ? '<b>Video</b> · ' : kind === 'gallery' ? '<b>Image</b> · ' : '';
+    return `<li><a class="reading-item" href="${attr(item.href)}" target="_blank" rel="noopener">
+      <div><h3 class="reading-item__title">${esc(item.title || item.href)}</h3><span class="reading-item__meta">${label}${esc(item.domain || srcLabel(group))}</span></div>
+      ${item.thumbnail ? `<div class="reading-item__thumb">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}</div>` : ''}
+    </a></li>`;
+  };
+  const content = renderSourceTabs(groups, (group) => `${lfSectionHead(group, 'reads')}
+    <ol class="reading-list">${[...group.previewItems, ...group.linkItems].map((item) => row(item, group)).join('')}</ol>`,
+  { prefix: 'reading-sources', emptyHtml: '<div class="lf-empty">Nothing on the list yet.</div>' });
+  const total = totalItems(groups);
+  const body = `<main class="lf-page">
+    <header class="reading-masthead">
+      <span class="reading-masthead__kicker">Reading list</span>
+      <h1>${esc(ctx.title)}</h1>
+      ${ctx.tagline ? `<p>${esc(ctx.tagline)}</p>` : ''}
+      <div class="reading-masthead__meta">${total} ${total === 1 ? 'read' : 'reads'}${ctx.today ? ` · ${esc(ctx.today)}` : ''}</div>
+    </header>
+    ${content}
+  </main>`;
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'lf-ds reading-theme', defaultTheme: 'light', themes });
+}
+
+// =====================================================
+// MOSAIC — bold, tight visual grid with color-band captions (dark native, new)
+// =====================================================
+function buildMosaic(ctx) {
+  const groups = buildSourceTabs(ctx.sourceGroups);
+  const themes = {
+    dark: palette({
+      '--bg': '#0d0d0f', '--surface': '#17171a', '--media': '#1f1f24', '--ink': '#f5f5f2', '--ink-2': '#c9c9c4', '--ink-3': '#9a9a95',
+      '--line': '#26262b', '--line-strong': '#f5f5f2', '--accent': '#ffd23f', '--accent-ink': '#ffd23f', '--on-accent': '#111111',
+    }, { '--mosaic-bg': '#0d0d0f' }),
+    light: palette({
+      '--bg': '#f3f2ee', '--surface': '#ffffff', '--media': '#e2e0da', '--ink': '#111111', '--ink-2': '#3a3a38', '--ink-3': '#5f5f5b',
+      '--line': '#d8d6cf', '--line-strong': '#111111', '--accent': '#d33025', '--accent-ink': '#c4291d', '--on-accent': '#ffffff',
+    }, { '--mosaic-bg': '#f3f2ee' }),
+  };
+  const layout = {
+    lg: { cols: 12, shapes: [{ spans: [8, 4], cost: 0 }, { spans: [4, 4, 4], cost: 0 }, { spans: [4, 8], cost: 0 }, { spans: [3, 3, 3, 3], cost: 0.05 }, { spans: [6, 6], cost: 0.1 }, { spans: [12], cost: 5 }], ar: { perSpan: 3 } },
+    md: { cols: 2, shapes: SHAPES.wideCards(2), ar: { perSpan: 0.75 } },
+    sm: { cols: 1, shapes: [{ spans: [1], cost: 0 }], ar: '4 / 3' },
+  };
+  const css = `
+  .mosaic-theme { --font-display: "Space Grotesk", var(--font-body); --title-font: var(--font-display); --title-size: var(--t-md); --title-weight: 600; --title-lh: 1.2; --title-tracking: -0.02em; --title-clamp: 2;
+    --gutter: clamp(12px, 2vw, 28px); --col-gap: 4px; --row-gap: 4px; --card-gap: 0; --radius-media: 0; --page-max: 1600px;
+    --tab-active-bg: var(--accent); --tab-active-text: var(--on-accent); }
+  .mosaic-masthead { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: clamp(8px, 2vw, 24px) 0 clamp(16px, 2vw, 24px); }
+  .mosaic-masthead h1 { margin: 0; font: 700 var(--t-display)/0.86 var(--font-display); letter-spacing: -0.065em; }
+  .mosaic-masthead h1 span { color: var(--accent-ink); }
+  .mosaic-masthead p { margin: 14px 0 0; max-width: 48ch; color: var(--ink-2); }
+  .mosaic-masthead__count { font: 700 var(--t-3xl)/0.9 var(--font-display); letter-spacing: -0.04em; text-align: right; }
+  .mosaic-masthead__count small { display: block; margin-top: 6px; font: 600 var(--t-2xs)/1 var(--font-meta); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  .mosaic-theme .tab-btn__title { font-family: var(--font-display); }
+  .mosaic-theme .lf-section__head { border-bottom: 0; margin-bottom: 8px; padding-bottom: 0; }
+  .mosaic-theme .lf-section__title { font: 700 var(--t-xl)/1.1 var(--font-display); letter-spacing: -0.02em; text-transform: none; }
+  .mosaic-theme .lf-card { background: var(--surface); transition: background var(--dur-base) var(--ease-out); }
+  .mosaic-theme .lf-card__body { padding: 14px 16px 16px; }
+  .mosaic-theme .lf-card:hover, .mosaic-theme .lf-card:focus-visible { background: var(--accent); }
+  .mosaic-theme .lf-card:hover .lf-card__title, .mosaic-theme .lf-card:focus-visible .lf-card__title,
+  .mosaic-theme .lf-card:hover .lf-card__meta, .mosaic-theme .lf-card:hover .lf-card__kicker { color: var(--on-accent); }
+  .mosaic-theme .lf-links ul { column-gap: 4px; }
+  .mosaic-theme .lf-links__title { font: 600 var(--t-md)/1.3 var(--font-display); }
+  @media (max-width: 700px) { .mosaic-masthead { grid-template-columns: 1fr; } .mosaic-masthead__count { text-align: left; } }`;
+  const words = String(ctx.title || '').trim().split(/\s+/).filter(Boolean);
+  const title = words.length > 1 ? `${esc(words.slice(0, -1).join(' '))} <span>${esc(words[words.length - 1])}</span>` : esc(ctx.title);
+  const content = renderSourceTabs(groups, (group) => `${lfSectionHead(group)}
+    ${lfGrid(group.previewItems, layout, (item, plan) => lfCard(item, plan, { meta: item.domain || srcLabel(group) }))}
+    ${lfLinks(group)}`, { prefix: 'mosaic-sources', emptyHtml: '<div class="lf-empty">Nothing selected.</div>' });
+  const total = totalItems(groups);
+  const body = `<div class="lf-page">
+    <header class="mosaic-masthead">
+      <div><h1>${title}</h1>${ctx.tagline ? `<p>${esc(ctx.tagline)}</p>` : ''}</div>
+      <div class="mosaic-masthead__count">${total}<small>${total === 1 ? 'pick' : 'picks'}</small></div>
+    </header>
+    ${content}
+  </div>`;
+  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'lf-ds mosaic-theme', defaultTheme: 'dark', themes });
 }
 
 // ---------- registry ----------
@@ -583,6 +1191,30 @@ const TEMPLATES = {
     preview: () => previewSvg('shelf'),
     build: (ctx) => buildShelf(normalize(ctx)),
   },
+  editorial: {
+    name: 'Editorial Front',
+    desc: 'A newspaper front page: serif headlines, section rules, and hero stories that keep every row whole.',
+    focus: 'Articles',
+    fit: 'Best for news, essays, newsletters, and article-led reading',
+    preview: () => previewSvg('front'),
+    build: (ctx) => buildEditorialFront(normalize(ctx)),
+  },
+  reading: {
+    name: 'Reading List',
+    desc: 'A quiet, numbered single column where links and previews read in one list.',
+    focus: 'Links',
+    fit: 'Great for link-heavy collections, research, and save-for-later lists',
+    preview: () => previewSvg('reading'),
+    build: (ctx) => buildReading(normalize(ctx)),
+  },
+  mosaic: {
+    name: 'Mosaic',
+    desc: 'A bold, edge-to-edge image grid with color-band captions.',
+    focus: 'Visual',
+    fit: 'Best for strong imagery: campaigns, portfolios, reels, and product drops',
+    preview: () => previewSvg('mosaic'),
+    build: (ctx) => buildMosaic(normalize(ctx)),
+  },
 };
 
 function suggestTemplate(counts) {
@@ -590,6 +1222,9 @@ function suggestTemplate(counts) {
   if (counts.gallery / t >= 0.4) return 'wall';
   if (counts.video / t >= 0.3) return 'youtube';
   if (counts.article / t >= 0.55) return 'shelf';
+  // Mostly preview-less links: every grid template would show a short grid
+  // and a long tail, while the reading list gives them equal weight.
+  if ((counts.link || 0) / t >= 0.5) return 'reading';
   return 'flux';
 }
 
@@ -633,7 +1268,7 @@ const MORE_LINKS_CSS_DARK = `
   }
 `;
 
-function shell({ title, tagline, today, body, css, bodyClass = '', defaultTheme = 'light' }) {
+function shell({ title, tagline, today, body, css, bodyClass = '', defaultTheme = 'light', themes = null }) {
   const bodyClasses = ['lf-template', bodyClass].filter(Boolean).join(' ');
   return `<!doctype html>
 <html lang="en" data-theme="${defaultTheme === 'dark' ? 'dark' : 'light'}">
@@ -822,6 +1457,7 @@ function shell({ title, tagline, today, body, css, bodyClass = '', defaultTheme 
     }
   }
 ${SOURCE_FILTER_CSS}
+${themes ? DS_CSS + themeBlocksCSS(themes) : ''}
 ${THEME_TOGGLE_CSS}
 ${css}
 </style>
@@ -1072,180 +1708,6 @@ function buildEditorial(ctx) {
 // =====================================================
 // 2) TUBE GRID — compact 16:9 cards with channel-style source headers
 // =====================================================
-function buildYoutube(ctx) {
-  const groups = buildSourceTabs(ctx.sourceGroups);
-  const previewGroups = groups.filter((group) => group.previewItems.length);
-  const linkGroups = groups.filter((group) => group.linkItems.length);
-  const firstGroup = previewGroups[0];
-  const hero = firstGroup?.previewItems[0] || null;
-
-  const image = (item, className = '') => `<img
-    class="${className}"
-    src="${attr(item.thumbnail)}"
-    alt=""
-    loading="lazy"
-    onerror="this.hidden=true;this.parentElement.classList.add('is-broken')"
-  />`;
-
-  // 6 / 4 / 2 columns; the remainder is absorbed by wide (2-column) cards
-  // near the top instead of an orphan row at the bottom.
-  const gridLayout = { lg: SHAPES.wideCards(6), md: SHAPES.wideCards(4), sm: SHAPES.wideCards(2) };
-  const card = (item, source, span) => `<a class="creator-card ${span.cls}" style="${span.style}" href="${attr(item.href)}" target="_blank" rel="noopener noreferrer">
-    <div class="creator-card__media">${image(item)}</div>
-    <h3>${esc(item.title || item.href)}</h3>
-    <div class="creator-card__source">${esc(source)}</div>
-  </a>`;
-
-  const sections = previewGroups.map((group, groupIndex) => {
-    const source = srcLabel(group);
-    const items = groupIndex === 0 && hero ? group.previewItems.slice(1) : group.previewItems;
-    if (!items.length) return '';
-    return `<section class="creator-section" data-source-key="${attr(group.key)}">
-      <div class="creator-section__head">
-        <h2>${esc(source)}</h2>
-        <span aria-hidden="true"></span>
-      </div>
-      <div class="creator-grid">${((spans) => items.map((item, i) => card(item, source, spans[i])).join(''))(balancedSpanStyles(items.length, gridLayout))}</div>
-    </section>`;
-  }).join('');
-
-  const heroHtml = hero ? `<a class="creator-hero" href="${attr(hero.href)}" target="_blank" rel="noopener noreferrer" data-source-key="${attr(firstGroup.key)}">
-    <div class="creator-hero__media">${image(hero)}</div>
-    <div class="creator-hero__shade"></div>
-    <div class="creator-hero__copy">
-      <h2>${esc(hero.title || hero.href)}</h2>
-      <span>${esc(srcLabel(firstGroup))}</span>
-    </div>
-  </a>` : '';
-
-  const linksHtml = linkGroups.length ? `<section class="creator-links" data-source-scope>
-    <div class="creator-section__head">
-      <h2>More links</h2>
-      <span aria-hidden="true"></span>
-    </div>
-    <div class="creator-links__groups">${linkGroups.map((group) => `<section data-source-key="${attr(group.key)}">
-      <h3>${esc(srcLabel(group))}</h3>
-      <ul>${group.linkItems.map((item) => `<li><a href="${attr(item.href)}" target="_blank" rel="noopener noreferrer">
-        <span>${esc(item.title || item.href)}</span>
-        ${item.domain ? `<small>${esc(item.domain)}</small>` : ''}
-      </a></li>`).join('')}</ul>
-    </section>`).join('')}</div>
-  </section>` : '';
-
-  const css = `
-  :root { --creator-bg: #0b1014; --creator-panel: #12171c; --creator-line: #2a3035; --creator-text: #f4f1eb; --creator-muted: #92989e; --creator-accent: #ff5b3d;
-    --tab-nav-bg: #0b1014; --tab-border: #2a3035; --tab-border-hover: #4a545c; --tab-text: var(--creator-muted);
-    --tab-active-bg: var(--creator-accent); --tab-active-text: #0b1014; }
-  /* Issue #2: light theme for this dark-native template. The palette
-     variables re-skin body/cards/tab bar; the rules below replace the
-     hard-coded dark hexes the variables don't reach (masthead, section
-     headings, card titles, link tail). Hero copy stays white on purpose:
-     it sits on the hero image's shade, not on the page background. */
-  :root[data-theme="light"] { --creator-bg: #f6f4ef; --creator-panel: #ffffff; --creator-line: #ddd8cf; --creator-text: #1c1a17; --creator-muted: #6f6a61;
-    --tab-nav-bg: #f6f4ef; --tab-border: #ddd8cf; --tab-border-hover: #b9b2a6; --tab-active-text: #ffffff; }
-  :root[data-theme="light"] .creator-masthead { border-bottom-color: var(--creator-line); }
-  :root[data-theme="light"] .creator-masthead h1 { color: var(--creator-text); }
-  :root[data-theme="light"] .creator-section__head h2 { color: var(--creator-text); }
-  :root[data-theme="light"] .creator-card h3 { color: var(--creator-text); }
-  :root[data-theme="light"] .creator-card__media { border-color: var(--creator-line); }
-  :root[data-theme="light"] .creator-card__media.is-broken { background: var(--creator-panel); }
-  :root[data-theme="light"] .creator-links__groups h3 { color: var(--creator-text); }
-  :root[data-theme="light"] .creator-links li { border-bottom-color: var(--creator-line); }
-  :root[data-theme="light"] .creator-links a { color: var(--creator-text); }
-  :root[data-theme="light"] .creator-links small { color: var(--creator-muted); }
-  body { background: var(--creator-bg); color: var(--creator-text); font-family: Inter, system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.4; }
-  .creator-wrap { width: min(100%, 1600px); margin: 0 auto; padding: 18px 24px 72px; }
-  .creator-masthead { display: flex; align-items: center; min-height: 52px; padding: 0 20px; border-bottom: 1px solid #1c2227; }
-  .creator-masthead h1 { margin: 0; color: #fff; font-family: Fraunces, Georgia, serif; font-size: clamp(28px, 3vw, 38px); font-weight: 500; letter-spacing: -0.04em; line-height: 1; }
-  .creator-hero { position: relative; display: block; min-height: clamp(270px, 25vw, 370px); margin-top: 0; overflow: hidden; background: var(--creator-panel); isolation: isolate; }
-  .creator-hero__media, .creator-hero__media img { width: 100%; height: 100%; }
-  .creator-hero__media { position: absolute; inset: 0; background: #171d22; }
-  .creator-hero__media img { object-fit: cover; transition: transform 600ms var(--ease-out), opacity 180ms ease; }
-  .creator-hero__media.is-broken { background: #171d22; }
-  .creator-hero__media.is-broken img, .creator-card__media.is-broken img { display: none !important; }
-  .creator-hero__shade { position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(5,8,10,.94) 0%, rgba(5,8,10,.68) 25%, rgba(5,8,10,.12) 58%, rgba(5,8,10,.08) 100%), linear-gradient(0deg, rgba(5,8,10,.35), transparent 48%); }
-  .creator-hero__copy { position: absolute; z-index: 2; left: clamp(28px, 4vw, 52px); bottom: clamp(26px, 3.5vw, 48px); width: min(470px, 70%); }
-  .creator-hero__copy h2 { margin: 0; color: #fff; font-family: Fraunces, Georgia, serif; font-size: clamp(34px, 3.8vw, 54px); font-weight: 500; letter-spacing: -0.04em; line-height: 1; }
-  .creator-hero__copy span { display: block; margin-top: 14px; color: #b6b8b9; font-size: 11px; letter-spacing: .04em; }
-  .creator-hero:hover .creator-hero__media img { transform: scale(1.018); }
-  .creator-hero:focus-visible { outline-color: var(--creator-accent); outline-offset: 4px; }
-
-  .creator-section { margin-top: 26px; }
-  .creator-section__head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-  .creator-section__head h2 { flex: 0 0 auto; margin: 0; color: #f3f0ea; font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-  .creator-section__head span { width: 100%; height: 1px; background: var(--creator-line); }
-  .creator-grid { --cols: 6; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 28px 14px; }
-  .creator-card { --s: var(--s-lg, 1); grid-column: span var(--s); }
-  /* Wide cards sit image-left / text-right so they keep a single card's
-     height and the row stays level. */
-  .creator-card.lf-lg-x2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 14px; align-content: start; }
-  .creator-card.lf-lg-x2 .creator-card__media { grid-row: 1 / span 2; }
-  .creator-card.lf-lg-x2 h3 { margin-top: 0; font-size: 15px; -webkit-line-clamp: 4; }
-  .creator-card { display: block; min-width: 0; }
-  .creator-card__media { aspect-ratio: 1.72 / 1; overflow: hidden; background: var(--creator-panel); border: 1px solid #20272c; }
-  .creator-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 350ms var(--ease-out), opacity 180ms ease; }
-  .creator-card__media.is-broken { background: #171d22; }
-  .creator-card h3 { display: -webkit-box; overflow: hidden; margin: 10px 0 0; color: #e7e7e5; font-size: 13px; font-weight: 500; letter-spacing: -.01em; line-height: 1.32; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-  .creator-card__source { overflow: hidden; margin-top: 5px; color: var(--creator-muted); font-size: 10px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
-  .creator-card:hover .creator-card__media img { transform: scale(1.035); }
-  .creator-card:hover h3, .creator-card:focus-visible h3 { color: var(--creator-accent); }
-  .creator-card:focus-visible { outline-color: var(--creator-accent); outline-offset: 5px; }
-
-  .creator-links { margin-top: 48px; padding-top: 4px; }
-  .creator-links__groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 40px; }
-  .creator-links__groups > section { min-width: 0; }
-  .creator-links__groups h3 { margin: 0 0 8px; color: #c4c5c5; font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-  .creator-links ul { list-style: none; margin: 0; padding: 0; }
-  .creator-links li { border-bottom: 1px solid #1e2429; }
-  .creator-links li:last-child { border-bottom: 0; }
-  .creator-links a { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; color: #cfd0cf; font-size: 12px; }
-  .creator-links a > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .creator-links small { flex: 0 0 auto; color: #727980; font-size: 9px; }
-  .creator-links a:hover, .creator-links a:focus-visible { color: var(--creator-accent); }
-  .creator-empty { margin: 64px 0; padding: 40px 20px; border-block: 1px solid var(--creator-line); color: var(--creator-muted); text-align: center; }
-
-  @media (max-width: 1180px) {
-    .creator-grid { --cols: 4; }
-    .creator-card { --s: var(--s-md, 1); }
-    .creator-card.lf-lg-x2 { display: block; }
-    .creator-card.lf-lg-x2 h3 { margin-top: 10px; font-size: 13px; -webkit-line-clamp: 2; }
-    .creator-card.lf-md-x2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 14px; align-content: start; }
-    .creator-card.lf-md-x2 .creator-card__media { grid-row: 1 / span 2; }
-    .creator-card.lf-md-x2 h3 { margin-top: 0; font-size: 15px; -webkit-line-clamp: 4; }
-  }
-  @media (max-width: 780px) {
-    .creator-wrap { padding: 12px 14px 56px; }
-    .creator-masthead { min-height: 48px; padding: 0 4px 12px; }
-    .creator-hero { min-height: 340px; }
-    .creator-hero__shade { background: linear-gradient(0deg, rgba(5,8,10,.94) 0%, rgba(5,8,10,.22) 70%); }
-    .creator-hero__copy { left: 22px; bottom: 24px; width: calc(100% - 44px); }
-    .creator-hero__copy h2 { font-size: clamp(34px, 10vw, 52px); }
-    .creator-grid { --cols: 2; gap: 22px 10px; }
-    .creator-card { --s: var(--s-sm, 1); }
-    .creator-card.lf-md-x2 { display: block; }
-    .creator-card.lf-md-x2 h3 { margin-top: 10px; font-size: 13px; -webkit-line-clamp: 2; }
-    .creator-card.lf-sm-x2 { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 12px; align-content: start; }
-    .creator-card.lf-sm-x2 .creator-card__media { grid-row: 1 / span 2; }
-    .creator-card.lf-sm-x2 h3 { margin-top: 0; font-size: 14px; -webkit-line-clamp: 4; }
-    .creator-links__groups { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  }
-  @media (max-width: 420px) {
-    .creator-hero { min-height: 310px; }
-    .creator-card h3 { font-size: 12px; }
-  }`;
-
-  const filterNav = sourceFilterNav(groups, 'creator-sources');
-  const body = `<div class="creator-wrap">
-    <header class="creator-masthead"><h1>${esc(ctx.title)}</h1></header>
-    ${filterNav}
-    ${heroHtml}
-    ${sections}
-    ${linksHtml}
-    ${!heroHtml && !sections && !linksHtml ? '<div class="creator-empty">No links selected.</div>' : ''}
-  </div>${filterNav ? sourceFilterScript('creator-sources') : ''}`;
-
-  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css, bodyClass: 'creator-theme', defaultTheme: 'dark' });
-}
 
 // =====================================================
 // 4) CONSOLE — terminal/IDE, image cards on top, link list below
@@ -1318,112 +1780,6 @@ function buildConsole(ctx) {
 // =====================================================
 // 5) WALL — uniform image grid (only items with previews), list below
 // =====================================================
-function buildWall(ctx) {
-  const groups = (ctx.sourceGroups || []).map((group, index) => {
-    const split = splitItems(group.items || []);
-    // Key mirrors partitionGroups' fallback so the filter chips line up with
-    // the same sources the other templates show.
-    return { ...group, key: group.key || `src-${index}`, previewItems: split.withPreview, linkItems: split.linkOnly };
-  }).filter((group) => group.previewItems.length || group.linkItems.length);
-
-  const css = `
-  :root { --ink: #171715; --muted: #77746d; --line: #d9d6cf; --paper: #f7f6f2; --accent: #b4452f;
-    --tab-nav-bg: var(--paper); --tab-border: var(--line); --tab-border-hover: var(--ink); --tab-text: var(--muted);
-    --tab-active-bg: var(--ink); --tab-active-text: var(--paper); }
-  /* Issue #2: dark theme for this light-native template. Nearly every
-     surface already reads var(--paper)/var(--ink)/var(--line), so the
-     variable swap does the work; only the media placeholder wells carry
-     hard-coded light hexes. */
-  :root[data-theme="dark"] { --ink: #f0ede6; --muted: #9d988e; --line: #45423a; --paper: #161512;
-    --tab-nav-bg: var(--paper); }
-  :root[data-theme="dark"] .media { background: #26241f; }
-  :root[data-theme="dark"] .media-fallback { color: var(--muted); }
-  body { background: var(--paper); color: var(--ink); font-family: "Inter", system-ui, -apple-system, sans-serif; }
-  .wall { max-width: 1440px; margin: 0 auto; padding: 34px clamp(18px, 3vw, 52px) 72px; }
-  .site-head { padding: 0 0 26px; margin-bottom: clamp(42px, 7vw, 88px); border-bottom: 1px solid var(--ink); }
-  .site-head h1 { margin: 0; font-family: "DM Serif Display", Georgia, serif; font-size: clamp(36px, 6vw, 76px); font-weight: 400; line-height: .95; letter-spacing: -.035em; }
-  .source { margin: 0 0 clamp(58px, 8vw, 108px); }
-  .source-head { display: flex; align-items: baseline; gap: 14px; padding-bottom: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
-  .source-name { min-width: 0; font-size: 12px; line-height: 1.2; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-  .source-count { flex: 0 0 auto; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 10px; }
-  .source-rule { height: 1px; flex: 1; background: var(--line); }
-.gallery { --cols: 12; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: clamp(14px, 1.7vw, 26px); align-items: start; }
-  /* Justified rows: each row is planned to fill the 12 columns exactly
-     (balancedSpanStyles), and an image's aspect ratio grows with its span
-     (span / 3), so every image in a row comes out the same height whatever
-     its width — no ragged row bottoms, no orphan tail. */
-  .work { --s: var(--s-lg, 4); --ar: calc(var(--s) / 3); grid-column: span var(--s); display: block; color: inherit; min-width: 0; }
-  .media { position: relative; aspect-ratio: var(--ar); overflow: hidden; background: #e8e5de; }
-  .media img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; transition: transform 500ms cubic-bezier(.2,.7,.2,1), filter 220ms ease; }
-  .media-fallback { position: absolute; z-index: 0; inset: 0; display: grid; place-items: center; color: #918d84; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
-  .work:hover .media img, .work:focus-visible .media img { transform: scale(1.025); filter: saturate(1.04); }
-  .work:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
-  .work h3 { margin: 10px 0 0; max-width: 34ch; font-size: clamp(13px, 1.15vw, 16px); font-weight: 500; line-height: 1.35; letter-spacing: -.01em; }
-  .work-meta { display: block; margin-top: 4px; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 9px; line-height: 1.4; }
-  .work:hover h3 { color: var(--accent); }
-  .plain-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; margin: 28px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); list-style: none; }
-  .plain-links li { min-width: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
-  .plain-links a { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; color: var(--ink); font-size: 12px; line-height: 1.35; }
-  .plain-links a:hover, .plain-links a:focus-visible { color: var(--accent); }
-  .plain-links__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .plain-links__domain { flex: 0 0 auto; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 9px; }
-  .empty { padding: 44px 0; color: var(--muted); border-top: 1px solid var(--line); font-size: 13px; }
-  @media (max-width: 860px) {
-    .gallery { --cols: 2; }
-    .work { --s: var(--s-md, 1); --ar: calc(var(--s) * 4 / 3); }
-  }
-  @media (max-width: 560px) {
-    .wall { padding-top: 24px; }
-    .site-head { margin-bottom: 48px; }
-    .gallery { --cols: 1; gap: 28px; }
-    .work { --s: 1; --ar: 4 / 3; }
-    .source-head { gap: 9px; }
-    .plain-links { grid-template-columns: 1fr; }
-  }`;
-
-  // Rows of two (6+6) or three (4+5+3) on desktop; on tablets pairs, with a
-  // full-width image only when the count is odd. A lone image spans the row.
-  const wallLayout = {
-    lg: [{ spans: [6, 6], cost: 0.1 }, { spans: [4, 5, 3], cost: 0 }, { spans: [12], cost: 5 }],
-    md: SHAPES.wideCards(2),
-  };
-  const sections = groups.map((group) => {
-    const spans = balancedSpanStyles(group.previewItems.length, wallLayout);
-    const works = group.previewItems.map((item, i) => `<a class="work ${spans[i].cls}" style="${spans[i].style}" href="${attr(item.href)}" target="_blank" rel="noopener">
-      <div class="media">
-        <span class="media-fallback" aria-hidden="true">Image unavailable</span>
-        <img src="${attr(item.thumbnail)}" alt="" loading="lazy" onerror="this.remove()" />
-      </div>
-      <h3>${esc(item.title || item.href)}</h3>
-      <span class="work-meta">${esc(item.domain || srcLabel(group))}</span>
-    </a>`).join('');
-    const links = group.linkItems.length ? `<ul class="plain-links">${group.linkItems.map((item) => `<li>
-      <a href="${attr(item.href)}" target="_blank" rel="noopener">
-        <span class="plain-links__title">${esc(item.title || item.href)}</span>
-        <span class="plain-links__domain">${esc(item.domain || '')}</span>
-      </a>
-    </li>`).join('')}</ul>` : '';
-    const count = group.previewItems.length;
-    return `<section class="source" data-source-key="${attr(group.key)}">
-      <header class="source-head">
-        <h2 class="source-name">${esc(srcLabel(group))}</h2>
-        <span class="source-rule" aria-hidden="true"></span>
-        <span class="source-count">${count} ${count === 1 ? 'item' : 'items'}</span>
-      </header>
-      ${works ? `<div class="gallery">${works}</div>` : '<div class="empty">No images available for this source.</div>'}
-      ${links}
-    </section>`;
-  }).join('');
-
-  const filterNav = sourceFilterNav(groups, 'wall-sources');
-  const body = `<main class="wall">
-    <header class="site-head"><h1>${esc(ctx.title)}</h1></header>
-    ${filterNav}
-    ${sections || '<div class="empty">No selected items to show.</div>'}
-  </main>${filterNav ? sourceFilterScript('wall-sources') : ''}`;
-
-  return shell({ title: ctx.title, tagline: ctx.tagline, today: ctx.today, body, css });
-}
 
 // =====================================================
 // 6) TIMELINE — vertical spine with image rows, link list below
@@ -1622,154 +1978,10 @@ function buildBroadsheet(ctx) {
 // =====================================================
 // FLUX INDEX — obsidian mixed-media index
 // =====================================================
-function buildFlux(ctx) {
-  const groups = buildSourceTabs(ctx.sourceGroups);
-  const titleWords = String(ctx.title || '').trim().split(/\s+/).filter(Boolean);
-  const displayTitle = titleWords.length > 1
-    ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}`
-    : esc(ctx.title);
-  const css = `
-  :root { --flux-bg:#080c0e; --flux-panel:#10171a; --flux-line:#263238; --flux-text:#edf5f4; --flux-muted:#89979b; --flux-mint:#86f4d3; --flux-ice:#bceafa; --lf-focus-color:var(--flux-mint); --tab-nav-bg:var(--flux-bg); --tab-sheen:none; }
-  /* Issue #2: light theme for this dark-native template. */
-  :root[data-theme="light"] { --flux-bg:#f4f6f6; --flux-panel:#ffffff; --flux-line:#d5dde0; --flux-text:#14201f; --flux-muted:#5f6f72; --tab-nav-bg:var(--flux-bg); --tab-border:#d5dde0; --tab-border-hover:#a7b6ba; --tab-text:var(--flux-muted); }
-  :root[data-theme="light"] .flux-card__media { background:#e3eaec; }
-  :root[data-theme="light"] .flux-signal i { background:#c3ced1; }
-  :root[data-theme="light"] .flux-links a { color:var(--flux-text); }
-  body { background:var(--flux-bg); color:var(--flux-text); font-family:"Manrope",system-ui,sans-serif; }
-  .flux-shell { max-width:1480px; margin:0 auto; padding:28px 42px 48px; }
-  .flux-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--flux-line); }
-  .flux-mark { color:var(--flux-mint); font:600 10px/1 "IBM Plex Mono",monospace; letter-spacing:.18em; text-transform:uppercase; }
-  .flux-count { color:var(--flux-muted); font:400 10px/1 "IBM Plex Mono",monospace; letter-spacing:.12em; text-transform:uppercase; }
-  .flux-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(260px,.68fr); align-items:end; min-height:180px; padding:34px 0 24px; border-bottom:1px solid var(--flux-line); }
-  .flux-hero h1 { max-width:900px; margin:0; font-size:clamp(48px,8vw,112px); font-weight:500; line-height:.84; letter-spacing:-.065em; text-transform:uppercase; }
-  .flux-signal { display:grid; grid-template-columns:repeat(14,1fr); gap:8px; align-items:end; height:70px; padding-bottom:6px; }
-  .flux-signal i { display:block; height:var(--h); background:#303b3f; }
-  .flux-signal i:nth-child(4n+1) { background:var(--flux-mint); }
-  .flux-signal i:nth-child(7n) { background:var(--flux-ice); }
-  .tab-shell { gap:20px; padding-top:18px; }
-  .tab-nav { flex-wrap:nowrap; overflow-x:auto; gap:0; border-bottom:1px solid var(--flux-line); }
-  .tab-btn { min-width:max-content; min-height:42px; padding:0 22px 12px 0; border:0; border-radius:0; background:transparent; color:var(--flux-muted); }
-  .tab-btn:hover,.tab-btn.active { background:transparent; color:var(--flux-text); box-shadow:none; transform:none; }
-  .tab-btn.active { color:var(--flux-mint); }
-  .tab-btn__title { font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; }
-  .tab-btn__meta { display:none; }
-  /* Balanced rows (balancedSpanStyles): pairs, threes and fours that fill the
-     12 columns exactly; media aspect grows with span (span / 3) so a row's
-     images share one height. */
-  .flux-grid { --cols:12; display:grid; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); gap:12px; align-items:start; }
-  .flux-card { --s:var(--s-lg,4); --ar:calc(var(--s) / 3); grid-column:span var(--s); min-width:0; overflow:hidden; border:1px solid var(--flux-line); border-radius:3px; background:var(--flux-panel); }
-  .flux-card__media { position:relative; aspect-ratio:var(--ar); overflow:hidden; background:#172126; }
-  .flux-card__media.is-broken::after { content:"Preview unavailable"; position:absolute; inset:0; display:grid; place-items:center; color:var(--flux-muted); font:400 10px "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
-  .flux-card__media img { width:100%; height:100%; object-fit:cover; filter:saturate(.82) contrast(1.04); transition:transform .4s var(--ease-out),filter .25s ease; }
-  .flux-card:hover img { transform:scale(1.025); filter:saturate(1); }
-  .flux-card__kind { position:absolute; left:12px; bottom:12px; padding:5px 7px; border:1px solid rgba(134,244,211,.45); background:rgba(8,12,14,.82); color:var(--flux-mint); font:600 9px/1 "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
-  .flux-card__body { display:grid; gap:7px; padding:12px; border-top:1px solid var(--flux-line); }
-  .flux-card h2 { display:-webkit-box; margin:0; overflow:hidden; font-size:14px; font-weight:500; line-height:1.3; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
-  .flux-card__meta { color:var(--flux-muted); font:400 9px/1.3 "IBM Plex Mono",monospace; }
-  .flux-card:hover h2 { color:var(--flux-mint); }
-  .flux-links { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px; }
-  .flux-links a { display:grid; grid-template-columns:1fr auto; gap:12px; padding:13px 14px; border:1px solid var(--flux-line); border-radius:3px; color:#c9d2d3; font:400 11px/1.35 "IBM Plex Mono",monospace; }
-  .flux-links a::after { content:"↗"; color:var(--flux-mint); }
-  .flux-links a:hover { border-color:#527067; color:var(--flux-text); }
-  .flux-empty { padding:36px 0; color:var(--flux-muted); font:400 11px "IBM Plex Mono",monospace; }
-  @media(max-width:900px){ .flux-shell{padding:24px}.flux-hero{grid-template-columns:1fr}.flux-signal{display:none}.flux-grid{--cols:2}.flux-card{--s:var(--s-md,1);--ar:calc(var(--s) * 4 / 3)}.flux-links{grid-template-columns:1fr 1fr} }
-  @media(max-width:600px){ .flux-shell{padding:20px 14px 36px}.flux-top{padding-bottom:18px}.flux-hero{min-height:132px;padding:28px 0 18px}.flux-hero h1{font-size:clamp(40px,14vw,72px)}.flux-grid{--cols:1}.flux-card{--s:1;--ar:16 / 10}.flux-links{grid-template-columns:1fr}.tab-btn{padding-right:18px} }
-  `;
-  const fluxLayout = {
-    lg: [{ spans: [6, 6], cost: 0.1 }, { spans: [4, 4, 4], cost: 0 }, { spans: [3, 3, 3, 3], cost: 0.1 }, { spans: [12], cost: 5 }],
-    md: SHAPES.wideCards(2),
-  };
-  const content = renderSourceTabs(groups, (group) => {
-    const spans = balancedSpanStyles(group.previewItems.length, fluxLayout);
-    // A failed image keeps its card (with a "Preview unavailable" panel):
-    // removing the card used to punch a hole in the planned rows and drop
-    // the link from the page without a trace.
-    const cards = group.previewItems.map((item, i) => `<a class="flux-card ${spans[i].cls}" style="${spans[i].style}" href="${attr(item.href)}" target="_blank" rel="noopener">
-      <div class="flux-card__media">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}<span class="flux-card__kind">${esc(itemKindLabel(item))}</span></div>
-      <div class="flux-card__body"><h2>${esc(item.title || item.href)}</h2><span class="flux-card__meta">${esc(item.domain || srcLabel(group))}</span></div>
-    </a>`).join('');
-    const links = group.linkItems.map((item) => `<a href="${attr(item.href)}" target="_blank" rel="noopener"><span>${esc(item.title || item.href)}</span></a>`).join('');
-    return `${cards ? `<div class="flux-grid">${cards}</div>` : '<div class="flux-empty">No image previews in this source.</div>'}${links ? `<div class="flux-links">${links}</div>` : ''}`;
-  }, { prefix:'flux-tabs', emptyHtml:'<div class="flux-empty">No items selected for this export yet.</div>' });
-  const bars = [42,68,30,84,54,36,72,24,62,46,78,34,58,88].map((h) => `<i style="--h:${h}%"></i>`).join('');
-  const total = groups.reduce((sum, group) => sum + group.previewItems.length + group.linkItems.length, 0);
-  const body = `<div class="flux-shell"><header class="flux-top"><span class="flux-mark">Flux index</span><span class="flux-count">${total} curated ${total === 1 ? 'item' : 'items'}</span></header><section class="flux-hero"><h1>${displayTitle}</h1><div class="flux-signal" aria-hidden="true">${bars}</div></section><main>${content}</main></div>`;
-  return shell({ title:ctx.title, tagline:ctx.tagline, today:ctx.today, body, css, bodyClass:'flux-theme', defaultTheme:'dark' });
-}
 
 // =====================================================
 // POP SHELF — light architectural media gallery
 // =====================================================
-function buildShelf(ctx) {
-  const groups = buildSourceTabs(ctx.sourceGroups);
-  const titleWords = String(ctx.title || '').trim().split(/\s+/).filter(Boolean);
-  const displayTitle = titleWords.length > 1
-    ? `${esc(titleWords[0])}<br>${esc(titleWords.slice(1).join(' '))}`
-    : esc(ctx.title);
-  const css = `
-  :root { --shelf-bg:#f7f8f8; --shelf-panel:#ffffff; --shelf-text:#172126; --shelf-muted:#6e7b80; --shelf-line:#d9e0e2; --shelf-blue:#4f76e8; --shelf-ice:#dff4fb; --lf-focus-color:var(--shelf-blue); --tab-nav-bg:var(--shelf-bg); --tab-sheen:none; }
-  /* Issue #2: dark theme for this light-native template. Card/link
-     surfaces read var(--shelf-panel) (below) so the swap reaches them. */
-  :root[data-theme="dark"] { --shelf-bg:#101619; --shelf-panel:#171e22; --shelf-text:#eef3f4; --shelf-muted:#93a1a6; --shelf-line:#2c363b; --shelf-ice:#1d3038; --tab-nav-bg:var(--shelf-bg); --tab-border:#2c363b; --tab-text:var(--shelf-muted); }
-  :root[data-theme="dark"] .shelf-card__media { background:#232d31; }
-  :root[data-theme="dark"] .tab-btn:hover { background:#1c262a; }
-  :root[data-theme="dark"] .shelf-card:hover h2 { color:#8fb0ff; }
-  :root[data-theme="dark"] .shelf-links a:hover { background:#16232b; color:#8fb0ff; }
-  body { background:var(--shelf-bg); color:var(--shelf-text); font-family:"Manrope",system-ui,sans-serif; }
-  .shelf-shell { max-width:1460px; margin:0 auto; padding:24px 30px 44px; }
-  .shelf-top { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-bottom:18px; border-bottom:1px solid var(--shelf-line); }
-  .shelf-brand { font-size:14px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; }
-  .shelf-date { color:var(--shelf-muted); font:400 9px "IBM Plex Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
-  .shelf-layout { display:grid; grid-template-columns:minmax(210px,.34fr) minmax(0,1fr); gap:28px; padding-top:30px; }
-  .shelf-intro { position:sticky; top:24px; align-self:start; min-height:420px; display:flex; flex-direction:column; justify-content:space-between; }
-  .shelf-intro h1 { margin:72px 0 0; font-size:clamp(42px,4.3vw,64px); font-weight:400; line-height:.92; letter-spacing:-.055em; text-transform:uppercase; overflow-wrap:normal; word-break:normal; }
-  .shelf-index { color:var(--shelf-muted); font:400 10px "IBM Plex Mono",monospace; letter-spacing:.1em; text-transform:uppercase; }
-  .tab-shell { gap:14px; }
-  .tab-nav { flex-wrap:nowrap; overflow-x:auto; gap:4px; }
-  .tab-btn { min-width:max-content; min-height:38px; padding:8px 12px; border:0; border-radius:3px; background:transparent; color:var(--shelf-muted); }
-  .tab-btn:hover { background:#eef2f3; transform:none; }
-  .tab-btn.active { border-color:transparent; background:var(--shelf-ice); color:#2459c4; box-shadow:none; }
-  .tab-btn__title { font-size:11px; font-weight:600; }
-  .tab-btn__meta { display:none; }
-  /* Balanced rows (7+5, 4+4+4, 5+7, 8+4) planned to fill 12 columns in
-     source order — this used to rely on dense auto-placement, which reorders
-     cards and still left a ragged tail. Media aspect grows with span
-     (span / 3) so each row's images share one height. */
-  .shelf-grid { --cols:12; display:grid; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); gap:8px; align-items:start; }
-  .shelf-card { --s:var(--s-lg,4); --ar:calc(var(--s) / 3); grid-column:span var(--s); min-width:0; overflow:hidden; border:1px solid var(--shelf-line); border-radius:4px; background:var(--shelf-panel); }
-  .shelf-card__media { position:relative; aspect-ratio:var(--ar); overflow:hidden; background:#e9eef0; }
-  .shelf-card__media.is-broken::after { content:"Preview unavailable"; position:absolute; inset:0; display:grid; place-items:center; color:var(--shelf-muted); font:400 10px "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
-  .shelf-card__media img { width:100%; height:100%; object-fit:cover; filter:saturate(.9); transition:transform .45s var(--ease-out),filter .25s ease; }
-  .shelf-card:hover img { transform:scale(1.025); filter:saturate(1.05); }
-  .shelf-card__body { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; padding:12px; }
-  .shelf-card h2 { margin:0; font-size:13px; font-weight:600; line-height:1.25; }
-  .shelf-card__meta { display:block; margin-top:5px; color:var(--shelf-muted); font:400 9px "IBM Plex Mono",monospace; }
-  .shelf-card__arrow { color:var(--shelf-blue); font:500 14px "IBM Plex Mono",monospace; }
-  .shelf-card:hover h2 { color:#2459c4; }
-  .shelf-links { margin-top:8px; border:1px solid var(--shelf-line); border-radius:4px; background:var(--shelf-panel); }
-  .shelf-links a { display:grid; grid-template-columns:1fr auto; gap:18px; padding:13px 14px; border-bottom:1px solid var(--shelf-line); font-size:12px; }
-  .shelf-links a:last-child { border-bottom:0; }
-  .shelf-links a::after { content:"↗"; color:var(--shelf-blue); font-family:"IBM Plex Mono",monospace; }
-  .shelf-links a:hover { background:#f0f7fa; color:#2459c4; }
-  .shelf-empty { padding:40px 0; color:var(--shelf-muted); font-size:13px; }
-  @media(max-width:900px){.shelf-layout{grid-template-columns:1fr}.shelf-intro{position:static;min-height:0}.shelf-intro h1{margin:18px 0 8px}.shelf-index{display:none}}
-  @media(max-width:620px){.shelf-shell{padding:18px 12px 36px}.shelf-date{display:none}.shelf-layout{padding-top:20px}.shelf-intro h1{font-size:clamp(44px,16vw,68px)}.shelf-grid{--cols:1}.shelf-card{--s:1;--ar:16 / 10}}
-  `;
-  const shelfLayout = {
-    lg: [{ spans: [7, 5], cost: 0 }, { spans: [4, 4, 4], cost: 0 }, { spans: [5, 7], cost: 0 }, { spans: [8, 4], cost: 0 }, { spans: [12], cost: 5 }],
-  };
-  const content = renderSourceTabs(groups, (group) => {
-    const spans = balancedSpanStyles(group.previewItems.length, shelfLayout);
-    const cards = group.previewItems.map((item, i) => `<a class="shelf-card ${spans[i].cls}" style="${spans[i].style}" href="${attr(item.href)}" target="_blank" rel="noopener">
-      <div class="shelf-card__media">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}</div>
-      <div class="shelf-card__body"><div><h2>${esc(item.title || item.href)}</h2><span class="shelf-card__meta">${esc(itemKindLabel(item))} · ${esc(item.domain || srcLabel(group))}</span></div><span class="shelf-card__arrow" aria-hidden="true">↗</span></div>
-    </a>`).join('');
-    const links = group.linkItems.map((item) => `<a href="${attr(item.href)}" target="_blank" rel="noopener"><span>${esc(item.title || item.href)}</span></a>`).join('');
-    return `${cards ? `<div class="shelf-grid">${cards}</div>` : '<div class="shelf-empty">No image previews in this source.</div>'}${links ? `<div class="shelf-links">${links}</div>` : ''}`;
-  }, { prefix:'shelf-tabs', emptyHtml:'<div class="shelf-empty">No items selected for this export yet.</div>' });
-  const body = `<div class="shelf-shell"><header class="shelf-top"><span class="shelf-brand">Pop shelf</span><span class="shelf-date">${esc(ctx.today)}</span></header><div class="shelf-layout"><aside class="shelf-intro"><h1>${displayTitle}</h1><span class="shelf-index">Curated links / mixed media</span></aside><main>${content}</main></div></div>`;
-  return shell({ title:ctx.title, tagline:ctx.tagline, today:ctx.today, body, css, bodyClass:'shelf-theme' });
-}
 
 // =====================================================
 // 9) SIGNAL — retired dark intelligence-style dashboard
@@ -1872,5 +2084,5 @@ if (typeof window !== 'undefined') {
   window.LINKFORGE_SUGGEST_TEMPLATE = suggestTemplate;
 }
 if (typeof module !== 'undefined') {
-  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups, planRows, balancedSpanStyles, SHAPES };
+  module.exports = { TEMPLATES, suggestTemplate, splitItems, partitionGroups, planRows, planGrid, SHAPES };
 }
