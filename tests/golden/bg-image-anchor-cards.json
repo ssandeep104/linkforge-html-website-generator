@@ -16,6 +16,14 @@
       "signature": "<a class=\"tile\">",
       "label": "",
       "count": 3,
+      "rank": {
+        "complete": 2,
+        "completeShare": 0.6666666666666666,
+        "structured": true,
+        "withVideo": 0,
+        "titled": 3,
+        "total": 3
+      },
       "fields": {
         "title": {
           "strategy": "anchor-heading",

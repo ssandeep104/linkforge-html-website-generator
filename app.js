@@ -792,13 +792,29 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
     });
   });
   // Rebuild in original source order, dropping non-winners.
+  // A second pass, per card set: cards that READ the same (same title, same
+  // picture; see duplicateKey) are one card even when their links differ.
+  // It runs on the values in effect, so choosing a different title or image
+  // source for a set re-evaluates which of its cards are duplicates. The
+  // first card in page order is kept.
   const all = [];
   for (const src of state.sources) {
+    const seenInSet = new Set();
+    src.duplicatesBySet = {};
     for (const it of src.items || []) {
       if (it._excludedBySet) continue;
       const key = keyOf(it);
       const winner = byHref.get(key);
       if (!winner || winner.item !== it) continue;
+      const dupKey = typeof duplicateKey === 'function' ? duplicateKey(it) : '';
+      if (dupKey) {
+        const scoped = `${it.setId}\u0000${dupKey}`;
+        if (seenInSet.has(scoped)) {
+          src.duplicatesBySet[it.setId] = (src.duplicatesBySet[it.setId] || 0) + 1;
+          continue;
+        }
+        seenInSet.add(scoped);
+      }
       const enabled = resetEnabled ? true : (prevEnabled.has(key) ? prevEnabled.get(key) : true);
       all.push({ ...it, enabled, pageSection: it.pageSection || 'Other' });
     }
@@ -1104,6 +1120,8 @@ function renderSetPanel(src, set, items, index, open) {
   const structure = set.kind === 'repeating'
     ? `repeating <code>${escapeText(set.signature)}</code>`
     : 'not part of a repeating layout';
+  const dupes = src.duplicatesBySet?.[set.id] || 0;
+  const dupeNote = dupes ? ` · <span class="set-panel__dupes">${dupes} duplicate${dupes === 1 ? '' : 's'} removed</span>` : '';
 
   const panel = document.createElement('section');
   panel.className = `group-panel set-panel set-panel--${set.kind}`;
@@ -1120,7 +1138,7 @@ function renderSetPanel(src, set, items, index, open) {
         <span class="group-panel__count">${enabled} / ${items.length}</span>
         <svg class="group-panel__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      <p class="set-panel__structure">${items.length} ${noun}${items.length === 1 ? '' : 's'} · ${structure}</p>
+      <p class="set-panel__structure">${items.length} ${noun}${items.length === 1 ? '' : 's'}${dupeNote} · ${structure}</p>
     </header>
     <div class="set-panel__fields"></div>
     <div class="group-panel__body"></div>

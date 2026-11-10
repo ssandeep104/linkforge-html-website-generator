@@ -33,6 +33,7 @@ export function toGolden(result) {
       signature: set.signature,
       label: set.label,
       count: set.count,
+      rank: set.rank,
       fields: Object.fromEntries(Object.entries(set.fields).map(([name, f]) => [name, {
         strategy: f.strategy,
         ambiguous: f.ambiguous,

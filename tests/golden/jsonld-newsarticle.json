@@ -16,6 +16,14 @@
       "signature": "<article>",
       "label": "",
       "count": 2,
+      "rank": {
+        "complete": 2,
+        "completeShare": 1,
+        "structured": false,
+        "withVideo": 0,
+        "titled": 2,
+        "total": 2
+      },
       "fields": {
         "title": {
           "strategy": "jsonld-headline",
@@ -43,6 +51,14 @@
       "signature": "JSON-LD",
       "label": "JSON-LD",
       "count": 1,
+      "rank": {
+        "complete": 1,
+        "completeShare": 1,
+        "structured": false,
+        "withVideo": 0,
+        "titled": 1,
+        "total": 1
+      },
       "fields": {
         "title": {
           "strategy": "jsonld-headline",

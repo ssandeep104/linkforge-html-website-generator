@@ -5058,3 +5058,4 @@ body:has(#step-review.screen--active),
 @media (max-width: 899px) {
   #step-review .review-filter { position: static; }
 }
+#step-review .set-panel__dupes { color: var(--color-primary); font-weight: 600; }

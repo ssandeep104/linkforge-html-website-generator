@@ -16,6 +16,14 @@
       "signature": "<article>",
       "label": "",
       "count": 5,
+      "rank": {
+        "complete": 5,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 0,
+        "titled": 5,
+        "total": 5
+      },
       "fields": {
         "title": {
           "strategy": "anchor-heading",

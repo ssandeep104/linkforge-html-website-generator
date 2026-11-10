@@ -16,6 +16,14 @@
       "signature": "<div class=\"gs-o-list-ui__item\">",
       "label": "Most Watched Video",
       "count": 4,
+      "rank": {
+        "complete": 4,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 0,
+        "titled": 4,
+        "total": 4
+      },
       "fields": {
         "title": {
           "strategy": "container-heading",

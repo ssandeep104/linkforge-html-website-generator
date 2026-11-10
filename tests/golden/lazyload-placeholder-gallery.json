@@ -16,6 +16,14 @@
       "signature": "<a class=\"asset-tile\">",
       "label": "",
       "count": 2,
+      "rank": {
+        "complete": 2,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 0,
+        "titled": 2,
+        "total": 2
+      },
       "fields": {
         "title": {
           "strategy": "anchor-img-alt",

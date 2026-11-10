@@ -6,7 +6,7 @@
    DOMParser polyfill, e.g. linkedom, installed by the caller).
    ===================================================== */
 
-import { detectCardSets, resolveSetFields } from './cards.js';
+import { detectCardSets, resolveSetFields, rankSet, compareSetRank, duplicateKey } from './cards.js';
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -2877,8 +2877,6 @@ function extractCards(doc, cards, sourceName, opts) {
     item.setId = set.id;
     set.items.push(item);
   }
-  // Detected structures first, in page order; ungrouped leftovers after.
-  cardSets.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'repeating' ? -1 : 1));
   for (const set of cardSets) {
     if (set.kind === 'repeating') set.items.sort((a, b) => a.cardIndex - b.cardIndex);
     set.fields = resolveSetFields(set.items, { isBadTitle: looksLikeBadTitle });
@@ -2890,8 +2888,13 @@ function extractCards(doc, cards, sourceName, opts) {
     const [topSection, topCount] = [...sections.entries()].sort((a, b) => b[1] - a[1])[0];
     set.label = topCount / set.items.length >= 0.6 && !/^(Other|Images|Videos)$/.test(topSection) ? topSection : '';
     set.count = set.items.length;
+    // Ranked on the cards as resolved above: a real title is one that is not
+    // the domain fallback and does not read like a button or a timestamp.
+    set.rank = rankSet(set.items, (it) => !!it.title && it.title !== it.domain && !looksLikeBadTitle(it.title), set.kind === 'repeating');
     delete set.items;
   }
+  // Best set first (see rankSet). Equal sets keep page order: sort is stable.
+  cardSets.sort((a, b) => compareSetRank(a.rank, b.rank));
 
   return {
     items,
@@ -3090,4 +3093,4 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   return outItems.length > 0 ? outItems : null;
 }
 
-export { parseSource, parseSourceWithMeta, domainOf, canonicalHref };
+export { parseSource, parseSourceWithMeta, domainOf, canonicalHref, duplicateKey };

@@ -16,6 +16,14 @@
       "signature": "<div class=\"video-card\">",
       "label": "",
       "count": 2,
+      "rank": {
+        "complete": 2,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 2,
+        "titled": 2,
+        "total": 2
+      },
       "fields": {
         "title": {
           "strategy": "container-title-class",

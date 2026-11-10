@@ -16,6 +16,14 @@
       "signature": "<div class=\"post-preview\">",
       "label": "",
       "count": 2,
+      "rank": {
+        "complete": 2,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 0,
+        "titled": 2,
+        "total": 2
+      },
       "fields": {
         "title": {
           "strategy": "anchor-heading",
@@ -43,6 +51,14 @@
       "signature": "<iframe>",
       "label": "",
       "count": 2,
+      "rank": {
+        "complete": 2,
+        "completeShare": 1,
+        "structured": false,
+        "withVideo": 2,
+        "titled": 2,
+        "total": 2
+      },
       "fields": {
         "title": {
           "strategy": "synthesized",

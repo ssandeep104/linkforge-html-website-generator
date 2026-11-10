@@ -16,6 +16,14 @@
       "signature": "<div class=\"fc-item\">",
       "label": "Video",
       "count": 3,
+      "rank": {
+        "complete": 3,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 3,
+        "titled": 3,
+        "total": 3
+      },
       "fields": {
         "title": {
           "strategy": "anchor-heading",

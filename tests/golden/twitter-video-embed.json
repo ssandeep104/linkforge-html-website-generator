@@ -16,6 +16,14 @@
       "signature": "<div class=\"blog-post-content\">",
       "label": "",
       "count": 1,
+      "rank": {
+        "complete": 0,
+        "completeShare": 0,
+        "structured": false,
+        "withVideo": 0,
+        "titled": 1,
+        "total": 1
+      },
       "fields": {
         "title": {
           "strategy": "anchor-visible-text",

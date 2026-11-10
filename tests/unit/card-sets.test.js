@@ -4,7 +4,7 @@
 import '../helpers/dom.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSourceWithMeta } from '../../parser.js';
+import { parseSourceWithMeta, duplicateKey } from '../../parser.js';
 
 const BASE = '<base href="https://site.example/">';
 const parse = (body) => parseSourceWithMeta(`<html><head>${BASE}</head><body>${body}</body></html>`, 'T');
@@ -168,4 +168,67 @@ test('a hover-preview video is paired with its own card', () => {
   assert.deepEqual(items.map((i) => i.video.src), range(5).map((i) => `https://cdn.example/preview${i}.mp4`));
   assert.deepEqual(items.map((i) => i.thumbnail), range(5).map((i) => `https://cdn.example/c${i}.jpg`));
   assert.equal(cardSets[0].fields.video.options.length, 1);
+});
+
+// ---------- set ranking ----------
+
+test('sets are ordered best-first by complete cards, not by size', () => {
+  const bare = (i) => `<li class="plain"><a href="/doc/${i}">Plain document link number ${i}</a></li>`;
+  const full = (i) => `<article class="full"><a href="/f/${i}"><img src="https://cdn.example/f${i}.jpg"><h3>Full card ${i}</h3></a></article>`;
+  const { cardSets } = parse(`
+    <ul class="docs">${range(30).map(bare).join('')}</ul>
+    <div class="cards">${range(5).map(full).join('')}</div>`);
+  assert.deepEqual(cardSets.map((s) => [s.signature, s.count, s.rank.complete]), [
+    ['<article class="full">', 5, 5],
+    ['<li class="plain">', 30, 0],
+  ]);
+});
+
+test('with equal complete cards, the cleaner set wins; untitled or image-less cards do not count', () => {
+  const ragged = (i) => `<div class="ragged"><a href="/r/${i}">${i <= 4 ? `<img src="https://cdn.example/r${i}.jpg">` : ''}<h3>Ragged card ${i}</h3></a></div>`;
+  const clean = (i) => `<div class="clean"><a href="/c/${i}"><img src="https://cdn.example/c${i}.jpg"><h3>Clean card ${i}</h3></a></div>`;
+  const { cardSets } = parse(`
+    <section>${range(12).map(ragged).join('')}</section>
+    <section>${range(4).map(clean).join('')}</section>`);
+  assert.deepEqual(cardSets.map((s) => [s.signature, s.rank.complete, s.rank.total]), [
+    ['<div class="clean">', 4, 4],
+    ['<div class="ragged">', 4, 12],
+  ]);
+});
+
+test('equally good sets keep page order', () => {
+  const card = (cls) => (i) => `<div class="${cls}"><a href="/${cls}/${i}"><img src="https://cdn.example/${cls}${i}.jpg"><h3>${cls} card ${i}</h3></a></div>`;
+  const { cardSets } = parse(`<section>${range(4).map(card('alpha')).join('')}</section><section>${range(4).map(card('beta')).join('')}</section>`);
+  assert.deepEqual(cardSets.map((s) => s.signature), ['<div class="alpha">', '<div class="beta">']);
+});
+
+// ---------- duplicate cards ----------
+
+const cardLike = (over) => ({ title: 'The long road home', thumbnail: 'https://cdn.example/a.jpg', domain: 'site.example', ...over });
+
+test('cards with the same title and picture share a duplicate key, whatever their links', () => {
+  assert.equal(duplicateKey(cardLike({ href: 'https://site.example/a?list=1' })), duplicateKey(cardLike({ href: 'https://site.example/a?list=2' })));
+  assert.equal(duplicateKey(cardLike()), duplicateKey(cardLike({ title: '  THE LONG ROAD HOME! ' })), 'case, spacing and punctuation are ignored');
+  assert.equal(
+    duplicateKey(cardLike({ thumbnail: 'https://cdn.example/a.jpg?w=300&q=60' })),
+    duplicateKey(cardLike({ thumbnail: 'https://cdn.example/a.jpg?w=1200' })),
+    'the same picture at another size is the same picture',
+  );
+});
+
+test('a different title or a different picture is a different card', () => {
+  assert.notEqual(duplicateKey(cardLike()), duplicateKey(cardLike({ title: 'Another story entirely' })));
+  assert.notEqual(duplicateKey(cardLike()), duplicateKey(cardLike({ thumbnail: 'https://cdn.example/b.jpg' })));
+  assert.notEqual(
+    duplicateKey(cardLike({ thumbnail: 'https://cdn.example/img?id=1' })),
+    duplicateKey(cardLike({ thumbnail: 'https://cdn.example/img?id=2' })),
+    'a content-bearing query parameter still tells pictures apart',
+  );
+});
+
+test('cards with no reliable identity are never merged', () => {
+  assert.equal(duplicateKey(cardLike({ title: '' })), '');
+  assert.equal(duplicateKey(cardLike({ title: 'site.example' })), '', 'the domain fallback is not a title');
+  assert.equal(duplicateKey(cardLike({ title: 'Download', thumbnail: null })), '', 'short picture-less labels repeat legitimately');
+  assert.notEqual(duplicateKey(cardLike({ thumbnail: null })), '', 'a full title identifies a picture-less card');
 });

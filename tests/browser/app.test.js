@@ -464,6 +464,35 @@ test('an ambiguous title is asked once per set and a single card can be overridd
   }
 });
 
+// Duplicates are judged on the values in effect: two cards that read the same
+// under the current title/image choice collapse into one, and choosing a
+// source that tells them apart brings the second one back.
+test('cards that read the same are shown once, re-evaluated when a source is picked', async () => {
+  const { page, pageErrors } = await openApp();
+  try {
+    const card = (i, title, deck) => `<article class="post"><a href="https://site.example/p/${i}"><img src="https://cdn.site.example/pic${Math.min(i, 5)}.jpg?w=${300 + i}"></a><h2>${title}</h2><h3 class="deck">${deck}</h3></article>`;
+    const html = `<html><body><div>${[1, 2, 3, 4, 5].map((i) => card(i, `Headline number ${i}`, `Deck line ${i}`)).join('')}${card(6, 'Headline number 5', 'A different deck for six')}</div></body></html>`;
+    await page.locator('.source-card textarea').first().fill(html);
+    await page.locator('#btn-parse').click();
+    await page.locator('#step-review.screen--active').waitFor();
+
+    const titles = () => page.evaluate(() => __lfState.items.map((it) => it.title));
+    assert.equal((await titles()).length, 5, 'card 6 repeats card 5 (same title, same picture at another size)');
+    assert.match(await page.locator('.set-panel__dupes').innerText(), /1 duplicate removed/);
+    assert.equal(await page.locator('#categories .item-row').count(), 5);
+
+    await page.locator('.set-pick[data-pick-field="title"] [data-set-pick="slot:h3.deck"]').click();
+    assert.equal((await titles()).length, 6, 'under the deck line the two cards differ, so both show');
+    assert.equal(await page.locator('.set-panel__dupes').count(), 0);
+
+    await page.locator('.set-pick[data-pick-field="title"] [data-set-pick=""]').click();
+    assert.equal((await titles()).length, 5);
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
 // WS3: measure the rendered grids. At desktop, tablet and phone widths every
 // row of cards must reach the grid's right edge (no orphan row), and the page
 // must not scroll sideways.

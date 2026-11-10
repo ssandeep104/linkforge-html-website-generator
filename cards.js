@@ -203,7 +203,12 @@ function detectCardSets(doc, { clickSelector = 'a[href]', chromeSelector = '' } 
       }
     }
   }
-  const dropped = new Set();
+  // Two passes. First find every wrapper; only then let the surviving outer
+  // sets claim their inner groups as detail. Judged in one pass, a plain list
+  // sitting in the same wrapper as a richer grid was thrown out as "detail"
+  // of a wrapper that was itself not a card set.
+  const wrappers = new Set();
+  const verdicts = [];
   for (const { A, B, containers } of pairs.values()) {
     let total = 0;
     let distinct = 0;
@@ -225,7 +230,12 @@ function detectCardSets(doc, { clickSelector = 'a[href]', chromeSelector = '' } 
     const aIsWrapper =
       perContainer >= 1.5 && distinctRatio >= 0.7 && asRich &&
       (coverage < 0.5 || primaryInside / containers.size >= 0.5);
-    dropped.add(aIsWrapper ? A : B);
+    if (aIsWrapper) wrappers.add(A);
+    verdicts.push({ A, B, aIsWrapper });
+  }
+  const dropped = new Set(wrappers);
+  for (const { A, B, aIsWrapper } of verdicts) {
+    if (!aIsWrapper && !wrappers.has(A)) dropped.add(B);
   }
   groups = groups.filter((g) => !dropped.has(g));
 
@@ -428,4 +438,87 @@ function resolveSetFields(items, { isBadTitle = () => false } = {}) {
   };
 }
 
-export { detectCardSets, resolveSetFields, titleTier, sameTitle };
+// ===================================================
+// Set ranking
+// ===================================================
+
+/**
+ * How good a card set is, for ordering sets best-first.
+ *
+ * Size alone is the wrong measure: forty bare footer links are not a better
+ * find than twelve cards that each have a headline and a picture. What the
+ * user came for is COMPLETE cards, so sets are ranked by
+ *   1. how many cards have both a real title and a thumbnail,
+ *   2. then the share of the set that is complete (a clean 6-of-6 set beats a
+ *      ragged 6-of-20 one),
+ *   3. then a detected repeating layout over loose leftovers,
+ *   4. then how many carry a video preview,
+ *   5. then how many at least have a real title.
+ * Ties keep page order.
+ *
+ * @param {Array} items            the set's cards
+ * @param {(item) => boolean} hasRealTitle
+ * @param {boolean} structured     the set is a detected repeating layout
+ */
+function rankSet(items, hasRealTitle = (it) => !!it.title, structured = false) {
+  let complete = 0;
+  let titled = 0;
+  let withVideo = 0;
+  for (const it of items) {
+    const title = hasRealTitle(it);
+    if (title) titled++;
+    if (title && it.thumbnail) complete++;
+    if (it.video) withVideo++;
+  }
+  return { complete, completeShare: items.length ? complete / items.length : 0, structured, withVideo, titled, total: items.length };
+}
+
+function compareSetRank(a, b) {
+  return (b.complete - a.complete) || (b.completeShare - a.completeShare) ||
+    (Number(b.structured) - Number(a.structured)) ||
+    (b.withVideo - a.withVideo) || (b.titled - a.titled);
+}
+
+// ===================================================
+// Duplicate cards
+// ===================================================
+
+// Query parameters that only resize or re-encode an image. Two URLs that
+// differ by these alone are the same picture.
+const IMAGE_SIZE_PARAMS = new Set([
+  'w', 'h', 'width', 'height', 'size', 'resize', 'fit', 'crop', 'q', 'quality',
+  'auto', 'format', 'fm', 'dpr', 's', 'sig', 'ixlib',
+]);
+
+function imageIdentity(url) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    const params = [...u.searchParams.entries()]
+      .filter(([k]) => !IMAGE_SIZE_PARAMS.has(k.toLowerCase()))
+      .sort((x, y) => x[0].localeCompare(y[0]) || x[1].localeCompare(y[1]));
+    return u.hostname.replace(/^www\./, '') + u.pathname + (params.length ? '?' + params.map(([k, v]) => `${k}=${v}`).join('&') : '');
+  } catch {
+    return String(url);
+  }
+}
+
+/**
+ * Identity of a card as the reader sees it: its title and its picture. Two
+ * cards of one set with the same key are the same card shown twice, even when
+ * their links differ (tracking variants, the same story in two shelves).
+ *
+ * Returns '' when a card has no reliable identity and must never be merged:
+ *   - no title, or only the fallback (its own domain);
+ *   - no picture AND a short title. Picture-less rows such as "Download" or
+ *     "Watch trailer" legitimately repeat with different destinations.
+ */
+function duplicateKey(item) {
+  const title = norm(item.title);
+  if (!title || title === norm(item.domain)) return '';
+  const image = imageIdentity(item.thumbnail);
+  if (!image && title.split(' ').length < 3) return '';
+  return `${title}\u0000${image}`;
+}
+
+export { detectCardSets, resolveSetFields, titleTier, sameTitle, rankSet, compareSetRank, duplicateKey };

@@ -16,6 +16,14 @@
       "signature": "<div class=\"container__item\">",
       "label": "Video",
       "count": 4,
+      "rank": {
+        "complete": 4,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 4,
+        "titled": 4,
+        "total": 4
+      },
       "fields": {
         "title": {
           "strategy": "anchor-title-class",

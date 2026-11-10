@@ -16,6 +16,14 @@
       "signature": "<ytd-reel-item-renderer>",
       "label": "",
       "count": 4,
+      "rank": {
+        "complete": 4,
+        "completeShare": 1,
+        "structured": true,
+        "withVideo": 0,
+        "titled": 4,
+        "total": 4
+      },
       "fields": {
         "title": {
           "strategy": "container-title-class",
