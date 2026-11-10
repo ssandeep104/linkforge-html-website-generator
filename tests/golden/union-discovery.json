@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<article>",
+      "label": "",
+      "count": 5,
+      "fields": {
+        "title": {
+          "strategy": "anchor-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-data-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Article A",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://union-test.example.com/article-a",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Article A",
@@ -56,6 +94,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://union-test.example.com/article-b",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Article B",
@@ -102,6 +149,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://union-test.example.com/article-c",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Article C",
@@ -193,6 +249,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://union-test.example.com/article-d",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Article D",
@@ -224,6 +289,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://union-test.example.com/article-e",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Article E",

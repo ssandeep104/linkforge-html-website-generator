@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "loose-1",
+      "kind": "loose",
+      "signature": "<div class=\"blog-post-content\">",
+      "label": "",
+      "count": 1,
+      "fields": {
+        "title": {
+          "strategy": "anchor-visible-text",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Read our full analysis of IFT-5 →",
@@ -20,6 +49,15 @@
       "category": "link",
       "pageSection": "Other",
       "pattern": "<div class=\"blog-post-content\">",
+      "setId": "loose-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://example-blog.com/spacex-ift5-analysis",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Read our full analysis of IFT-5 →",

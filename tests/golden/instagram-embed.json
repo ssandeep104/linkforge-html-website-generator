@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<blockquote class=\"instagram-media\">",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "anchor-img-alt",
+          "ambiguous": true,
+          "ambiguousCount": 2,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": "page-embed",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Fashion lookbook reel preview",
@@ -22,11 +51,32 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"post-content\">",
+      "setId": "set-1",
+      "ambiguous": {
+        "title": true
+      },
+      "linkCandidates": [
+        {
+          "value": "https://www.instagram.com/reel/C8x9YZabc12/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Fashion lookbook reel preview",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "Summer collection drop 🌊 Full video now available. Link in bio to shop.",
+          "strategy": "slot:p",
+          "label": "<p>"
+        },
+        {
+          "value": "View this post on Instagram",
+          "strategy": "slot:p:2",
+          "label": "<p> #2"
         }
       ],
       "thumbCandidates": [
@@ -41,25 +91,54 @@
           "label": "any container <img>"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/",
+          "strategy": "page-embed",
+          "label": "matching embed on page",
+          "info": {
+            "url": "https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/",
+            "kind": "embed"
+          }
+        }
+      ]
     },
     {
       "title": "Behind the scenes shoot",
       "href": "https://www.instagram.com/p/C7w8XYzde34/",
       "thumbnail": "https://www.instagram.com/p/C7w8XYzde34/media/?size=t",
-      "video": {
-        "src": "https://www.instagram.com/reel/C8x9YZabc12/embed/captioned/"
-      },
+      "video": null,
       "description": null,
       "domain": "instagram.com",
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"post-content\">",
+      "setId": "set-1",
+      "ambiguous": {
+        "title": true
+      },
+      "linkCandidates": [
+        {
+          "value": "https://www.instagram.com/p/C7w8XYzde34/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Behind the scenes shoot",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "BTS from our photoshoot at the old mills. Coming to the store June 15.",
+          "strategy": "slot:p",
+          "label": "<p>"
+        },
+        {
+          "value": "View this post on Instagram",
+          "strategy": "slot:p:2",
+          "label": "<p> #2"
         }
       ],
       "thumbCandidates": [
@@ -69,7 +148,7 @@
           "label": "<img src>"
         },
         {
-          "value": "https://www.instagram.com/p/C8x9YZabc12/media/?size=t",
+          "value": "https://www.instagram.com/p/C7w8XYzde34/media/?size=t",
           "strategy": "container-any-img",
           "label": "any container <img>"
         }

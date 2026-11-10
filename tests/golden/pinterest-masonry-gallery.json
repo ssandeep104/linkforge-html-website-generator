@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<a class=\"pin\">",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-title-class",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Sunset over the Dolomites",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://boardly.example/pin/44201",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Sunset over the Dolomites",
@@ -46,6 +84,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://boardly.example/pin/44202",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Minimalist kitchen renovation ideas",
@@ -72,6 +119,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://boardly.example/pin/44203",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Hand-lettered wedding invitation set",

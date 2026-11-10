@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<ytd-rich-item-renderer>",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "anchor-visible-text",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "How to Build a Home Server From Scratch",
@@ -20,6 +49,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.youtube.com/watch?v=abc123XYZ89",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "How to Build a Home Server From Scratch",
@@ -32,6 +70,11 @@
           "value": "https://i.ytimg.com/vi/abc123XYZ89/hqdefault.jpg",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.ytimg.com/vi/abc123XYZ89/hqdefault.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -46,6 +89,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.youtube.com/watch?v=def456UVW12",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "I Tried Cooking Without Recipes for a Week",
@@ -58,6 +110,11 @@
           "value": "https://i.ytimg.com/vi/def456UVW12/hqdefault.jpg",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.ytimg.com/vi/def456UVW12/hqdefault.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []

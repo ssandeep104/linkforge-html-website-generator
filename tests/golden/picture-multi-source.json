@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<article>",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Breaking: Council Approves Budget",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.example-news.com/2026/06/26/breaking-news",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Breaking: Council Approves Budget",
@@ -221,6 +259,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.example-news.com/2026/06/25/transit",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Transit",
@@ -297,6 +344,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.example-news.com/2026/06/24/parks",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Parks Department Lands Federal Grant",

@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<article class=\"WSJTheme--story--XB4V2mLz\">",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-data-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Markets Rally After Fed Signals Two Rate Cuts in 2026",
@@ -23,6 +52,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.wsj.com/video/series/markets-hub/market-reaction-to-rate-decision-june-2026/AB1234CD-5678-EFGH-IJKL-MN9012OPQRST",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Markets Rally After Fed Signals Two Rate Cuts in 2026",
@@ -38,6 +76,11 @@
           "value": "Federal Reserve Chair speaking at podium",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "Stocks soared as the Federal Reserve indicated it could cut rates twice this year pending inflation data.",
+          "strategy": "slot:p.WSJTheme--summary--1HVnhk4D",
+          "label": "<p class=\"WSJTheme--summary--1HVnhk4D\">"
         }
       ],
       "thumbCandidates": [
@@ -87,6 +130,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.wsj.com/video/series/journal-report/future-of-electric-vehicles-2026-outlook/EF5678GH-9012-IJKL-MNOP-QR3456STUVWX",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "EV Market Faces Reckoning as Sales Growth Slows",
@@ -102,6 +154,11 @@
           "value": "Electric vehicle charging station at night",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "Electric vehicle manufacturers are reassessing their strategies amid softening consumer demand.",
+          "strategy": "slot:p.WSJTheme--summary--1HVnhk4D",
+          "label": "<p class=\"WSJTheme--summary--1HVnhk4D\">"
         }
       ],
       "thumbCandidates": [
@@ -136,6 +193,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<article class=\"WSJTheme--story--XB4V2mLz\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.wsj.com/video/series/the-economics-of/why-housing-remains-unaffordable-june-2026/GH9012IJ-3456-KLMN-OPQR-ST7890UVWXYZ",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Why Housing Costs Keep Rising Even as Mortgage Rates Fall",

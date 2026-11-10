@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<article>",
+      "label": "",
+      "count": 5,
+      "fields": {
+        "title": {
+          "strategy": "synthesized",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "synthesized",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": "synthesized",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Visiting a Soldier's Funeral in Ukraine",
@@ -23,6 +52,9 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Visiting a Soldier's Funeral in Ukraine",
@@ -62,6 +94,9 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Scott Pelley: Bari Weiss Put a 'Thumb on the Scale' for Trump",
@@ -101,6 +136,9 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Soccer Referee Receives Hero's Welcome in Somalia After U.S. Denies Him Entry",
@@ -140,6 +178,9 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Russian Military Official Killed in Car Explosion Near Moscow",
@@ -179,6 +220,9 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<article>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Southern Lights Seen From International Space Station",

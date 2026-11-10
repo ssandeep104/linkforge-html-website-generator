@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<li class=\"story-card\">",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "container-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Storm season starts early on the coast",
@@ -20,11 +49,25 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li class=\"story-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://news.example/2026/storm-season",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Storm season starts early on the coast",
           "strategy": "container-heading",
           "label": "container <h3>"
+        },
+        {
+          "value": "By R. Diaz",
+          "strategy": "slot:p",
+          "label": "<p>"
         },
         {
           "value": "Read more",
@@ -56,6 +99,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li class=\"story-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://news.example/2026/bridge-vote",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "City council approves the new bridge",
@@ -66,6 +118,11 @@
           "value": "Bridge at dusk",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "By K. Lee",
+          "strategy": "slot:p",
+          "label": "<p>"
         },
         {
           "value": "Read more",

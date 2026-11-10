@@ -9,6 +9,62 @@
     "matchedCount": 2,
     "orphanCount": 1
   },
+  "cardSets": [
+    {
+      "id": "loose-1",
+      "kind": "loose",
+      "signature": "<article>",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "jsonld-headline",
+          "ambiguous": true,
+          "ambiguousCount": 2,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "jsonld-image",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    },
+    {
+      "id": "loose-2",
+      "kind": "loose",
+      "signature": "JSON-LD",
+      "label": "JSON-LD",
+      "count": 1,
+      "fields": {
+        "title": {
+          "strategy": "jsonld-headline",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "jsonld-image",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "City Council Approves $4.2B Budget After Marathon Session",
@@ -20,6 +76,17 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "loose-1",
+      "ambiguous": {
+        "title": true
+      },
+      "linkCandidates": [
+        {
+          "value": "https://www.example-news.com/2026/06/26/city-council-approves-budget",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "City Council Approves $4.2B Budget After Marathon Session",
@@ -66,6 +133,17 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article>",
+      "setId": "loose-1",
+      "ambiguous": {
+        "title": true
+      },
+      "linkCandidates": [
+        {
+          "value": "https://www.example-news.com/2026/06/25/transit-rollout",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Light Rail Expansion Hits Construction Milestone",
@@ -97,6 +175,9 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
+      "setId": "loose-2",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Parks Department Lands Federal Grant for Greenway",

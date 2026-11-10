@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<a class=\"rail-card\">",
+      "label": "Trending Now",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-title-class",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Midnight Protocol",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Trending Now",
       "pattern": "<a class=\"rail-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://streamvault.example/watch/midnight-protocol",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Midnight Protocol",
@@ -51,6 +89,15 @@
       "category": "article",
       "pageSection": "Trending Now",
       "pattern": "<a class=\"rail-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://streamvault.example/watch/coastal-drift",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Coastal Drift",
@@ -82,6 +129,15 @@
       "category": "article",
       "pageSection": "Trending Now",
       "pattern": "<a class=\"rail-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://streamvault.example/watch/the-long-orbit",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "The Long Orbit",

@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<article class=\"ch\">",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-heading",
+          "ambiguous": true,
+          "ambiguousCount": 3,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "container-any-img",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Stop Using ChatGPT for Code. Do This Instead.",
@@ -20,6 +49,17 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"ch ci\">",
+      "setId": "set-1",
+      "ambiguous": {
+        "title": true
+      },
+      "linkCandidates": [
+        {
+          "value": "https://medium.com/towards-data-science/stop-using-chatgpt-for-code-do-this-instead-abc123def456",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Stop Using ChatGPT for Code. Do This Instead.",
@@ -30,6 +70,11 @@
           "value": "Stop Using ChatGPT for Code. Do This Instead. Seriously, there's a better way that most developers haven't tried yet",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "Seriously, there's a better way that most developers haven't tried yet",
+          "strategy": "slot:h3.db",
+          "label": "<h3 class=\"db\">"
         },
         {
           "value": "Stop Using ChatGPT for Code. Do This Instead.",
@@ -71,6 +116,17 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"ch ci\">",
+      "setId": "set-1",
+      "ambiguous": {
+        "title": true
+      },
+      "linkCandidates": [
+        {
+          "value": "https://medium.com/ux-planet/the-one-design-principle-every-developer-ignores-xyz789abc123",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "The One Design Principle Every Developer Ignores",
@@ -81,6 +137,11 @@
           "value": "The One Design Principle Every Developer Ignores And why it's making your apps worse than they need to be",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "And why it's making your apps worse than they need to be",
+          "strategy": "slot:h3.db",
+          "label": "<h3 class=\"db\">"
         },
         {
           "value": "The One Design Principle Every Developer Ignores",
@@ -122,6 +183,17 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<article class=\"ch ci\">",
+      "setId": "set-1",
+      "ambiguous": {
+        "title": true
+      },
+      "linkCandidates": [
+        {
+          "value": "https://medium.com/javascript-in-plain-english/typescript-5-4-is-a-game-changer-heres-why-ghi012jkl345",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "TypeScript 5.4 Is a Game-Changer. Here's Why.",
@@ -132,6 +204,11 @@
           "value": "TypeScript 5.4 Is a Game-Changer. Here's Why. NoInfer, improved narrowing, and what they mean for your codebase",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "NoInfer, improved narrowing, and what they mean for your codebase",
+          "strategy": "slot:h3.db",
+          "label": "<h3 class=\"db\">"
         },
         {
           "value": "TypeScript 5.4 Is a Game-Changer. Here's Why.",

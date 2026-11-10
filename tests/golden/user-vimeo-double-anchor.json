@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"video-card\">",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "container-title-class",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "You will Feel Me Playdaddy channel 1.2M views",
@@ -20,6 +49,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"video-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://vimeo.com/videos/you-will-feel-me-6419696",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "You will Feel Me Playdaddy channel 1.2M views",
@@ -81,6 +119,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"video-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://vimeo.com/videos/another-clip-1234567",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Another Clip Some Channel",

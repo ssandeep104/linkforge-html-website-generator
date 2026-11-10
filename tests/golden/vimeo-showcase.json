@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"clip_thumbnail\">",
+      "label": "",
+      "count": 4,
+      "fields": {
+        "title": {
+          "strategy": "container-title-class",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "The Last Glacier — Short Film",
@@ -20,16 +49,30 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://vimeo.com/1001234567",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        },
+        {
+          "value": "https://vimeo.com/glacierfilms",
+          "strategy": "card-link:2",
+          "label": "Glacier Films"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "The Last Glacier — Short Film",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
         {
           "value": "12:34",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
-        },
-        {
-          "value": "The Last Glacier — Short Film",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
         },
         {
           "value": "The Last Glacier — Short Film",
@@ -42,28 +85,18 @@
           "value": "https://i.vimeocdn.com/video/1001234567_640x360.jpg?r=pad",
           "strategy": "img-src",
           "label": "<img src>"
-        }
-      ],
-      "videoCandidates": []
-    },
-    {
-      "title": "Glacier Films",
-      "href": "https://vimeo.com/glacierfilms",
-      "thumbnail": null,
-      "video": null,
-      "description": null,
-      "domain": "vimeo.com",
-      "category": "video",
-      "pageSection": "Other",
-      "pattern": "Default Link",
-      "titleCandidates": [
+        },
         {
-          "value": "Glacier Films",
-          "strategy": "anchor-visible-text",
-          "label": "anchor text"
+          "value": "https://i.vimeocdn.com/video/1001234567_640x360.jpg?r=pad",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://i.vimeocdn.com/video/1001234567_640x360.jpg?r=pad",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
-      "thumbCandidates": [],
       "videoCandidates": []
     },
     {
@@ -76,16 +109,30 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://vimeo.com/1001234568",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        },
+        {
+          "value": "https://vimeo.com/urbanstudio",
+          "strategy": "card-link:2",
+          "label": "Urban Studio"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "Urban Pulse — City Life Documentary",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
         {
           "value": "28:17",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
-        },
-        {
-          "value": "Urban Pulse — City Life Documentary",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
         },
         {
           "value": "Urban Pulse — City Life Documentary",
@@ -98,28 +145,18 @@
           "value": "https://i.vimeocdn.com/video/1001234568_640x360.jpg?r=pad",
           "strategy": "img-src",
           "label": "<img src>"
-        }
-      ],
-      "videoCandidates": []
-    },
-    {
-      "title": "Urban Studio",
-      "href": "https://vimeo.com/urbanstudio",
-      "thumbnail": null,
-      "video": null,
-      "description": null,
-      "domain": "vimeo.com",
-      "category": "video",
-      "pageSection": "Other",
-      "pattern": "Default Link",
-      "titleCandidates": [
+        },
         {
-          "value": "Urban Studio",
-          "strategy": "anchor-visible-text",
-          "label": "anchor text"
+          "value": "https://i.vimeocdn.com/video/1001234568_640x360.jpg?r=pad",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://i.vimeocdn.com/video/1001234568_640x360.jpg?r=pad",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
-      "thumbCandidates": [],
       "videoCandidates": []
     },
     {
@@ -132,16 +169,30 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://vimeo.com/1001234569",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        },
+        {
+          "value": "https://vimeo.com/neonrecords",
+          "strategy": "card-link:2",
+          "label": "Neon Records"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "Neon Drift — Music Video",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
         {
           "value": "4:02",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
-        },
-        {
-          "value": "Neon Drift — Music Video",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
         },
         {
           "value": "Neon Drift — Music Video",
@@ -154,28 +205,18 @@
           "value": "https://i.vimeocdn.com/video/1001234569_640x360.jpg?r=pad",
           "strategy": "img-src",
           "label": "<img src>"
-        }
-      ],
-      "videoCandidates": []
-    },
-    {
-      "title": "Neon Records",
-      "href": "https://vimeo.com/neonrecords",
-      "thumbnail": null,
-      "video": null,
-      "description": null,
-      "domain": "vimeo.com",
-      "category": "video",
-      "pageSection": "Other",
-      "pattern": "Default Link",
-      "titleCandidates": [
+        },
         {
-          "value": "Neon Records",
-          "strategy": "anchor-visible-text",
-          "label": "anchor text"
+          "value": "https://i.vimeocdn.com/video/1001234569_640x360.jpg?r=pad",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://i.vimeocdn.com/video/1001234569_640x360.jpg?r=pad",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
-      "thumbCandidates": [],
       "videoCandidates": []
     },
     {
@@ -188,16 +229,30 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://vimeo.com/1001234570",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        },
+        {
+          "value": "https://vimeo.com/craftvisuals",
+          "strategy": "card-link:2",
+          "label": "Craft Visuals"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "Brand Story — Craft Brewery",
+          "strategy": "container-title-class",
+          "label": "container class=title"
+        },
         {
           "value": "3:45",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
-        },
-        {
-          "value": "Brand Story — Craft Brewery",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
         },
         {
           "value": "Brand Story — Craft Brewery",
@@ -210,28 +265,18 @@
           "value": "https://i.vimeocdn.com/video/1001234570_640x360.jpg?r=pad",
           "strategy": "img-src",
           "label": "<img src>"
-        }
-      ],
-      "videoCandidates": []
-    },
-    {
-      "title": "Craft Visuals",
-      "href": "https://vimeo.com/craftvisuals",
-      "thumbnail": null,
-      "video": null,
-      "description": null,
-      "domain": "vimeo.com",
-      "category": "video",
-      "pageSection": "Other",
-      "pattern": "Default Link",
-      "titleCandidates": [
+        },
         {
-          "value": "Craft Visuals",
-          "strategy": "anchor-visible-text",
-          "label": "anchor text"
+          "value": "https://i.vimeocdn.com/video/1001234570_640x360.jpg?r=pad",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://i.vimeocdn.com/video/1001234570_640x360.jpg?r=pad",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
-      "thumbCandidates": [],
       "videoCandidates": []
     }
   ]

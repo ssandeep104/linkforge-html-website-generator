@@ -6,7 +6,24 @@
    DOMParser polyfill, e.g. linkedom, installed by the caller).
    ===================================================== */
 
+import { detectCardSets, resolveSetFields } from './cards.js';
+
 const uid = () => Math.random().toString(36).slice(2, 9);
+
+// ---------- card context ----------
+// Set for the duration of one parse: the card sets detected in the document
+// (see cards.js). Field rules ask it for the element that bounds the card a
+// click target belongs to, instead of guessing at a container by class name.
+let activeCards = null;
+
+// The element that bounds `a`'s card. When `a` sits in a detected card set,
+// that is the set member (structural evidence); otherwise fall back to the
+// nearest ancestor that merely LOOKS like a card (`selector`).
+function containerFor(a, selector) {
+  const hit = activeCards?.memberOf(a);
+  if (hit) return hit.el;
+  return a.closest(selector);
+}
 
 // ===================================================
 // PARSING
@@ -859,7 +876,7 @@ function cardDuration(root) {
 // when it holds no OTHER destination, so a list wrapper's chips never leak
 // onto every item in the list.
 function soleCardOf(a, href) {
-  const container = a.closest(CARD_CONTAINER_SELECTOR);
+  const container = containerFor(a, CARD_CONTAINER_SELECTOR);
   if (!container || container === a) return null;
   const key = canonicalHref(href);
   for (const other of container.querySelectorAll(CLICK_TARGET_SELECTOR)) {
@@ -1002,7 +1019,7 @@ function isContentImage(img) {
 // passed in (if any) so the standalone-image walk doesn't re-emit it as an
 // orphan "Image" item.
 function findFigureSiblingThumb(a, baseURL, claimedSet) {
-  const block = a.closest('article, li, [class*="card"], [class*="story"], [class*="teaser"], [class*="item"], [class*="tile"], [class*="post"]');
+  const block = containerFor(a, 'article, li, [class*="card"], [class*="story"], [class*="teaser"], [class*="item"], [class*="tile"], [class*="post"]');
   if (!block) return null;
   // Tier A — prefer <figure><picture><img> / <figure><img> / div-wrapped thumb.
   // Real-world news sites often wrap thumbs in <div class="thumb|image|media|poster|hero">
@@ -1172,7 +1189,8 @@ function findAdjacentSiblingThumb(a, allAnchors, baseURL, claimedSet) {
 // The returned element should be added to claimedVideos so the standalone
 // walk doesn't re-emit it.
 function findSiblingVideo(a, baseURL) {
-  const block = a.closest(
+  const block = containerFor(
+    a,
     'article, li, [class*="card"], [class*="story"], [class*="teaser"], [class*="post"], ' +
     'shreddit-post, shreddit-feed-post, [class*="feed-item"], [class*="feed-card"]'
   );
@@ -1378,7 +1396,7 @@ const TITLE_RULES = [
     // the shared container outranks it.
     id: 'container-heading',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const out = [];
       const headings = Array.from(container.querySelectorAll('h1, h2, h3, h4')).filter((h) => !a.contains(h));
@@ -1429,7 +1447,7 @@ const TITLE_RULES = [
     // sites, where alt text was winning over an obviously-better caption.
     id: 'container-caption',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const cap = container.querySelector('figcaption, [class*="caption" i]');
       return cap ? [{ value: visibleText(cap), strategy: 'container-caption', label: 'caption' }] : [];
@@ -1450,7 +1468,7 @@ const TITLE_RULES = [
     // ROLE ("video card"), not a specific title, so this stays low-priority.
     id: 'container-aria-label',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const cAria = container.getAttribute('aria-label');
       return cAria ? [{ value: cAria, strategy: 'container-aria-label', label: 'container aria-label' }] : [];
@@ -1463,6 +1481,37 @@ const TITLE_RULES = [
     extract(a) {
       const p = a.parentElement?.parentElement?.querySelector('p[class*="PVideoLabel"]');
       return p ? [{ value: visibleText(p), strategy: 'sibling-p-title', label: 'sibling <p> title' }] : [];
+    },
+  },
+  {
+    // Every text slot of the card, when the card's real bounds are known (the
+    // click target sits in a detected card set). The rules above each return
+    // their single best guess; this one lays out everything else the card says
+    // (a second heading, a deck, a caption) so the user can point at the
+    // right one. Keyed by the slot's own tag and class, so one choice applies
+    // to the same slot in every card of the set.
+    id: 'card-text-slots',
+    extract(a) {
+      const hit = activeCards?.memberOf(a);
+      if (!hit) return [];
+      const out = [];
+      const nthOf = new Map();
+      const slots = hit.el.querySelectorAll('h1, h2, h3, h4, h5, h6, [class*="title" i], [class*="headline" i], figcaption, [class*="caption" i], p');
+      for (const el of slots) {
+        if (out.length >= 6) break;
+        const value = visibleText(el);
+        if (!value) continue;
+        const cls = (el.getAttribute('class') || '').trim().split(/\s+/)[0];
+        const base = el.tagName.toLowerCase() + (cls ? '.' + cls : '');
+        const nth = (nthOf.get(base) || 0) + 1;
+        nthOf.set(base, nth);
+        out.push({
+          value,
+          strategy: `slot:${base}${nth > 1 ? ':' + nth : ''}`,
+          label: `<${el.tagName.toLowerCase()}${cls ? ` class="${cls}"` : ''}>${nth > 1 ? ` #${nth}` : ''}`,
+        });
+      }
+      return out;
     },
   },
 ];
@@ -1553,7 +1602,7 @@ const THUMB_RULES = [
     // Container-level images: hero/poster/thumb classed <img>s.
     id: 'container-class-img',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const imgs = container.querySelectorAll('img[class*="thumb" i], img[class*="poster" i], img[class*="hero" i], img[class*="image" i], img[class*="media" i], img[class*="photo" i]');
       return Array.from(imgs)
@@ -1565,7 +1614,7 @@ const THUMB_RULES = [
   {
     id: 'container-video-poster',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const poster = pickVideoPoster(container.querySelector('video[poster], video[data-poster]'));
       return poster ? [{ value: poster, strategy: 'container-video-poster', label: 'video poster' }] : [];
@@ -1577,7 +1626,7 @@ const THUMB_RULES = [
     // that's fine, the picker is the right place to dig through alternates.
     id: 'container-picture',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const out = [];
       container.querySelectorAll('picture').forEach((pic) => {
@@ -1594,7 +1643,7 @@ const THUMB_RULES = [
   {
     id: 'container-bg-image',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const bg = findBackgroundImage(container, { includeSelf: false });
       return bg ? [{ value: bg.url, strategy: 'container-bg-image', label: 'container background-image' }] : [];
@@ -1603,12 +1652,38 @@ const THUMB_RULES = [
   {
     id: 'container-any-img',
     extract(a) {
-      const container = a.closest(CARD_CONTAINER_SELECTOR);
+      const container = containerFor(a, CARD_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const anyImg = container.querySelector('img');
       if (!anyImg) return [];
       const v = pickImgSrc(anyImg);
       return v ? [{ value: v, strategy: 'container-any-img', label: 'any container <img>' }] : [];
+    },
+  },
+  {
+    // Each separate picture in the card, when the card's bounds are known.
+    // The rules above enumerate URLs, and one <img> can contribute a dozen
+    // (srcset sizes, lazy-load attributes); this one counts PICTURES, which is
+    // what tells a card with one image apart from a card where two images
+    // compete for the thumbnail. Emitted only when there is a choice to make.
+    id: 'card-images',
+    extract(a) {
+      const hit = activeCards?.memberOf(a);
+      if (!hit) return [];
+      const urls = [];
+      const add = (u) => {
+        if (!u || /^data:/i.test(u) || looksLikeLazyLoadPlaceholder(u) || urls.includes(u)) return;
+        urls.push(u);
+      };
+      for (const el of hit.el.querySelectorAll('img, video')) {
+        if (el.tagName === 'VIDEO') add(pickVideoPoster(el));
+        else if (isContentImage(el)) add(pickImgSrc(el));
+      }
+      const bgEls = Array.from(hit.el.querySelectorAll(BG_SELECTOR));
+      if (hit.el.matches(BG_SELECTOR)) bgEls.unshift(hit.el);
+      for (const el of bgEls) if (isLikelyContentMediaElement(el)) add(backgroundImageUrl(el));
+      if (urls.length < 2) return [];
+      return urls.slice(0, 6).map((u, i) => ({ value: u, strategy: `card-image:${i + 1}`, label: `card image ${i + 1}` }));
     },
   },
 ];
@@ -1650,7 +1725,7 @@ const VIDEO_RULES = [
   {
     id: 'container-video',
     extract(a) {
-      const container = a.closest(VIDEO_CONTAINER_SELECTOR);
+      const container = containerFor(a, VIDEO_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const containerVid = container.querySelector('video');
       if (!containerVid) return [];
@@ -1664,7 +1739,7 @@ const VIDEO_RULES = [
     // and the player sits beside it in the same card.
     id: 'container-iframe-embed',
     extract(a, baseURL) {
-      const container = a.closest(VIDEO_CONTAINER_SELECTOR);
+      const container = containerFor(a, VIDEO_CONTAINER_SELECTOR);
       if (!container || container === a) return [];
       const out = [];
       container.querySelectorAll('iframe[src]').forEach((f) => {
@@ -1704,7 +1779,7 @@ const VIDEO_RULES = [
     // container.
     id: 'hover-play-data-attrs',
     extract(a) {
-      const container = a.closest(VIDEO_CONTAINER_SELECTOR);
+      const container = containerFor(a, VIDEO_CONTAINER_SELECTOR);
       const out = [];
       for (const attr of VIDEO_HOVER_DATA_ATTRS) {
         const val = a.getAttribute(attr) || container?.getAttribute(attr);
@@ -2103,6 +2178,35 @@ function detectDemotedBylineAnchors(doc, baseURL) {
 // element, so — unlike the title/thumb/video CANDIDATE rules above, which
 // are pure — this stays as an explicit shared-state object passed into each
 // resolver rather than being eliminated.
+// How strongly a destination looks like THE destination of its card, as
+// opposed to a byline, tag chip, comment count or lightbox link sharing the
+// card with it.
+const BYLINE_CLASS = /uploader|avatar|author|byline|user-?(link|name)|channel-?link|tag|category|comment|share/;
+const BYLINE_PATH = /^\/(channels?|users?|u|profile|author|by|tags?|category|categories|topics?)\//i;
+function primaryLinkScore(bucket, memberEl) {
+  let score = 0;
+  for (const a of bucket.anchors) {
+    if (!memberEl.contains(a)) continue;
+    score += 1;
+    if (a === memberEl) score += 5; // the whole card is the link
+    const hasArt = Array.from(a.querySelectorAll('img')).some(isContentImage) ||
+      !!a.querySelector('picture, video, iframe') || !!findBackgroundImage(a);
+    if (hasArt) score += 8;
+    if (a.querySelector('h1, h2, h3, h4, h5, h6') || a.closest('h1, h2, h3, h4, h5, h6')) score += 6;
+    if (a.matches('[class*="title" i], [class*="headline" i]') || a.closest('[class*="title" i], [class*="headline" i]') !== null && memberEl.contains(a.closest('[class*="title" i], [class*="headline" i]')) && a.closest('[class*="title" i], [class*="headline" i]') !== memberEl) score += 4;
+    const text = visibleText(a);
+    score += Math.min(text.length, 80) / 20;
+    if (text && looksLikeBadTitle(text)) score -= 3;
+    if (BYLINE_CLASS.test((a.getAttribute('class') || '').toLowerCase())) score -= 8;
+  }
+  try {
+    const path = new URL(bucket.href).pathname;
+    if (BYLINE_PATH.test(path) || /^\/@/.test(path)) score -= 6;
+    if (IMAGE_EXT.test(path)) score -= 6; // a lightbox link to the picture itself
+  } catch {}
+  return score;
+}
+
 function resolveBucketTitle(bucket) {
   let lastResort = null;
   for (const a of bucket.anchors) {
@@ -2228,6 +2332,25 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
   // Required for sites like NYT video feeds.
   expandShadowTemplates(doc);
 
+  // Stage 1 — find the page's repeating card structures. Everything after
+  // this reads the DOM through them: which element bounds a card, which
+  // destination is the card's own, which cards belong together.
+  const cards = detectCardSets(doc, {
+    clickSelector: CLICK_TARGET_SELECTOR,
+    chromeSelector: CHROME_CONTAINER_SELECTOR,
+  });
+  activeCards = cards;
+  try {
+    return extractCards(doc, cards, sourceName, opts);
+  } finally {
+    activeCards = null;
+  }
+}
+
+// Stages 2-4: resolve one destination per card, resolve each card's fields,
+// then judge the fields of every card set as a group.
+function extractCards(doc, cards, sourceName, opts) {
+
   // Try to detect a base URL from multiple signals, in order of reliability.
   // Used to resolve relative hrefs/thumbnails. If we can't find one, we leave
   // relative links unresolved (the parser will skip them) so we never invent
@@ -2342,6 +2465,37 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     buckets.get(bucketKey).anchors.push(a);
   }
 
+  // Stage 2 — one card, one destination. A card usually carries several
+  // links (the story, its author, a tag, "comments"); only one of them is
+  // where the card goes. The rest are kept as alternates for the picker
+  // instead of being emitted as cards of their own.
+  const bucketsByMember = new Map();
+  for (const [bucketKey, bucket] of buckets) {
+    const hit = cards.memberOf(bucket.firstAnchor);
+    bucket.member = hit;
+    if (!hit) continue;
+    if (!bucketsByMember.has(hit.el)) bucketsByMember.set(hit.el, []);
+    bucketsByMember.get(hit.el).push(bucketKey);
+  }
+  for (const [memberEl, keys] of bucketsByMember) {
+    if (keys.length < 2) continue;
+    let primaryKey = keys[0];
+    let primaryScore = -Infinity;
+    for (const key of keys) {
+      const score = primaryLinkScore(buckets.get(key), memberEl);
+      if (score > primaryScore) { primaryScore = score; primaryKey = key; }
+    }
+    const primary = buckets.get(primaryKey);
+    primary.altLinks = [];
+    for (const key of keys) {
+      if (key === primaryKey) continue;
+      const other = buckets.get(key);
+      primary.altLinks.push({ href: other.href, text: visibleText(other.firstAnchor).slice(0, 80) });
+      buckets.delete(key);
+    }
+  }
+
+  const originOf = new Map(); // item -> the element it was read from
   const claims = { imgs: claimedImgs, videos: claimedVideos };
   for (const [bucketKey, bucket] of buckets) {
     if (seen.has(bucketKey)) continue;
@@ -2454,6 +2608,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       thumbCandidates,
       videoCandidates,
       descriptionCandidates,
+      linkCandidates: [{ value: href, strategy: 'card-link:primary', label: 'main link' }].concat(
+        (bucket.altLinks || []).map((l, i) => ({ value: l.href, strategy: `card-link:${i + 2}`, label: l.text || domainOf(l.href) }))
+      ),
       jsonLd: jsonLdEntry || null,
       domain: domainOf(href),
       // Non-anchor video cards fall back to 'Videos', matching the standalone
@@ -2463,6 +2620,14 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     };
     item.category = classify(item);
     items.push(item);
+    originOf.set(item, bucket.firstAnchor);
+    // Everything inside a detected card belongs to that card. Claim its media
+    // so the standalone image/video walks below don't re-emit a card's second
+    // picture or its player as orphan items.
+    if (bucket.member) {
+      bucket.member.el.querySelectorAll('img').forEach((el) => claimedImgs.add(el));
+      bucket.member.el.querySelectorAll('video, iframe, source').forEach((el) => claimedVideos.add(el));
+    }
   }
 
   // 1.5) <article> synthesis — for articles that contain no <a href> of their own.
@@ -2482,6 +2647,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       seen.add(synth.href);
       synth.pageSection = sectionFor.get(art) || 'Videos';
       items.push(synth);
+      originOf.set(synth, art);
     }
     // Mark all images & videos inside this article so standalone walks skip them.
     art.querySelectorAll('img, video, iframe, source').forEach((el) => synthesizedFromArticles.add(el));
@@ -2524,7 +2690,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     if (seen.has(imgKey)) continue;
     seen.add(imgKey);
     const altTitle = derivedTitle || 'Image';
-    items.push({
+    const imgItem = {
       id: uid(),
       sourceName,
       href: normalizedSrc,
@@ -2539,7 +2705,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       category: 'gallery',
       pageSection: sectionFor.get(img) || 'Images',
       pattern: '<img>',
-    });
+    };
+    items.push(imgItem);
+    originOf.set(imgItem, img);
   }
 
   // 3) Pure video tags / iframes without anchors
@@ -2560,6 +2728,20 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     // deliberately doesn't list.
     if (!isVideoHref(normalizedSrc) && !isVideoEmbedUrl(normalizedSrc, baseURL) && !(v.tagName === 'VIDEO')) continue;
     seen.add(videoKey);
+    // A player whose URL extends a card's own destination
+    // (instagram.com/reel/ID/ -> instagram.com/reel/ID/embed/) is that card's
+    // video, wherever on the page the embed was placed. Attach it there
+    // rather than emitting a second, title-less item for the same post.
+    const owner = items.find((it) => {
+      if (it.video || it.href === normalizedSrc) return false;
+      const key = canonicalHref(it.href);
+      return key.includes('/') && !key.endsWith('/') && videoKey.startsWith(key + '/');
+    });
+    if (owner) {
+      owner.video = { src: normalizedSrc };
+      owner.videoCandidates.push({ value: normalizedSrc, strategy: 'page-embed', label: 'matching embed on page', info: { url: normalizedSrc, kind: 'embed' } });
+      continue;
+    }
     // Same treatment as standalone images: a bare "Video" tells the user
     // nothing, and an embedded player almost always sits inside a card that
     // names it (heading, figcaption, aria-label on the iframe).
@@ -2568,7 +2750,7 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       collectTitleCandidates(v).find((c) => !looksLikeBadTitle(c.value))?.value ||
       'Video';
     const vPoster = pickVideoPoster(v);
-    items.push({
+    const videoItem = {
       id: uid(),
       sourceName,
       href: normalizedSrc,
@@ -2583,7 +2765,9 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
       category: 'video',
       pageSection: sectionFor.get(v) || 'Videos',
       pattern: v.tagName === 'IFRAME' ? '<iframe>' : '<video>',
-    });
+    };
+    items.push(videoItem);
+    originOf.set(videoItem, v);
   }
 
   // og:image is the SITE-wide social card (often the site logo). Never apply it
@@ -2660,8 +2844,58 @@ function parseSourceWithMeta(html, sourceName, opts = {}) {
     return bLd - aLd;
   });
 
+  // Stage 4 — group the cards into their sets and judge each set's fields
+  // together (see resolveSetFields). Cards read from a detected repeating
+  // structure share its set; everything else is grouped by markup pattern so
+  // it still gets shared controls in the review step.
+  const cardSets = [];
+  const setById = new Map();
+  const looseIds = new Map();
+  for (const item of items) {
+    const el = originOf.get(item);
+    const hit = el ? cards.memberOf(el) : null;
+    let set;
+    if (hit) {
+      set = setById.get(hit.set.id);
+      if (!set) {
+        set = { id: hit.set.id, kind: 'repeating', signature: hit.set.signature, memberCount: hit.set.members.length, items: [] };
+        setById.set(set.id, set);
+        cardSets.push(set);
+      }
+      item.cardIndex = hit.index;
+    } else {
+      const key = item.pattern || 'Other';
+      if (!looseIds.has(key)) looseIds.set(key, `loose-${looseIds.size + 1}`);
+      const id = looseIds.get(key);
+      set = setById.get(id);
+      if (!set) {
+        set = { id, kind: 'loose', signature: key, memberCount: 0, items: [] };
+        setById.set(id, set);
+        cardSets.push(set);
+      }
+    }
+    item.setId = set.id;
+    set.items.push(item);
+  }
+  // Detected structures first, in page order; ungrouped leftovers after.
+  cardSets.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'repeating' ? -1 : 1));
+  for (const set of cardSets) {
+    if (set.kind === 'repeating') set.items.sort((a, b) => a.cardIndex - b.cardIndex);
+    set.fields = resolveSetFields(set.items, { isBadTitle: looksLikeBadTitle });
+    for (const it of set.items) {
+      if (it.category !== 'gallery') it.category = classify(it);
+    }
+    const sections = new Map();
+    for (const it of set.items) sections.set(it.pageSection, (sections.get(it.pageSection) || 0) + 1);
+    const [topSection, topCount] = [...sections.entries()].sort((a, b) => b[1] - a[1])[0];
+    set.label = topCount / set.items.length >= 0.6 && !/^(Other|Images|Videos)$/.test(topSection) ? topSection : '';
+    set.count = set.items.length;
+    delete set.items;
+  }
+
   return {
     items,
+    cardSets,
     unresolvedCount,
     hasBase: !!baseURL,
     baseURL: baseURL || null,

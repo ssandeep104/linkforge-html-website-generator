@@ -9,6 +9,62 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"post-preview\">",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "anchor-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "container-any-img",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    },
+    {
+      "id": "loose-1",
+      "kind": "loose",
+      "signature": "<iframe>",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "synthesized",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "synthesized",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": "synthesized",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Diffusion Models Explained: A Visual Guide",
@@ -20,11 +76,25 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<a class=\"post-preview-title\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://techpulse.substack.com/p/diffusion-models-explained",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Diffusion Models Explained: A Visual Guide",
           "strategy": "anchor-heading",
           "label": "<h2>"
+        },
+        {
+          "value": "Diffusion Models Explained: A Visual Guide",
+          "strategy": "container-heading",
+          "label": "container <h2>"
         },
         {
           "value": "Diffusion model visualisation",
@@ -33,6 +103,11 @@
         }
       ],
       "thumbCandidates": [
+        {
+          "value": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdiffusion-cover.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
         {
           "value": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fdiffusion-cover.jpg",
           "strategy": "img-src",
@@ -51,11 +126,25 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<a class=\"post-preview-title\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://techpulse.substack.com/p/claude-vs-gpt4-benchmark",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Claude 4 vs GPT-4o: Full Benchmark Breakdown",
           "strategy": "anchor-heading",
           "label": "<h2>"
+        },
+        {
+          "value": "Claude 4 vs GPT-4o: Full Benchmark Breakdown",
+          "strategy": "container-heading",
+          "label": "container <h2>"
         },
         {
           "value": "Benchmark comparison chart",
@@ -64,6 +153,11 @@
         }
       ],
       "thumbCandidates": [
+        {
+          "value": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbenchmark-chart.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
         {
           "value": "https://substackcdn.com/image/fetch/w_300,c_limit,f_webp/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fbenchmark-chart.jpg",
           "strategy": "img-src",
@@ -84,6 +178,9 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<iframe>",
+      "setId": "loose-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "The AI Video Revolution Is Here",
@@ -121,6 +218,9 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<iframe>",
+      "setId": "loose-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "The AI Video Revolution Is Here",

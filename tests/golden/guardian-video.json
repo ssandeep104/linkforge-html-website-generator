@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"fc-item\">",
+      "label": "Video",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "New drone footage reveals scale of Amazon deforestation",
@@ -23,6 +52,15 @@
       "category": "video",
       "pageSection": "Video",
       "pattern": "<a class=\"fc-item__link\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.theguardian.com/environment/video/2026/jun/10/amazon-deforestation-drone-footage-video",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "New drone footage reveals scale of Amazon deforestation",
@@ -60,6 +98,36 @@
           "value": "https://i.guim.co.uk/img/media/abc123/master/300.jpg?width=300&quality=45&auto=format",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "container-picture-source:min-width-980px:620w",
+          "label": "container picture <source> ((min-width: 980px)) · 620w"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "container-picture-source:min-width-980px:any",
+          "label": "container picture <source> ((min-width: 980px)) · any size"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/abc123/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -77,6 +145,15 @@
       "category": "video",
       "pageSection": "Video",
       "pattern": "<a class=\"fc-item__link\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.theguardian.com/sport/video/2026/jun/10/euro-2026-england-germany-highlights-video",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "England 3-1 Germany: Euro 2026 quarter-final highlights",
@@ -114,6 +191,36 @@
           "value": "https://i.guim.co.uk/img/media/def456/master/300.jpg?width=300&quality=45&auto=format",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "container-picture-source:min-width-980px:620w",
+          "label": "container picture <source> ((min-width: 980px)) · 620w"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "container-picture-source:min-width-980px:any",
+          "label": "container picture <source> ((min-width: 980px)) · any size"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/2000.jpg?width=620&quality=45&auto=format",
+          "strategy": "container-picture-source:any",
+          "label": "container picture <source> · any"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/def456/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -131,6 +238,15 @@
       "category": "video",
       "pageSection": "Video",
       "pattern": "<a class=\"fc-item__link\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.theguardian.com/technology/video/2026/jun/10/ai-deepfakes-explained-video",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Deepfakes explained: how AI is blurring reality",
@@ -153,6 +269,21 @@
           "value": "https://i.guim.co.uk/img/media/ghi789/master/300.jpg?width=300&quality=45&auto=format",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/ghi789/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/ghi789/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-img-src",
+          "label": "container <img src>"
+        },
+        {
+          "value": "https://i.guim.co.uk/img/media/ghi789/master/300.jpg?width=300&quality=45&auto=format",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []

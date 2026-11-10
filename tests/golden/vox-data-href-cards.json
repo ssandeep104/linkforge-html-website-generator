@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"duet--content-cards--content-card\">",
+      "label": "Latest",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "anchor-bg-image",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "The new foldable finally fixes the crease",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Latest",
       "pattern": "<div class=\"duet--content-cards--content-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.theverge.com/2026/06/10/foldable-phone-review",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "The new foldable finally fixes the crease",
@@ -54,6 +92,15 @@
       "category": "video",
       "pageSection": "Latest",
       "pattern": "<div class=\"duet--content-cards--content-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.theverge.com/2026/06/10/robot-vacuum-video",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "We let a robot vacuum map our office for a week",
@@ -85,6 +132,15 @@
       "category": "article",
       "pageSection": "Latest",
       "pattern": "<div class=\"duet--content-cards--content-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.theverge.com/2026/06/10/chip-shortage-explainer",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Why the chip shortage is back",

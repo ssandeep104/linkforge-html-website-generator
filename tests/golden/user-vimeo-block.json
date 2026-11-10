@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "loose-1",
+      "kind": "loose",
+      "signature": "Default Link",
+      "label": "",
+      "count": 1,
+      "fields": {
+        "title": {
+          "strategy": "anchor-aria-label",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "You will Feel Me",
@@ -20,6 +49,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "Default Link",
+      "setId": "loose-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://vimeo.com/videos/you-will-feel-me-6419696",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "You will Feel Me",

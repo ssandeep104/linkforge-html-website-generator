@@ -9,6 +9,35 @@
     "matchedCount": 3,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<li>",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "jsonld-headline",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "jsonld-image",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "The Quiet City: A Year Without Cars",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.example-mag.com/long-reads/the-quiet-city",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "The Quiet City: A Year Without Cars",
@@ -61,6 +99,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.example-mag.com/long-reads/midnight-bakers",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "The Midnight Bakers Who Feed the Morning Shift",
@@ -102,6 +149,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<li>",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.example-mag.com/long-reads/library-as-home",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "When the Library Is Home",

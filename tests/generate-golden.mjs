@@ -25,6 +25,21 @@ export function toGolden(result) {
     hasBase: result.hasBase,
     baseURL: result.baseURL,
     jsonLdMeta: result.jsonLdMeta,
+    // The card sets the items were grouped into, with each field's set-level
+    // verdict (winning source, whether sources compete).
+    cardSets: (result.cardSets || []).map((set) => ({
+      id: set.id,
+      kind: set.kind,
+      signature: set.signature,
+      label: set.label,
+      count: set.count,
+      fields: Object.fromEntries(Object.entries(set.fields).map(([name, f]) => [name, {
+        strategy: f.strategy,
+        ambiguous: f.ambiguous,
+        ambiguousCount: f.ambiguousCount,
+        corrected: f.corrected,
+      }])),
+    })),
     items: (result.items || []).map((it) => ({
       title: it.title,
       href: it.href,
@@ -35,6 +50,9 @@ export function toGolden(result) {
       category: it.category,
       pageSection: it.pageSection,
       pattern: it.pattern,
+      setId: it.setId,
+      ambiguous: it.ambiguous || {},
+      linkCandidates: (it.linkCandidates || []).map((c) => ({ value: c.value, strategy: c.strategy, label: c.label })),
       // Full candidate lists (not just counts) so a value/order drift on a
       // non-winning candidate — e.g. a rule silently returning a slightly
       // wrong URL that never becomes the default winner — actually fails

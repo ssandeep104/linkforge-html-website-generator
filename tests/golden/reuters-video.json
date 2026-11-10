@@ -9,9 +9,38 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"media-story-card\">",
+      "label": "Latest Videos",
+      "count": 4,
+      "fields": {
+        "title": {
+          "strategy": "container-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
-      "title": "Negotiators at ceasefire talks",
+      "title": "Gaza ceasefire talks enter critical phase, mediators say",
       "href": "https://www.reuters.com/world/middle-east/ceasefire-negotiations-latest-update-2026-06-10/",
       "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
       "video": {
@@ -23,7 +52,21 @@
       "category": "video",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.reuters.com/world/middle-east/ceasefire-negotiations-latest-update-2026-06-10/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "Gaza ceasefire talks enter critical phase, mediators say",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
         {
           "value": "2:47",
           "strategy": "anchor-visible-text",
@@ -50,12 +93,22 @@
           "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/XYZABC123DEF.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
     },
     {
-      "title": "Factory workers on assembly line",
+      "title": "U.S. adds 280,000 jobs in May, beating expectations",
       "href": "https://www.reuters.com/business/economy/us-jobs-report-may-2026-analysis-2026-06-10/",
       "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
       "video": {
@@ -67,7 +120,21 @@
       "category": "video",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.reuters.com/business/economy/us-jobs-report-may-2026-analysis-2026-06-10/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "U.S. adds 280,000 jobs in May, beating expectations",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
         {
           "value": "3:15",
           "strategy": "anchor-visible-text",
@@ -94,12 +161,22 @@
           "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/GHIJKL456MNO.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
     },
     {
-      "title": "Power grid control room monitors",
+      "title": "State-sponsored hackers breach European energy infrastructure",
       "href": "https://www.reuters.com/technology/cyber/major-cyberattack-hits-eu-energy-grid-2026-06-10/",
       "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
       "video": {
@@ -111,7 +188,21 @@
       "category": "video",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.reuters.com/technology/cyber/major-cyberattack-hits-eu-energy-grid-2026-06-10/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "State-sponsored hackers breach European energy infrastructure",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
         {
           "value": "4:33",
           "strategy": "anchor-visible-text",
@@ -138,12 +229,22 @@
           "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
           "strategy": "img-data-src",
           "label": "<img data-src>"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/PQRSTU789VWX.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
     },
     {
-      "title": "Tennis player serving on grass court",
+      "title": "Wimbledon 2026 draw: Djokovic and Swiatek headline favorites",
       "href": "https://www.reuters.com/sports/tennis/wimbledon-2026-draw-preview-2026-06-10/",
       "thumbnail": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
       "video": {
@@ -155,7 +256,21 @@
       "category": "video",
       "pageSection": "Latest Videos",
       "pattern": "<a class=\"story-card__media-content\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.reuters.com/sports/tennis/wimbledon-2026-draw-preview-2026-06-10/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
+        {
+          "value": "Wimbledon 2026 draw: Djokovic and Swiatek headline favorites",
+          "strategy": "container-heading",
+          "label": "container <h3>"
+        },
         {
           "value": "1:58",
           "strategy": "anchor-visible-text",
@@ -177,6 +292,16 @@
           "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
+          "strategy": "container-class-img",
+          "label": "container thumb/hero/poster img"
+        },
+        {
+          "value": "https://cloudfront-us-east-2.images.arcpublishing.com/reuters/YZABC012DEF.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []

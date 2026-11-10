@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<shreddit-post>",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-visible-text",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "container-video-poster",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": "container-video",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Amazing drone footage of Yosemite National Park",
@@ -23,11 +52,25 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"post-title\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.reddit.com/r/videos/comments/1abc12/amazing_drone_footage_of_yosemite/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Amazing drone footage of Yosemite National Park",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "Amazing drone footage of Yosemite National Park",
+          "strategy": "container-title-class",
+          "label": "container class=title"
         },
         {
           "value": "Amazing drone footage thumbnail",
@@ -38,11 +81,32 @@
       "thumbCandidates": [
         {
           "value": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
+          "strategy": "container-video-poster",
+          "label": "video poster"
+        },
+        {
+          "value": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
+        {
+          "value": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
           "strategy": "img-src",
           "label": "<img src>"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback",
+          "strategy": "container-video",
+          "label": "container <video>",
+          "info": {
+            "url": "https://v.redd.it/abc123drone/DASH_720.mp4?source=fallback",
+            "poster": "https://preview.redd.it/amazing-drone-yosemite.jpg?width=640&crop=smart&auto=webp&s=abc123",
+            "kind": "inline"
+          }
+        }
+      ]
     },
     {
       "title": "Incredible timelapse of Northern Lights in Norway",
@@ -57,11 +121,25 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"post-title\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.reddit.com/r/videos/comments/2def34/incredible_timelapse_of_northern_lights/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Incredible timelapse of Northern Lights in Norway",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "Incredible timelapse of Northern Lights in Norway",
+          "strategy": "container-title-class",
+          "label": "container class=title"
         },
         {
           "value": "Northern Lights timelapse thumbnail",
@@ -72,11 +150,32 @@
       "thumbCandidates": [
         {
           "value": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
+          "strategy": "container-video-poster",
+          "label": "video poster"
+        },
+        {
+          "value": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
+        {
+          "value": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
           "strategy": "img-src",
           "label": "<img src>"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://v.redd.it/def456lights/DASH_720.mp4?source=fallback",
+          "strategy": "container-video",
+          "label": "container <video>",
+          "info": {
+            "url": "https://v.redd.it/def456lights/DASH_720.mp4?source=fallback",
+            "poster": "https://preview.redd.it/northern-lights.jpg?width=640&crop=smart&auto=webp&s=def456",
+            "kind": "inline"
+          }
+        }
+      ]
     },
     {
       "title": "Dog learns to skateboard in one afternoon",
@@ -91,11 +190,25 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"post-title\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.reddit.com/r/videos/comments/3ghi56/dog_learns_to_skateboard_in_one_afternoon/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Dog learns to skateboard in one afternoon",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "Dog learns to skateboard in one afternoon",
+          "strategy": "container-title-class",
+          "label": "container class=title"
         },
         {
           "value": "Skateboarding dog thumbnail",
@@ -106,11 +219,32 @@
       "thumbCandidates": [
         {
           "value": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
+          "strategy": "container-video-poster",
+          "label": "video poster"
+        },
+        {
+          "value": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
+        },
+        {
+          "value": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
           "strategy": "img-src",
           "label": "<img src>"
         }
       ],
-      "videoCandidates": []
+      "videoCandidates": [
+        {
+          "value": "https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback",
+          "strategy": "container-video",
+          "label": "container <video>",
+          "info": {
+            "url": "https://v.redd.it/ghi789skate/DASH_720.mp4?source=fallback",
+            "poster": "https://preview.redd.it/dog-skate.jpg?width=640&crop=smart&auto=webp&s=ghi789",
+            "kind": "inline"
+          }
+        }
+      ]
     }
   ]
 }

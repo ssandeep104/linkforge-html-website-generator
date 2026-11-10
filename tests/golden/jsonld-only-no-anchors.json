@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 3
   },
+  "cardSets": [
+    {
+      "id": "loose-1",
+      "kind": "loose",
+      "signature": "JSON-LD",
+      "label": "JSON-LD",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "jsonld-headline",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "jsonld-image",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Atlas Mission Launches at Dawn",
@@ -20,6 +49,9 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
+      "setId": "loose-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Atlas Mission Launches at Dawn",
@@ -46,6 +78,9 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
+      "setId": "loose-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Transit Tax Passes by 6-Point Margin",
@@ -72,6 +107,9 @@
       "category": "article",
       "pageSection": "JSON-LD",
       "pattern": "JSON-LD",
+      "setId": "loose-1",
+      "ambiguous": {},
+      "linkCandidates": [],
       "titleCandidates": [
         {
           "value": "Hospital Workers Enter Day Three of Strike",

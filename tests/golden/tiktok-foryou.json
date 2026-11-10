@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"css-wv4eus-DivItemContainerV2\">",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-img-alt",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-data-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "How bees make honey — 3D animation",
@@ -20,6 +49,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000001",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "4.2M",
@@ -61,6 +99,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000002",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "11.7M",
@@ -102,6 +149,15 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<div class=\"css-wv4eus-DivItemContainerV2\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.tiktok.com/@sciencewithmark/video/7380000000000000003",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "8.9M",

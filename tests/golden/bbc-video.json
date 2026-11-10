@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"gs-o-list-ui__item\">",
+      "label": "Most Watched Video",
+      "count": 4,
+      "fields": {
+        "title": {
+          "strategy": "container-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "California wildfires: What started them?",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.bbc.com/news/articles/c9d0gex9q3go",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "California wildfires: What started them?",
@@ -30,6 +68,11 @@
           "value": "Wildfire spreading across hillside",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "Wind-driven blazes force mass evacuations across Los Angeles County.",
+          "strategy": "slot:p.media__summary",
+          "label": "<p class=\"media__summary\">"
         }
       ],
       "thumbCandidates": [
@@ -81,6 +124,15 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.bbc.com/news/articles/cy8n7z2xm9lo",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Astronauts return after eight months on ISS",
@@ -91,6 +143,11 @@
           "value": "Astronauts in orange suits",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "The crew splashed down off the coast of Florida on Tuesday morning.",
+          "strategy": "slot:p.media__summary",
+          "label": "<p class=\"media__summary\">"
         }
       ],
       "thumbCandidates": [
@@ -142,6 +199,15 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.bbc.com/news/articles/cq5xp0r4wkno",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Millions march in global climate rally",
@@ -152,6 +218,11 @@
           "value": "Large crowd at climate protest",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "Demonstrators gathered in over 150 cities to demand urgent climate action.",
+          "strategy": "slot:p.media__summary",
+          "label": "<p class=\"media__summary\">"
         }
       ],
       "thumbCandidates": [
@@ -198,6 +269,15 @@
       "category": "article",
       "pageSection": "Most Watched Video",
       "pattern": "<div class=\"gs-o-list-ui__item faux-block-link__promo\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.bbc.com/news/articles/cm3n8w1vt5po",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "G7 leaders agree on new AI safety framework",
@@ -208,6 +288,11 @@
           "value": "G7 world leaders at summit table",
           "strategy": "anchor-img-alt",
           "label": "image alt"
+        },
+        {
+          "value": "Summit concludes with landmark agreement on artificial intelligence regulation.",
+          "strategy": "slot:p.media__summary",
+          "label": "<p class=\"media__summary\">"
         }
       ],
       "thumbCandidates": [

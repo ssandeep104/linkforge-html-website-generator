@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"styles_vertVideoCardWrapper__ie_iW\">",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "card-title-testid",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "anchor-bg-image",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": "card-contentid",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Rare baby hippo makes appearance at Berlin Zoo",
@@ -23,6 +52,15 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<div class=\"styles_vertVideoCardsTwoByThreeContainer__DOkDK\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.nbcnews.com/now/video/mmvo264919109909",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Rare baby hippo makes appearance at Berlin Zoo",
@@ -40,6 +78,11 @@
           "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/baby_hippo-afw9z1.jpg",
           "strategy": "anchor-bg-image",
           "label": "background-image"
+        },
+        {
+          "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/baby_hippo-afw9z1.jpg",
+          "strategy": "container-bg-image",
+          "label": "container background-image"
         }
       ],
       "videoCandidates": [
@@ -67,6 +110,15 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<div class=\"styles_vertVideoCardsTwoByThreeContainer__DOkDK\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.nbcnews.com/now/video/mmvo264814149890",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Are the UFC fights at the White House unprecedented?",
@@ -84,6 +136,16 @@
           "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/gabe_thumb2-lef1r4.jpg",
           "strategy": "anchor-bg-image",
           "label": "background-image"
+        },
+        {
+          "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/gabe_thumb2-lef1r4.jpg",
+          "strategy": "container-bg-image",
+          "label": "container background-image"
+        },
+        {
+          "value": "https://media-cldnry.s-nbcnews.com/image/upload/rockcms/2026-01/asterisk-43f04b.svg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": [
@@ -111,6 +173,15 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<div class=\"styles_vertVideoCardsTwoByThreeContainer__DOkDK\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.nbcnews.com/now/video/mmvo264912965718",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Russian authorities investigate two car bombings in Moscow",
@@ -128,6 +199,11 @@
           "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/Russia_Thumb_Vert-gzj8sk.jpg",
           "strategy": "anchor-bg-image",
           "label": "background-image"
+        },
+        {
+          "value": "https://media-cldnry.s-nbcnews.com/image/upload/t_fit-360w,f_avif,q_auto:eco,dpr_2/mpx/2704722219/2026_06/Russia_Thumb_Vert-gzj8sk.jpg",
+          "strategy": "container-bg-image",
+          "label": "container background-image"
         }
       ],
       "videoCandidates": [

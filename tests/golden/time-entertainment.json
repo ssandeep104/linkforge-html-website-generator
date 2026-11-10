@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-2",
+      "kind": "repeating",
+      "signature": "<li class=\"3\">",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "container-heading",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "container-picture-source:max-width-1024px:1080w",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
       "pattern": "<article>",
+      "setId": "set-2",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://time.com/article/2026/06/10/every-year-after-finale/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Breaking Down the Dramatic Ending of Romance Series 'Every Year After'",
@@ -30,6 +68,11 @@
           "value": "Justine Yeung—Prime Video",
           "strategy": "container-caption",
           "label": "caption"
+        },
+        {
+          "value": "by Barry Levitt",
+          "strategy": "slot:p",
+          "label": "<p>"
         }
       ],
       "thumbCandidates": [
@@ -81,11 +124,25 @@
       "category": "article",
       "pageSection": "Marjane Satrapi Always Defied Convention",
       "pattern": "<article>",
+      "setId": "set-2",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://time.com/article/2026/06/10/marjane-satrapi-remembrance/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Marjane Satrapi Always Defied Convention",
           "strategy": "container-heading",
           "label": "container <h3>"
+        },
+        {
+          "value": "by Joobin Bekhrad",
+          "strategy": "slot:p",
+          "label": "<p>"
         }
       ],
       "thumbCandidates": [
@@ -137,11 +194,25 @@
       "category": "article",
       "pageSection": "Inside the Surprising Cast of 'Disclosure Day'",
       "pattern": "<article>",
+      "setId": "set-2",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://time.com/article/2026/06/03/disclosure-day-cast-interview/",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Inside the Surprising Cast of 'Disclosure Day'",
           "strategy": "container-heading",
           "label": "container <h3>"
+        },
+        {
+          "value": "by Eliana Dockterman",
+          "strategy": "slot:p",
+          "label": "<p>"
         }
       ],
       "thumbCandidates": [

@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<a class=\"stream-card\">",
+      "label": "",
+      "count": 2,
+      "fields": {
+        "title": {
+          "strategy": "anchor-title-class",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Ranked grind to Diamond! Road to top 500",
@@ -20,6 +49,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<a class=\"stream-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://livecast.example/directory/game/valor-arena/stream1",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Ranked grind to Diamond! Road to top 500",
@@ -30,6 +68,11 @@
           "value": "LIVE 12.4K viewers Ranked grind to Diamond! Road to top 500 NovaPlaysLive",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "NovaPlaysLive",
+          "strategy": "slot:p.channel-name",
+          "label": "<p class=\"channel-name\">"
         }
       ],
       "thumbCandidates": [
@@ -51,6 +94,15 @@
       "category": "article",
       "pageSection": "Other",
       "pattern": "<a class=\"stream-card\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://livecast.example/directory/game/valor-arena/stream2",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "chill sunday coding + chatting",
@@ -61,6 +113,11 @@
           "value": "LIVE 3.1K viewers chill sunday coding + chatting devwithkay",
           "strategy": "anchor-visible-text",
           "label": "anchor text"
+        },
+        {
+          "value": "devwithkay",
+          "strategy": "slot:p.channel-name",
+          "label": "<p class=\"channel-name\">"
         }
       ],
       "thumbCandidates": [

@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<ytd-reel-item-renderer>",
+      "label": "",
+      "count": 4,
+      "fields": {
+        "title": {
+          "strategy": "container-title-class",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Every iPhone Camera — Compared",
@@ -20,11 +49,20 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Every iPhone Camera — Compared",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
+          "strategy": "container-title-class",
+          "label": "container class=title"
         },
         {
           "value": "Every iPhone Camera — Compared",
@@ -37,6 +75,11 @@
           "value": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLAmfZ1fq5xHhMD_syvkMiIgUYDu3Q",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLAmfZ1fq5xHhMD_syvkMiIgUYDu3Q",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -51,11 +94,20 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.youtube.com/watch?v=abc123xyz00",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Galaxy S25 Ultra First Look",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
+          "strategy": "container-title-class",
+          "label": "container class=title"
         },
         {
           "value": "Galaxy S25 Ultra First Look",
@@ -68,6 +120,11 @@
           "value": "https://i.ytimg.com/vi/abc123xyz00/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.ytimg.com/vi/abc123xyz00/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -82,11 +139,20 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.youtube.com/watch?v=xyz999shorts",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Best Budget Laptop 2024",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
+          "strategy": "container-title-class",
+          "label": "container class=title"
         },
         {
           "value": "Best Budget Laptop 2024",
@@ -99,6 +165,11 @@
           "value": "https://i.ytimg.com/vi/xyz999shorts/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue2",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.ytimg.com/vi/xyz999shorts/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue2",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []
@@ -113,11 +184,20 @@
       "category": "video",
       "pageSection": "Other",
       "pattern": "<a class=\"yt-simple-endpoint ytd-reel-item-renderer\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.youtube.com/watch?v=lmnop567890",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Watch This Before Buying AirPods Pro 2",
-          "strategy": "anchor-img-alt",
-          "label": "image alt"
+          "strategy": "container-title-class",
+          "label": "container class=title"
         },
         {
           "value": "Watch This Before Buying AirPods Pro 2",
@@ -130,6 +210,11 @@
           "value": "https://i.ytimg.com/vi/lmnop567890/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue3",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://i.ytimg.com/vi/lmnop567890/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw8IARUAAIhCGAFwAcABBg==&rs=AOn4CLC_testvalue3",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": []

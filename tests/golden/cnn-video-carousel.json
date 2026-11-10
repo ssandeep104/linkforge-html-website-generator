@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"container__item\">",
+      "label": "Video",
+      "count": 4,
+      "fields": {
+        "title": {
+          "strategy": "anchor-title-class",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": null,
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Space debris lights up night sky over Pacific Northwest",
@@ -23,6 +52,15 @@
       "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.cnn.com/videos/us/2026/06/10/space-debris-reentry-orig-dp.cnn",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Space debris lights up night sky over Pacific Northwest",
@@ -67,6 +105,15 @@
       "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.cnn.com/videos/politics/2026/06/10/senate-vote-infrastructure-orig-jm.cnn",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Senate passes sweeping infrastructure package 67-33",
@@ -111,6 +158,15 @@
       "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.cnn.com/videos/weather/2026/06/10/tornado-texas-panhandle-orig-na.cnn",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Massive tornado tears through Texas Panhandle, dozens injured",
@@ -155,6 +211,15 @@
       "category": "video",
       "pageSection": "Video",
       "pattern": "<article class=\"container__item-media\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.cnn.com/videos/tech/2026/06/10/openai-new-model-demo-orig-bk.cnn",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "OpenAI unveils new reasoning model at surprise event",

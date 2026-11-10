@@ -9,6 +9,35 @@
     "matchedCount": 0,
     "orphanCount": 0
   },
+  "cardSets": [
+    {
+      "id": "set-1",
+      "kind": "repeating",
+      "signature": "<div class=\"video-feed__item\">",
+      "label": "",
+      "count": 3,
+      "fields": {
+        "title": {
+          "strategy": "anchor-aria-label",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "thumb": {
+          "strategy": "img-src",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        },
+        "video": {
+          "strategy": "data-attr-video-url",
+          "ambiguous": false,
+          "ambiguousCount": 0,
+          "corrected": 0
+        }
+      }
+    }
+  ],
   "items": [
     {
       "title": "Fed Holds Rates Steady as Inflation Data Cools",
@@ -23,6 +52,15 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<button class=\"video-card__trigger\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.bloomberg.com/news/videos/2026-06-10/fed-rate-decision-analysis",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Fed Holds Rates Steady as Inflation Data Cools",
@@ -45,6 +83,11 @@
           "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/fed-rates-analysis/v1/640x360.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": [
@@ -73,6 +116,15 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<button class=\"video-card__trigger\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.bloomberg.com/news/videos/2026-06-10/tech-earnings-preview",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "Big Tech Earnings: What to Expect This Week",
@@ -95,6 +147,11 @@
           "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/tech-earnings/v1/640x360.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": [
@@ -123,6 +180,15 @@
       "category": "video",
       "pageSection": "Videos",
       "pattern": "<button class=\"video-card__trigger\">",
+      "setId": "set-1",
+      "ambiguous": {},
+      "linkCandidates": [
+        {
+          "value": "https://www.bloomberg.com/news/videos/2026-06-10/oil-markets-opec-decision",
+          "strategy": "card-link:primary",
+          "label": "main link"
+        }
+      ],
       "titleCandidates": [
         {
           "value": "OPEC+ Cuts Output Again: Oil Prices React",
@@ -145,6 +211,11 @@
           "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
           "strategy": "img-src",
           "label": "<img src>"
+        },
+        {
+          "value": "https://assets.bwbx.io/images/users/iqjWHBFdfxIU/opec-decision/v1/640x360.jpg",
+          "strategy": "container-any-img",
+          "label": "any container <img>"
         }
       ],
       "videoCandidates": [
