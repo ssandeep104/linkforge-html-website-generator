@@ -356,6 +356,8 @@ function resolveSetFields(items, { isBadTitle = () => false } = {}) {
   const repeatedTitles = uniformValues(items, 'titleCandidates');
   let titleFixed = 0;
   let titleAmbiguous = 0;
+  const titleRivals = new Map(); // strategy -> cards where it competes
+  const bump = (map, key) => map.set(key, (map.get(key) || 0) + 1);
   for (const it of items) {
     const cands = it.titleCandidates || [];
     const usable = (c) => !repeatedTitles.has(c.value) && !isBadTitle(c.value);
@@ -366,8 +368,9 @@ function resolveSetFields(items, { isBadTitle = () => false } = {}) {
     // The chosen text is as trustworthy as its best source: a heading that the
     // link text merely repeats is still a heading.
     const tier = cands.reduce((t, c) => (c.value === it.title ? Math.max(t, titleTier(c.strategy)) : t), 1);
-    const rival = cands.find((c) => usable(c) && titleTier(c.strategy) >= tier && !sameTitle(c.value, it.title));
-    if (rival) { it.ambiguous.title = true; titleAmbiguous++; }
+    const rivals = cands.filter((c) => usable(c) && titleTier(c.strategy) >= tier && !sameTitle(c.value, it.title));
+    if (rivals.length) { it.ambiguous.title = true; titleAmbiguous++; }
+    for (const s of new Set(rivals.map((c) => c.strategy))) bump(titleRivals, s);
   }
   const titleSummary = summarizeOptions(items, 'titleCandidates', items.map((it) => strategyOfValue(it.titleCandidates, it.title)), repeatedTitles);
 
@@ -375,6 +378,7 @@ function resolveSetFields(items, { isBadTitle = () => false } = {}) {
   const repeatedThumbs = uniformValues(items, 'thumbCandidates');
   let thumbFixed = 0;
   let thumbAmbiguous = 0;
+  const thumbRivals = new Map();
   for (const it of items) {
     const cands = it.thumbCandidates || [];
     if (it.thumbnail && repeatedThumbs.has(it.thumbnail)) {
@@ -385,31 +389,42 @@ function resolveSetFields(items, { isBadTitle = () => false } = {}) {
     // attributes of one <img> are the same picture. The parser tags each
     // separate image element in a card as card-image:N.
     const pictures = cands.filter((c) => /^card-image:\d+$/.test(c.strategy) && !repeatedThumbs.has(c.value));
-    if (pictures.length >= 2) { it.ambiguous.thumb = true; thumbAmbiguous++; }
+    if (pictures.length >= 2) {
+      it.ambiguous.thumb = true;
+      thumbAmbiguous++;
+      for (const c of pictures) bump(thumbRivals, c.strategy);
+    }
   }
   const thumbSummary = summarizeOptions(items, 'thumbCandidates', items.map((it) => strategyOfValue(it.thumbCandidates, it.thumbnail)), repeatedThumbs);
 
   // ---- video preview ----
   let videoAmbiguous = 0;
+  const videoRivals = new Map();
   for (const it of items) {
     const values = new Set((it.videoCandidates || []).map((c) => c.value));
-    if (values.size >= 2) { it.ambiguous.video = true; videoAmbiguous++; }
+    if (values.size >= 2) {
+      it.ambiguous.video = true;
+      videoAmbiguous++;
+      for (const s of new Set(it.videoCandidates.map((c) => c.strategy))) bump(videoRivals, s);
+    }
   }
   const videoOf = (it) => it.video && (it.video.src || it.video.url);
   const videoSummary = summarizeOptions(items, 'videoCandidates', items.map((it) => strategyOfValue(it.videoCandidates, videoOf(it))), new Set());
 
-  const field = (summary, ambiguousCount, fixed, what) => ({
+  const top = (map) => [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 4).map(([s]) => s);
+  const field = (summary, ambiguousCount, fixed, what, rivals) => ({
     strategy: summary.chosen,
     ambiguous: needs(ambiguousCount),
     ambiguousCount,
+    rivals: top(rivals), // the sources that compete with the pick, most frequent first
     corrected: fixed,
     note: fixed ? `${fixed} ${what} repeated across cards and ${fixed === 1 ? 'was' : 'were'} replaced` : '',
     options: summary.options,
   });
   return {
-    title: field(titleSummary, titleAmbiguous, titleFixed, titleFixed === 1 ? 'title' : 'titles'),
-    thumb: field(thumbSummary, thumbAmbiguous, thumbFixed, thumbFixed === 1 ? 'image' : 'images'),
-    video: field(videoSummary, videoAmbiguous, 0, ''),
+    title: field(titleSummary, titleAmbiguous, titleFixed, titleFixed === 1 ? 'title' : 'titles', titleRivals),
+    thumb: field(thumbSummary, thumbAmbiguous, thumbFixed, thumbFixed === 1 ? 'image' : 'images', thumbRivals),
+    video: field(videoSummary, videoAmbiguous, 0, '', videoRivals),
   };
 }
 

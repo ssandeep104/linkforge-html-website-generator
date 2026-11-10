@@ -77,11 +77,8 @@ test('sample content completes the review and generation flow', async () => {
   try {
     await loadSampleAndReview(page);
     assert.ok(await page.locator('.template-card').count() > 0, 'review should offer templates');
-    const extraction = page.locator('#extraction-advanced');
-    assert.equal(await extraction.getAttribute('open'), null, 'advanced extraction should start collapsed');
-    assert.equal(await page.locator('#source-strategy').isVisible(), false);
-    await extraction.locator('summary').click();
-    assert.equal(await page.locator('#source-strategy').isVisible(), true);
+    assert.ok(await page.locator('#categories .set-panel').count() > 0, 'review groups cards into sets');
+    assert.equal(await page.locator('.detect-summary').isVisible(), true);
 
     await page.locator('#btn-generate').click();
     await page.locator('#step-output.screen--active').waitFor();
@@ -415,6 +412,45 @@ test('video cards stay videos through the review step', async () => {
     // the path that used to strip the video semantics.
     await page.locator('[data-reset-review-source]').click();
     assert.deepEqual(await kinds(), ['video', 'video', 'video']);
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
+// Card sets: a set whose cards offer two competing titles asks the user once,
+// the answer applies to the whole set, and one card can still be edited alone.
+test('an ambiguous title is asked once per set and a single card can be overridden', async () => {
+  const { page, pageErrors } = await openApp();
+  try {
+    const html = await import('node:fs').then((fs) => fs.readFileSync('tests/fixtures/medium-article-cards.html', 'utf8'));
+    await page.locator('.source-card textarea').first().fill(html);
+    await page.locator('#btn-parse').click();
+    await page.locator('#step-review.screen--active').waitFor();
+
+    const titles = () => page.evaluate(() => __lfState.items.map((it) => it.title));
+    const before = await titles();
+    assert.equal(await page.locator('#categories .set-panel').count(), 1);
+    assert.match(await page.locator('[data-next-question]').innerText(), /1 choice to check/);
+
+    await page.locator('.set-ask[data-ask-field="title"] [data-ask-pick]').first().click();
+    const after = await titles();
+    assert.equal(after.length, before.length);
+    assert.ok(after.every((t, i) => t && t !== before[i]), 'the pick changes every card in the set');
+    assert.equal(await page.locator('.set-ask').count(), 0, 'an answered question is not asked again');
+    assert.equal(await page.locator('[data-next-question]').count(), 0);
+
+    await page.locator('[data-edit-card]').first().click();
+    const custom = page.locator('#card-editor [data-custom-title]');
+    await custom.fill('A title of my own');
+    await custom.press('Enter');
+    await page.locator('#card-editor .card-editor__foot [data-editor-close]').click();
+    const edited = await titles();
+    assert.equal(edited[0], 'A title of my own');
+    assert.deepEqual(edited.slice(1), after.slice(1), 'other cards keep the set choice');
+
+    await page.locator('[data-reset-review-source]').click();
+    assert.deepEqual(await titles(), before, 'reset returns to the detected defaults');
     assert.deepEqual(pageErrors, []);
   } finally {
     await page.close();

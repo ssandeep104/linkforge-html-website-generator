@@ -175,7 +175,7 @@
             </div>
             <div class="how-item-compact">
               <strong>§02 — Review</strong>
-              <p>Choose from four responsive layout templates. Untick links you don't want, customize names, titles, and media selections.</p>
+              <p>Linkforge finds the repeating cards on the page and pairs each one's title, thumbnail, and video preview. Confirm anything it flags, untick what you don't want, and choose a layout.</p>
             </div>
             <div class="how-item-compact">
               <strong>§03 — Ship</strong>
@@ -245,7 +245,7 @@
           <p class="eyebrow">SHEET 02 — SELECTION &amp; LAYOUT</p>
           <h2 class="page-title" id="review-collection-heading" contenteditable="true" role="textbox" aria-label="Collection title" spellcheck="true">My Collection</h2>
           <p class="muted">
-            Choose a layout, then untick anything you don’t want in the export.
+            Linkforge grouped the page into card sets. Confirm the flagged fields, untick what you don’t want, and pick a layout.
           </p>
         </div>
         <div class="review-head__meta" data-review-meta></div>
@@ -289,7 +289,7 @@
       <section id="review-source-stepper" class="source-stepper" hidden></section>
 
       <div class="review-list-head">
-        <strong>Extracted links and media</strong>
+        <strong>Detected cards</strong>
         <span data-active-source-name></span>
       </div>
 
@@ -304,23 +304,13 @@
           <button class="btn btn--ghost btn--sm" type="button" data-bulk="all">Select all</button>
           <button class="btn btn--ghost btn--sm" type="button" data-bulk="none">Deselect all</button>
           <span class="bulk-actions__sep" aria-hidden="true"></span>
-          <button class="btn btn--ghost btn--sm btn--danger" type="button" data-reset-review-source title="Re-select every link in this source and undo its field overrides">Reset source</button>
-          <button class="btn btn--ghost btn--sm btn--danger" type="button" data-reset-review-all title="Re-select every link in every source and undo all field overrides">Reset all</button>
+          <button class="btn btn--ghost btn--sm btn--danger" type="button" data-reset-review-source title="Re-select every card in this source and undo its field choices">Reset source</button>
+          <button class="btn btn--ghost btn--sm btn--danger" type="button" data-reset-review-all title="Re-select every card in every source and undo all field choices">Reset all</button>
         </div>
       </nav>
 
       <div id="categories" class="categories"></div>
 
-      <details id="extraction-advanced" class="extraction-advanced" hidden>
-        <summary>
-          <span>
-            <strong>Advanced extraction</strong>
-            <small>Change how Linkforge chooses titles, images, and video previews</small>
-          </span>
-          <span class="extraction-advanced__action" aria-hidden="true">Tune fields</span>
-        </summary>
-        <section id="source-strategy" class="strategy-picker" hidden></section>
-      </details>
         </div>
 
         <aside class="review-preview" aria-label="Live site preview">
@@ -360,7 +350,7 @@
       </div>
 
       <div class="review-foot">
-        <div class="review-foot__summary" data-review-selection-summary>0 links selected</div>
+        <div class="review-foot__summary" data-review-selection-summary>0 cards selected</div>
         <button class="btn btn--ghost" type="button" data-back-to-input>
           Back
         </button>
@@ -452,6 +442,9 @@
         ></iframe>
       </div>
     </main>
+
+    <!-- Per-card editor: every title / image / video / link the card offers -->
+    <dialog id="card-editor" class="card-editor" aria-labelledby="card-editor-title"></dialog>
 
     <!-- Toasts -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

@@ -196,7 +196,9 @@ function resetSource(id) {
   src.overrideBase = null;
   src.unresolvedCount = 0;
   src.domainValidationState = 'idle';
-  src.strategyByPattern = {};
+  src.cardSets = [];
+  src.setChoices = {};
+  src.cardEdits = {};
   src.detectedBase = null;
   src.emptyAfterParse = false;
   syncSourceHtml(src);
@@ -339,6 +341,11 @@ function runParse(src, card) {
   // time would otherwise be stale or empty).
   for (const it of meta.items) it.sourceId = src.id;
   src.items = meta.items;
+  src.cardSets = meta.cardSets || [];
+  // A fresh parse is a fresh set of cards: earlier choices point at set ids
+  // and item ids that no longer exist.
+  src.setChoices = {};
+  src.cardEdits = {};
   src.unresolvedCount = meta.unresolvedCount;
   src.detectedBase = meta.baseURL;
 
@@ -366,7 +373,7 @@ function runParse(src, card) {
   // "Empty source" — we got non-empty HTML but zero items. Likely a JS-rendered
   // page or a snippet that needs different selectors. Track so we can show a hint.
   src.emptyAfterParse = !!(src.html.trim() && meta.items.length === 0 && meta.unresolvedCount === 0);
-  updateStats(card, meta.items, meta.jsonLdMeta);
+  updateStats(card, meta.items, meta.jsonLdMeta, src.cardSets);
   renderBanner(src, card);
   updateCounts();
 }
@@ -478,7 +485,7 @@ async function probeHost(origin) {
   }
 }
 
-function updateStats(card, items, jsonLdMeta) {
+function updateStats(card, items, jsonLdMeta, cardSets = []) {
   const stats = card.querySelector('.source-card__stats');
   const nonVideo = items.filter((i) => i.category === 'link' || i.category === 'article').length;
   const images = items.filter((i) => i.thumbnail).length;
@@ -493,7 +500,13 @@ function updateStats(card, items, jsonLdMeta) {
     const title = `${jsonLdMeta.scriptCount} <script type="application/ld+json"> block${jsonLdMeta.scriptCount === 1 ? '' : 's'} parsed · ${jsonLdMeta.matchedCount} matched to anchors · ${jsonLdMeta.orphanCount} orphan${jsonLdMeta.orphanCount === 1 ? '' : 's'}`;
     jsonLdBadge = `<span class="source-card__schema-badge" title="${escapeAttr(title)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>${escapeText(label)}</span>`;
   }
+  const repeating = cardSets.filter((s) => s.kind === 'repeating');
+  const inSets = repeating.reduce((sum, s) => sum + s.count, 0);
+  const setsStat = repeating.length
+    ? `<span title="Repeating layouts found on the page"><strong>${repeating.length}</strong> card set${repeating.length === 1 ? '' : 's'} (${inSets} card${inSets === 1 ? '' : 's'})</span>`
+    : '';
   stats.innerHTML = `
+    ${setsStat}
     <span><strong>${nonVideo}</strong> items</span>
     <span><strong>${images}</strong> with image</span>
     <span><strong>${videos}</strong> videos</span>
@@ -574,7 +587,7 @@ function updateReviewSelectionSummary() {
   const filter = reviewState.filter || 'all';
   // Noun follows the active filter: "images"/"videos"/"links", or the neutral
   // "links" when viewing everything.
-  const noun = filter === 'image' ? 'image' : filter === 'video' ? 'video' : 'link';
+  const noun = filter === 'image' ? 'image' : filter === 'video' ? 'video' : filter === 'link' ? 'link' : 'card';
   const plural = scoped.length === 1 ? '' : 's';
   summary.textContent = `${selected} of ${scoped.length} ${noun}${plural} selected`;
 }
@@ -592,6 +605,10 @@ function applyReviewItemFilter() {
   $$('.group-panel', $('#categories')).forEach((panel) => {
     panel.hidden = !panel.querySelector('.item-row:not([hidden])');
   });
+  // The summary speaks for the whole source; hide it while a filter narrows
+  // the list so its counts never contradict what is on screen.
+  const summary = $('.detect-summary', $('#categories'));
+  if (summary) summary.hidden = filter !== 'all';
 }
 
 function getReviewableSources() {
@@ -700,7 +717,7 @@ function renderReviewSourceStepper() {
     <div class="source-stepper__meta">
       <span class="source-stepper__kicker">Reviewing source ${activeIdx + 1} of ${reviewable.length}</span>
       <strong class="source-stepper__name">${escapeText(activeName)}</strong>
-      <span class="source-stepper__count">${selectedCount} / ${totalCount} links selected</span>
+      <span class="source-stepper__count">${selectedCount} / ${totalCount} cards selected</span>
     </div>
     <div class="source-stepper__actions">
       <button type="button" class="btn btn--ghost btn--sm" data-stepper="prev" ${activeIdx === 0 ? 'disabled' : ''}>Previous source</button>
@@ -750,7 +767,7 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
     for (const it of state.items || []) prevEnabled.set(keyOf(it), it.enabled);
   }
   for (const src of state.sources) {
-    applySourceStrategy(src);
+    applyCardChoices(src);
   }
   // Dedup by canonical destination, with a "richest-wins" tie-break so the card
   // that has both title + thumbnail beats a thinner duplicate of the same URL.
@@ -766,7 +783,7 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
   const byHref = new Map(); // canonicalKey -> { item, srcIdx, itemIdx }
   state.sources.forEach((src, srcIdx) => {
     (src.items || []).forEach((it, itemIdx) => {
-      if (it._excludedByPattern) return;
+      if (it._excludedBySet) return;
       const key = keyOf(it);
       const existing = byHref.get(key);
       if (!existing || richness(it) > richness(existing.item)) {
@@ -778,7 +795,7 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
   const all = [];
   for (const src of state.sources) {
     for (const it of src.items || []) {
-      if (it._excludedByPattern) continue;
+      if (it._excludedBySet) continue;
       const key = keyOf(it);
       const winner = byHref.get(key);
       if (!winner || winner.item !== it) continue;
@@ -789,14 +806,14 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
   state.items = all;
 }
 
-// Reset the ACTIVE review source: undo its per-field strategy overrides (back
-// to Linkforge's default title/image/video picks) and re-select every one of
-// its links. Other sources are left untouched.
+// Reset the ACTIVE review source: undo its set-level field choices and
+// per-card edits (back to Linkforge's own picks) and re-select every one of
+// its cards. Other sources are left untouched.
 function resetReviewSource() {
   const src = getActiveReviewSource();
   if (!src) return;
-  src.strategyByPattern = {};
-  seedDefaultStrategies(src);
+  src.setChoices = {};
+  src.cardEdits = {};
   flattenSourcesIntoItems({ resetEnabled: false });
   for (const it of state.items) {
     if (it.sourceId === src.id) it.enabled = true;
@@ -805,48 +822,78 @@ function resetReviewSource() {
   showToast('Source reset to defaults');
 }
 
-// Reset EVERY review source: undo all per-field overrides and re-select every
-// link across all sources.
+// Reset EVERY review source: undo all choices and edits and re-select every
+// card across all sources.
 function resetReviewAll() {
   for (const src of state.sources) {
-    src.strategyByPattern = {};
-    seedDefaultStrategies(src);
+    src.setChoices = {};
+    src.cardEdits = {};
   }
   flattenSourcesIntoItems({ resetEnabled: true });
   renderReview();
   showToast('All sources reset to defaults');
 }
 
-// ---------- candidate-picker support ----------
-// Each source stores src.strategy = {title, thumb, video} with the user's
-// chosen extractor name. Applying it walks the source's items and updates
-// item.title/thumbnail/video from the saved candidate lists. No re-parse needed.
-function applySourceStrategy(src) {
-  src.strategyByPattern = src.strategyByPattern || {};
+// ---------- card choices ----------
+// The parser hands back cards already resolved (item.title / thumbnail /
+// video) plus every alternative it saw. The user can overrule it at two
+// levels, both stored on the source and replayed here without re-parsing:
+//
+//   src.setChoices[setId]  = { title, thumb, video, reviewed: {field: true} }
+//       "for every card in this set, read the title from <h3 class=deck>".
+//       Values are candidate strategy keys; NONE turns a field off. A card
+//       that does not offer the chosen source keeps the parser's own pick.
+//
+//   src.cardEdits[itemId]  = { title, thumbnail, video, href }
+//       one card's own value, which wins over the set choice.
+const NONE = '__none__';
+const FIELD_CANDIDATES = { title: 'titleCandidates', thumb: 'thumbCandidates', video: 'videoCandidates' };
+const FIELD_LABEL = { title: 'Title', thumb: 'Image', video: 'Video preview' };
+
+function normalizeVideo(info) {
+  if (!info) return null;
+  const src = info.src || info.url;
+  return src ? { src, poster: info.poster || null } : null;
+}
+
+function applyCardChoices(src) {
+  src.setChoices = src.setChoices || {};
+  src.cardEdits = src.cardEdits || {};
   for (const it of src.items || []) {
-    const strat = src.strategyByPattern[it.pattern] || {};
-    it._excludedByPattern = !!strat.exclude;
-    if (it._excludedByPattern) continue;
-    if (strat.title) {
-      const pick = it.titleCandidates?.find((c) => c.strategy === strat.title);
-      // A partial strategy is deliberately allowed by the picker. Items that
-      // do not offer it must be empty, matching the option-group warning,
-      // rather than silently retaining a stale value from the last strategy.
-      it.title = pick ? pick.value : '';
+    if (!it._parsed) {
+      it._parsed = { title: it.title, thumbnail: it.thumbnail, video: it.video || null, href: it.href };
     }
-    if (strat.thumb) {
-      const pick = it.thumbCandidates?.find((c) => c.strategy === strat.thumb);
-      it.thumbnail = pick ? pick.value : null;
+    const base = it._parsed;
+    const choice = src.setChoices[it.setId] || {};
+    const edit = src.cardEdits[it.id] || {};
+    const pick = (field, strategy) => (it[FIELD_CANDIDATES[field]] || []).find((c) => c.strategy === strategy);
+
+    let title = base.title;
+    if (choice.title) title = pick('title', choice.title)?.value ?? base.title;
+    if (typeof edit.title === 'string') title = edit.title;
+
+    let thumbnail = base.thumbnail;
+    if (choice.thumb === NONE) thumbnail = null;
+    else if (choice.thumb) thumbnail = pick('thumb', choice.thumb)?.value ?? base.thumbnail;
+    if ('thumbnail' in edit) thumbnail = edit.thumbnail;
+
+    // A parsed video whose src is the card's own destination says what the
+    // card IS (a video page: Bloomberg/NBC/duration-chip cards), not an
+    // optional inline preview, so turning the preview off keeps it.
+    const destinationVideo = base.video && base.video.src === base.href ? base.video : null;
+    let video = base.video;
+    if (choice.video === NONE) video = destinationVideo;
+    else if (choice.video) {
+      const c = pick('video', choice.video);
+      video = c ? normalizeVideo(c.info || { url: c.value }) : base.video;
     }
-    // A parsed video whose src is the item's own destination says what the
-    // item IS (a video page: Bloomberg/NBC/duration-chip cards), not an
-    // optional inline preview, so the default "no preview" choice keeps it.
-    if (it._parsedVideo === undefined) it._parsedVideo = it.video || null;
-    if (strat.video) {
-      const pick = it.videoCandidates?.find((c) => c.strategy === strat.video);
-      const destinationVideo = it._parsedVideo && it._parsedVideo.src === it.href ? it._parsedVideo : null;
-      it.video = pick ? (pick.info || { url: pick.value }) : destinationVideo;
-    }
+    if ('video' in edit) video = edit.video || destinationVideo;
+
+    it.href = edit.href || base.href;
+    it.domain = domainOf(it.href) || it.domain;
+    it.title = title;
+    it.thumbnail = thumbnail;
+    it.video = video;
     refreshItemCategory(it);
   }
 }
@@ -858,7 +905,7 @@ const STRATEGY_VIDEO_HOSTS = [
 
 function refreshItemCategory(item) {
   // Preserve the parser's gallery distinction while still allowing a chosen
-  // video strategy to promote the item (and a cleared image to demote it).
+  // video to promote the item (and a cleared image to demote it).
   item._strategyBaseCategory ||= item.category;
   let hrefIsVideo = /\.(mp4|webm|ogg|mov)(\?|$)/i.test(item.href || '');
   try {
@@ -873,266 +920,47 @@ function refreshItemCategory(item) {
       : 'link';
 }
 
-// Build the per-source picker option list as a UNION across every item in
-// the source. Each strategy key collapses to one option, but we now track
-// how many distinct items it matched, plus whether values vary across items
-// (so the dropdown label can show "varies" instead of one specific URL,
-// which would otherwise make the option look tied to a single href).
-function buildPickerOptionsForGroup(items, field) {
-  const candKey = field === 'title' ? 'titleCandidates'
-    : field === 'thumb' ? 'thumbCandidates'
-    : 'videoCandidates';
-  const totalItems = (items || []).length;
-  const byStrategy = new Map();
-  for (const it of items || []) {
-    const seenForItem = new Set();
-    for (const c of it[candKey] || []) {
-      if (!byStrategy.has(c.strategy)) {
-        byStrategy.set(c.strategy, {
-          strategy: c.strategy,
-          label: c.label,
-          sample: c.value,
-          count: 0,
-          values: new Set(),
-        });
-      }
-      const slot = byStrategy.get(c.strategy);
-      // count items not raw candidate hits — a single item could contribute
-      // the same strategy twice (e.g. two data-* attrs with identical key).
-      if (!seenForItem.has(c.strategy)) {
-        slot.count++;
-        seenForItem.add(c.strategy);
-      }
-      slot.values.add(c.value);
+function sourceOfItem(item) {
+  return state.sources.find((s) => s.id === item.sourceId) || null;
+}
+
+function setChoiceOf(src, setId) {
+  src.setChoices = src.setChoices || {};
+  if (!src.setChoices[setId]) src.setChoices[setId] = { reviewed: {} };
+  src.setChoices[setId].reviewed ||= {};
+  return src.setChoices[setId];
+}
+
+// Is this set's field still waiting on the user? True while the parser found
+// competing sources and the user has neither picked one nor confirmed ours.
+function fieldNeedsReview(src, set, field) {
+  if (!set.fields?.[field]?.ambiguous) return false;
+  const choice = src.setChoices?.[set.id];
+  return !(choice?.reviewed?.[field] || choice?.[field]);
+}
+
+function openQuestions(src) {
+  const out = [];
+  for (const set of src?.cardSets || []) {
+    if (!state.items.some((it) => it.sourceId === src.id && it.setId === set.id)) continue;
+    for (const field of ['title', 'thumb', 'video']) {
+      if (fieldNeedsReview(src, set, field)) out.push({ set, field });
     }
   }
-  // Sort: umbrella `:any` and broader (high-count) options bubble up; ties broken
-  // by label so the dropdown is stable. Detailed descriptor options drop below.
-  const out = Array.from(byStrategy.values()).map((o) => ({
-    strategy: o.strategy,
-    label: o.label,
-    sample: o.sample,
-    count: o.count,
-    totalItems,
-    varies: o.values.size > 1,
-    coverage: o.count / Math.max(1, totalItems),
-    isUmbrella: /(?::any\b|:any$)/.test(o.strategy),
-  }));
-  out.sort((a, b) => {
-    // Umbrella first when coverage is comparable, otherwise highest coverage wins
-    if (b.coverage !== a.coverage) return b.coverage - a.coverage;
-    if (a.isUmbrella !== b.isUmbrella) return a.isUmbrella ? -1 : 1;
-    return a.label.localeCompare(b.label);
-  });
   return out;
 }
 
-// Initialize src.strategy from the parser's default winner (first candidate).
-// This makes the dropdown show the right value on first render.
-function seedDefaultStrategies(src) {
-  if (!src) return;
-  src.strategyByPattern = src.strategyByPattern || {};
+function chooseSetField(src, setId, field, strategy) {
+  const choice = setChoiceOf(src, setId);
+  if (strategy) choice[field] = strategy;
+  else delete choice[field];
+  choice.reviewed[field] = true;
+  // A set-wide choice replaces one-off edits of the same field in that set,
+  // otherwise the cards the user already touched would silently ignore it.
+  const editKey = field === 'thumb' ? 'thumbnail' : field;
   for (const it of src.items || []) {
-    if (!it.pattern) continue;
-    if (!src.strategyByPattern[it.pattern]) {
-      src.strategyByPattern[it.pattern] = {};
-    }
-    const strat = src.strategyByPattern[it.pattern];
-
-    if (typeof strat.exclude !== 'boolean') {
-      strat.exclude = false;
-    }
-
-    if (!strat.title && it.titleCandidates?.length) {
-      // pick the strategy whose value equals the current it.title, else first
-      const match = it.titleCandidates.find((c) => c.value === it.title);
-      strat.title = (match || it.titleCandidates[0]).strategy;
-    }
-    if (!strat.thumb && it.thumbCandidates?.length) {
-      const match = it.thumbCandidates.find((c) => c.value === it.thumbnail);
-      strat.thumb = (match || it.thumbCandidates[0]).strategy;
-    }
-    if (!strat.video) {
-      strat.video = '__none__';
-    }
+    if (it.setId === setId && src.cardEdits?.[it.id]) delete src.cardEdits[it.id][editKey];
   }
-}
-
-function renderSourceStrategyPicker() {
-  const root = $('#source-strategy');
-  if (!root) return;
-  const disclosure = $('#extraction-advanced');
-  const src = getActiveReviewSource();
-  if (!src) {
-    root.hidden = true;
-    if (disclosure) disclosure.hidden = true;
-    root.innerHTML = '';
-    return;
-  }
-  // Always show the picker for every source that has any items — user wants
-  // to pick title and image for everything, even when there's no ambiguity.
-  // The defaults are the parser's best guess; the dropdown lets the user
-  // confirm or override.
-  const rows = [];
-  seedDefaultStrategies(src);
-  const groups = new Map();
-  for (const it of src.items || []) {
-    const pattern = it.pattern || 'Other';
-    if (!groups.has(pattern)) groups.set(pattern, []);
-    groups.get(pattern).push(it);
-  }
-
-  for (const [pattern, items] of groups.entries()) {
-    const titleOpts = buildPickerOptionsForGroup(items, 'title');
-    const thumbOpts = buildPickerOptionsForGroup(items, 'thumb');
-    const videoOpts = buildPickerOptionsForGroup(items, 'video');
-    const showTitle = titleOpts.length >= 1;
-    const showThumb = thumbOpts.length >= 1;
-    const showVideo = videoOpts.length >= 1;
-    if (!showTitle && !showThumb && !showVideo) continue;
-
-    const currentStrategy = src.strategyByPattern[pattern] || {};
-    rows.push({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy });
-  }
-  if (rows.length === 0) {
-    root.hidden = true;
-    if (disclosure) disclosure.hidden = true;
-    root.innerHTML = '';
-    return;
-  }
-  const srcIdx = state.sources.findIndex((s) => s.id === src.id);
-  if (disclosure) disclosure.hidden = false;
-  root.hidden = false;
-  root.innerHTML = `
-    <div class="strategy-picker__head">
-      <h3>${escapeText(displayName(src, srcIdx))}</h3>
-      <p class="muted">Override Linkforge’s best guesses for this source.</p>
-    </div>
-    <div class="strategy-picker__list">
-      ${rows.map(({ src, pattern, items, titleOpts, thumbOpts, videoOpts, showTitle, showThumb, showVideo, currentStrategy }) => `
-        <div class="strategy-row ${currentStrategy.exclude ? 'strategy-row--excluded' : ''}" data-src-id="${escapeAttr(src.id)}">
-          <div class="strategy-row__header">
-            <div class="strategy-row__header-left">
-              <span class="strategy-row__name">${escapeText(src.name || 'Untitled source')}</span>
-              <span class="strategy-row__count muted">${items.length} link${items.length === 1 ? '' : 's'} matching <code class="strategy-row__pattern" title="${escapeAttr(pattern)}">${escapeText(pattern)}</code></span>
-            </div>
-            <div class="strategy-row__header-right">
-              <label class="strategy-row__toggle">
-                <input type="checkbox" data-strategy-include data-src-id="${escapeAttr(src.id)}" data-pattern="${escapeAttr(pattern)}" ${currentStrategy.exclude ? '' : 'checked'} />
-                <span>Include this tag group</span>
-              </label>
-            </div>
-          </div>
-          <div class="strategy-row__workspace" ${currentStrategy.exclude ? 'aria-disabled="true"' : ''}>
-            <div class="strategy-row__fields">
-              ${showTitle ? renderStrategySelect('title', src, titleOpts, currentStrategy.title, pattern) : ''}
-              ${showThumb ? renderStrategySelect('thumb', src, thumbOpts, currentStrategy.thumb, pattern, { allowNone: true }) : ''}
-              ${showVideo ? renderStrategySelect('video', src, videoOpts, currentStrategy.video, pattern, { allowNone: true, optional: true }) : ''}
-            </div>
-            <div class="strategy-row__previews" ${currentStrategy.exclude ? 'style="display:none;"' : ''}>
-              ${items.map(it => {
-                const hasThumb = !!it.thumbnail;
-                const thumbUrl = hasThumb ? it.thumbnail : '';
-                return `
-                  <div class="strategy-preview-card">
-                    <div class="strategy-preview-card__media">
-                      ${hasThumb 
-                        ? `<img src="${escapeAttr(thumbUrl)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'strategy-preview-card__no-img', textContent: 'Err'}))" />`
-                        : `<div class="strategy-preview-card__no-img"><span>No img</span></div>`
-                      }
-                    </div>
-                    <div class="strategy-preview-card__info">
-                      <p class="strategy-preview-card__title" title="${escapeAttr(it.title || '')}">${escapeText(it.title || 'Untitled')}</p>
-                      <span class="strategy-preview-card__url" title="${escapeAttr(it.href || '')}">${escapeText(it.domain || '')}</span>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-  // bind change handlers
-  root.querySelectorAll('select[data-strategy-field]').forEach((sel) => {
-    sel.addEventListener('change', onStrategyChange);
-  });
-  root.querySelectorAll('input[data-strategy-include]').forEach((checkbox) => {
-    checkbox.addEventListener('change', onStrategyIncludeToggle);
-  });
-}
-
-function renderStrategySelect(field, src, options, currentStrategyVal, pattern, opts = {}) {
-  const { allowNone = false, optional = false } = opts;
-  const labelText = field === 'title' ? 'Title' : field === 'thumb' ? 'Image' : 'Video preview';
-  const current = currentStrategyVal || (options[0]?.strategy) || '__none__';
-  // Group options into two buckets so the dropdown stays scannable when many
-  // strategy keys exist across mixed categories of links:
-  //   - Universal: option covers every item in the source ("all N"). Picking
-  //     it works for every link without leaving any card blank.
-  //   - Partial: option covers only a subset of items (one category). Useful
-  //     when the source actually contains a single category of href, or when
-  //     the user wants the fine-grained descriptor for a specific category.
-  // Inside each group, umbrella (`:any`) keys are first, then by coverage.
-  const total = (options[0]?.totalItems) || 0;
-  const fmtOption = (o) => {
-    const totalN = o.totalItems || 0;
-    const allMatch = totalN > 0 && o.count === totalN;
-    const coverageTag = allMatch ? `all ${totalN}` : `${o.count} of ${totalN}`;
-    const preview = o.varies ? 'varies per link' : (truncate(o.sample || '', 48) || '(empty)');
-    const optLabel = `${o.label} — ${preview} · ${coverageTag}`;
-    return `<option value="${escapeAttr(o.strategy)}" ${o.strategy === current ? 'selected' : ''}>${escapeText(optLabel)}</option>`;
-  };
-  const universal = options.filter((o) => total > 0 && o.count === total);
-  const partial = options.filter((o) => !(total > 0 && o.count === total));
-  const universalHtml = universal.length
-    ? `<optgroup label="Works for every link">${universal.map(fmtOption).join('')}</optgroup>`
-    : '';
-  const partialHtml = partial.length
-    ? `<optgroup label="Works for a subset (some links will be empty)">${partial.map(fmtOption).join('')}</optgroup>`
-    : '';
-  const optHtml = universalHtml + partialHtml;
-  const noneHtml = allowNone
-    ? `<option value="__none__" ${current === '__none__' ? 'selected' : ''}>${optional ? 'No video preview' : `No ${field}`}</option>`
-    : '';
-  return `
-    <label class="strategy-field">
-      <span class="strategy-field__label">${labelText}</span>
-      <select data-strategy-field="${field}" data-src-id="${escapeAttr(src.id)}" data-pattern="${escapeAttr(pattern)}">
-        ${optHtml}
-        ${noneHtml}
-      </select>
-    </label>
-  `;
-}
-
-function onStrategyChange(e) {
-  const sel = e.currentTarget;
-  const srcId = sel.dataset.srcId;
-  const field = sel.dataset.strategyField;
-  const pattern = sel.dataset.pattern;
-  const value = sel.value;
-  const src = state.sources.find((s) => s.id === srcId);
-  if (!src) return;
-  src.strategyByPattern = src.strategyByPattern || {};
-  if (!src.strategyByPattern[pattern]) src.strategyByPattern[pattern] = {};
-  src.strategyByPattern[pattern][field] = value;
-  // Re-flatten so the new title/thumb/video shows up in state.items, then
-  // re-render the categories panel. Preserve user's enabled toggles.
-  flattenSourcesIntoItems({ resetEnabled: false });
-  renderReview();
-}
-
-function onStrategyIncludeToggle(e) {
-  const checkbox = e.currentTarget;
-  const srcId = checkbox.dataset.srcId;
-  const pattern = checkbox.dataset.pattern;
-  const src = state.sources.find((s) => s.id === srcId);
-  if (!src) return;
-  src.strategyByPattern = src.strategyByPattern || {};
-  if (!src.strategyByPattern[pattern]) src.strategyByPattern[pattern] = {};
-  src.strategyByPattern[pattern].exclude = !checkbox.checked;
   flattenSourcesIntoItems({ resetEnabled: false });
   renderReview();
 }
@@ -1185,102 +1013,149 @@ function syncReviewModeForViewport() {
   setReviewMode(mode);
 }
 
+function setDisplayName(set, index) {
+  if (set.label) return set.label;
+  if (set.kind === 'repeating') return `Card set ${index + 1}`;
+  if (set.signature === 'JSON-LD') return 'Structured data';
+  if (set.signature === '<img>') return 'Standalone images';
+  if (set.signature === '<video>' || set.signature === '<iframe>') return 'Standalone videos';
+  return 'Other links';
+}
+
 function renderReview() {
   ensureActiveReviewSource();
   updateReviewMeta();
   renderReviewSourceStepper();
   updateReviewPrimaryAction();
-
-  renderSourceStrategyPicker();
   renderTemplatePicker();
 
   const root = $('#categories');
+  // Remember which sets the user collapsed, so a re-render (every choice
+  // triggers one) does not spring them back open.
+  const collapsed = new Set($$('.set-panel:not(.group-panel--open)', root).map((p) => p.dataset.setId));
   root.innerHTML = '';
 
   const activeSource = getActiveReviewSource();
   const activeItems = getActiveReviewItems();
   const activeSourceName = $('[data-active-source-name]');
-  if (activeSourceName) {
-    activeSourceName.textContent = activeSource
-      ? displayName(activeSource, state.sources.findIndex((s) => s.id === activeSource.id))
-      : '';
-  }
+  const sourceName = activeSource
+    ? displayName(activeSource, state.sources.findIndex((s) => s.id === activeSource.id))
+    : '';
+  if (activeSourceName) activeSourceName.textContent = sourceName;
 
   if (!activeSource || activeItems.length === 0) {
     root.innerHTML = `
       <div class="empty">
-        <h3>No items found.</h3>
-        <p>Go back and paste HTML that contains anchor tags, images, or videos.</p>
+        <h3>No cards found.</h3>
+        <p>Go back and paste HTML that contains links, images, or videos.</p>
       </div>
     `;
     return;
   }
 
-  // Group by existing category: article, video, gallery, link.
-  const grouped = new Map();
-  for (const it of activeItems) {
-    const k = it.category || 'link';
-    if (!grouped.has(k)) grouped.set(k, []);
-    grouped.get(k).push(it);
-  }
+  const sets = (activeSource.cardSets || [])
+    .map((set) => ({ set, items: activeItems.filter((it) => it.setId === set.id) }))
+    .filter((entry) => entry.items.length > 0);
+  // Items the parser did not assign to a set (defensive: older parse results).
+  const known = new Set(sets.map((entry) => entry.set.id));
+  const strays = activeItems.filter((it) => !known.has(it.setId));
+  if (strays.length) sets.push({ set: { id: '__stray__', kind: 'loose', signature: 'Other', fields: {} }, items: strays });
 
-  const header = document.createElement('section');
-  header.className = 'source-finalized';
-  header.innerHTML = `
-    <h3 class="source-finalized__title">Extracted links and media</h3>
-    <span class="source-finalized__source">${escapeText(displayName(activeSource, state.sources.findIndex((s) => s.id === activeSource.id)))}</span>
-  `;
-  root.appendChild(header);
-
-  CATEGORY_ORDER.forEach((key, idx) => {
-    const items = grouped.get(key);
-    if (!items || items.length === 0) return;
-    // Show all groups open by default so the user can immediately see images/titles
-    root.appendChild(renderGroupPanel(key, items, true));
+  root.appendChild(renderDetectSummary(activeSource, sourceName, sets));
+  sets.forEach(({ set, items }, index) => {
+    root.appendChild(renderSetPanel(activeSource, set, items, index, !collapsed.has(set.id)));
   });
   applyReviewItemFilter();
   updateReviewSelectionSummary();
   refreshReviewPreview();
 }
 
-function renderGroupPanel(key, items, openByDefault) {
-  const title = CATEGORY_META[key]?.title || key;
-  const desc = CATEGORY_META[key]?.desc || '';
+// What was found, and what (if anything) is waiting on the user.
+function renderDetectSummary(src, sourceName, sets) {
+  const repeating = sets.filter((entry) => entry.set.kind === 'repeating');
+  const cardCount = sets.reduce((sum, entry) => sum + entry.items.length, 0);
+  const questions = openQuestions(src);
+  const found = repeating.length
+    ? `<strong>${repeating.length} card set${repeating.length === 1 ? '' : 's'}</strong> · ${cardCount} card${cardCount === 1 ? '' : 's'}`
+    : `<strong>${cardCount} item${cardCount === 1 ? '' : 's'}</strong> · no repeating card layout`;
+  const explain = repeating.length
+    ? 'Each set is one repeating layout on the page. Its cards share one choice of title, image, and video preview.'
+    : 'Nothing on this page repeats often enough to be read as a card layout, so links are listed as found.';
+  const el = document.createElement('section');
+  el.className = 'detect-summary';
+  el.innerHTML = `
+    <div class="detect-summary__text">
+      <p class="detect-summary__found">${found} <span class="detect-summary__source">in ${escapeText(sourceName)}</span></p>
+      <p class="detect-summary__explain">${explain}</p>
+    </div>
+    ${questions.length
+      ? `<button type="button" class="btn btn--sm detect-summary__action" data-next-question>${questions.length} choice${questions.length === 1 ? '' : 's'} to check</button>`
+      : `<span class="detect-summary__ok">${repeating.length ? 'Every field resolved' : ''}</span>`}
+  `;
+  return el;
+}
+
+function renderSetPanel(src, set, items, index, open) {
   const enabled = items.filter((i) => i.enabled).length;
   const allOn = enabled === items.length;
   const someOn = enabled > 0 && enabled < items.length;
+  const name = setDisplayName(set, index);
+  const noun = set.kind === 'repeating' ? 'card' : 'item';
+  const structure = set.kind === 'repeating'
+    ? `repeating <code>${escapeText(set.signature)}</code>`
+    : 'not part of a repeating layout';
 
   const panel = document.createElement('section');
-  panel.className = 'group-panel';
-  if (openByDefault) panel.classList.add('group-panel--open');
+  panel.className = `group-panel set-panel set-panel--${set.kind}`;
+  if (open) panel.classList.add('group-panel--open');
+  panel.dataset.setId = set.id;
   panel.innerHTML = `
     <header class="group-panel__head">
-      <label class="group-checkbox" title="Toggle all in this group">
-        <input type="checkbox" data-group-toggle ${allOn ? 'checked' : ''} ${someOn ? 'data-indeterminate="true"' : ''} />
+      <label class="group-checkbox" title="Include or leave out this whole set">
+        <input type="checkbox" data-group-toggle ${allOn ? 'checked' : ''} aria-label="Include ${escapeAttr(name)}" />
         <span class="group-checkbox__box"></span>
       </label>
-      <button type="button" class="group-panel__toggle" aria-expanded="${openByDefault ? 'true' : 'false'}">
-        <span class="group-panel__title">${escapeText(title)}</span>
+      <button type="button" class="group-panel__toggle" aria-expanded="${open ? 'true' : 'false'}">
+        <span class="group-panel__title">${escapeText(name)}</span>
         <span class="group-panel__count">${enabled} / ${items.length}</span>
         <svg class="group-panel__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-      ${desc ? `<p class="group-panel__desc">${escapeText(desc)}</p>` : ''}
+      <p class="set-panel__structure">${items.length} ${noun}${items.length === 1 ? '' : 's'} · ${structure}</p>
     </header>
+    <div class="set-panel__fields"></div>
     <div class="group-panel__body"></div>
   `;
 
-  const body = panel.querySelector('.group-panel__body');
-  items.forEach((it) => body.appendChild(renderItemRow(it)));
-
-  // Fix indeterminate after attaching
-  const groupChk = panel.querySelector('[data-group-toggle]');
-  if (someOn) {
-    requestAnimationFrame(() => {
-      groupChk.indeterminate = true;
-    });
+  const fields = panel.querySelector('.set-panel__fields');
+  const controls = ['title', 'thumb', 'video'].map((field) => renderSetFieldControl(src, set, field, items)).filter(Boolean);
+  if (controls.length) {
+    const bar = document.createElement('div');
+    bar.className = 'set-fields';
+    controls.forEach((c) => bar.appendChild(c));
+    fields.appendChild(bar);
   }
+  for (const field of ['title', 'thumb', 'video']) {
+    if (fieldNeedsReview(src, set, field)) {
+      const ask = renderSetQuestion(src, set, field, items);
+      if (ask) fields.appendChild(ask);
+    }
+  }
+  for (const field of ['title', 'thumb']) {
+    const note = set.fields?.[field]?.note;
+    if (note) {
+      const p = document.createElement('p');
+      p.className = 'set-panel__note';
+      p.textContent = `${note}.`;
+      fields.appendChild(p);
+    }
+  }
+  if (!fields.children.length) fields.remove();
 
-  // Group checkbox: select / deselect all in this group
+  const body = panel.querySelector('.group-panel__body');
+  items.forEach((it) => body.appendChild(renderItemRow(it, src, set)));
+
+  const groupChk = panel.querySelector('[data-group-toggle]');
+  if (someOn) groupChk.indeterminate = true;
   groupChk.addEventListener('change', (e) => {
     e.stopPropagation();
     const turnOn = groupChk.checked;
@@ -1288,7 +1163,6 @@ function renderGroupPanel(key, items, openByDefault) {
     renderReview();
   });
 
-  // Collapse toggle
   panel.querySelector('.group-panel__toggle').addEventListener('click', () => {
     panel.classList.toggle('group-panel--open');
     const expanded = panel.classList.contains('group-panel--open');
@@ -1298,9 +1172,104 @@ function renderGroupPanel(key, items, openByDefault) {
   return panel;
 }
 
-function renderItemRow(item) {
+// One field's source for the whole set: "Auto" (the parser's per-card pick)
+// or any source the set's cards offer.
+function renderSetFieldControl(src, set, field, items) {
+  const info = set.fields?.[field];
+  const options = (info?.options || []).filter((o) => o.strategy !== 'fallback');
+  // A choice only exists when there is more than one source, or a field that
+  // can sensibly be switched off.
+  if (!options.length) return null;
+  if (field === 'title' && options.length < 2) return null;
+  const choice = src.setChoices?.[set.id]?.[field] || '';
+  const total = set.count || items.length;
+  const optionLabel = (o) => {
+    const sample = field === 'title' ? ` · “${truncate(o.samples?.[0] || '', 36)}”` : '';
+    const reach = o.count >= total ? '' : ` · ${o.count} of ${total} cards`;
+    const flag = o.repeats ? ' · same on every card' : '';
+    return `${o.label}${sample}${reach}${flag}`;
+  };
+  const auto = info.strategy ? options.find((o) => o.strategy === info.strategy) : null;
+  const autoLabel = auto ? `Auto · ${auto.label}` : 'Auto';
+  const wrap = document.createElement('label');
+  wrap.className = 'set-field';
+  if (fieldNeedsReview(src, set, field)) wrap.classList.add('set-field--ask');
+  wrap.innerHTML = `
+    <span class="set-field__label">${FIELD_LABEL[field]}</span>
+    <select data-set-field="${field}" aria-label="${FIELD_LABEL[field]} source for this set">
+      <option value="">${escapeText(autoLabel)}</option>
+      ${options.map((o) => `<option value="${escapeAttr(o.strategy)}" ${o.strategy === choice ? 'selected' : ''}>${escapeText(optionLabel(o))}</option>`).join('')}
+      ${field === 'title' ? '' : `<option value="${NONE}" ${choice === NONE ? 'selected' : ''}>${field === 'thumb' ? 'No image' : 'No video preview'}</option>`}
+    </select>
+  `;
+  wrap.querySelector('select').addEventListener('change', (e) => {
+    chooseSetField(src, set.id, field, e.currentTarget.value);
+  });
+  return wrap;
+}
+
+// The ambiguity notice. Shown with a real card from the set as the example,
+// so the user compares actual values instead of selector names.
+function renderSetQuestion(src, set, field, items) {
+  const info = set.fields[field];
+  const candKey = FIELD_CANDIDATES[field];
+  const example = items.find((it) => it.ambiguous?.[field]) || items[0];
+  if (!example) return null;
+  const current = field === 'title' ? example.title
+    : field === 'thumb' ? example.thumbnail
+    : (example.video?.src || '');
+  const rivals = [];
+  for (const strategy of info.rivals || []) {
+    const cand = (example[candKey] || []).find((c) => c.strategy === strategy);
+    if (!cand || cand.value === current || rivals.some((r) => r.value === cand.value)) continue;
+    rivals.push(cand);
+  }
+  if (!rivals.length) return null;
+
+  const what = field === 'title' ? 'title' : field === 'thumb' ? 'image' : 'video preview';
+  const total = items.length;
+  const count = Math.min(info.ambiguousCount, total);
+  const preview = (value) => field === 'title'
+    ? `<span class="set-ask__text">${escapeText(truncate(value || '(empty)', 90))}</span>`
+    : field === 'thumb'
+      ? `<img class="set-ask__img" src="${escapeAttr(value || '')}" alt="" loading="lazy" />`
+      : `<span class="set-ask__text set-ask__text--mono">${escapeText(truncate(String(value || '').replace(/^https?:\/\//, ''), 60))}</span>`;
+
+  const ask = document.createElement('div');
+  ask.className = 'set-ask';
+  ask.dataset.askField = field;
+  ask.setAttribute('role', 'group');
+  ask.setAttribute('aria-label', `Choose the ${what} for this set`);
+  ask.innerHTML = `
+    <p class="set-ask__msg">
+      <strong>Which ${what}?</strong>
+      ${count} of ${total} card${total === 1 ? '' : 's'} offer${count === 1 ? 's' : ''} more than one. Pick one and it applies to the whole set.
+    </p>
+    <div class="set-ask__options">
+      <button type="button" class="set-ask__option is-current" data-ask-keep>
+        <span class="set-ask__tag">Current pick</span>
+        ${preview(current)}
+      </button>
+      ${rivals.map((c) => `
+        <button type="button" class="set-ask__option" data-ask-pick="${escapeAttr(c.strategy)}">
+          <span class="set-ask__tag">${escapeText(c.label)}</span>
+          ${preview(c.value)}
+        </button>`).join('')}
+    </div>
+  `;
+  ask.querySelector('[data-ask-keep]').addEventListener('click', () => {
+    setChoiceOf(src, set.id).reviewed[field] = true;
+    renderReview();
+  });
+  ask.querySelectorAll('[data-ask-pick]').forEach((btn) => {
+    btn.addEventListener('click', () => chooseSetField(src, set.id, field, btn.dataset.askPick));
+  });
+  return ask;
+}
+
+function renderItemRow(item, src, set) {
   const row = document.createElement('label');
-  row.className = 'item-row';
+  row.className = 'item-row item-row--card';
   if (!item.enabled) row.classList.add('item-row--off');
   row.dataset.id = item.id;
   row.dataset.reviewFilterKind = reviewFilterOf(item);
@@ -1312,24 +1281,33 @@ function renderItemRow(item) {
        </div>`
     : `<div class="item-row__thumb item-row__thumb--empty"><span>${escapeText((item.domain || item.title || 'L').charAt(0).toUpperCase())}</span></div>`;
 
+  const edited = src?.cardEdits?.[item.id] && Object.keys(src.cardEdits[item.id]).length > 0;
+  const hasPreview = !!(item.video && item.video.src && item.video.src !== item.href);
+  const badges = [
+    hasPreview ? '<span class="item-row__badge">Video preview</span>' : '',
+    edited ? '<span class="item-row__badge item-row__badge--edited">Edited</span>' : '',
+  ].join('');
+
   row.innerHTML = `
     <input type="checkbox" class="item-row__check" ${item.enabled ? 'checked' : ''} />
     <span class="item-row__box"></span>
     ${thumbHtml}
     <div class="item-row__body">
-      <p class="item-row__title">${escapeText(item.title)}</p>
+      <p class="item-row__title">${escapeText(item.title || 'Untitled')}</p>
       <div class="item-row__meta">
         <span class="item-row__domain">${escapeText(item.domain)}</span>
+        ${badges}
       </div>
       <span class="item-row__url">${escapeText(item.href)}</span>
     </div>
+    <button type="button" class="item-row__edit" data-edit-card="${escapeAttr(item.id)}" aria-label="Edit card: ${escapeAttr(item.title || 'Untitled')}">Edit</button>
   `;
 
   const check = row.querySelector('.item-row__check');
   check.addEventListener('change', () => {
     item.enabled = check.checked;
     row.classList.toggle('item-row--off', !item.enabled);
-    // Update parent group + meta counts without re-rendering everything
+    // Update parent set + meta counts without re-rendering everything
     updateGroupHeader(row);
     updateReviewMeta();
     updateReviewSelectionSummary();
@@ -1348,6 +1326,189 @@ function updateGroupHeader(row) {
   groupChk.checked = onCount === checks.length;
   groupChk.indeterminate = onCount > 0 && onCount < checks.length;
   panel.querySelector('.group-panel__count').textContent = `${onCount} / ${checks.length}`;
+}
+
+// ---------- per-card editor ----------
+// Everything one card offers, side by side. A pick here edits this card only;
+// "Use for all cards in this set" promotes the same source to a set choice.
+const cardEditor = { itemId: null };
+
+function openCardEditor(itemId) {
+  cardEditor.itemId = itemId;
+  renderCardEditor();
+  const dialog = $('#card-editor');
+  if (dialog && !dialog.open) dialog.showModal();
+}
+
+function closeCardEditor() {
+  cardEditor.itemId = null;
+  const dialog = $('#card-editor');
+  if (dialog?.open) dialog.close();
+}
+
+function uniqueByValue(cands) {
+  const seen = new Set();
+  return (cands || []).filter((c) => c.value && !seen.has(c.value) && seen.add(c.value));
+}
+
+function renderCardEditor() {
+  const dialog = $('#card-editor');
+  const item = state.items.find((it) => it.id === cardEditor.itemId);
+  const src = item ? sourceOfItem(item) : null;
+  if (!dialog || !item || !src) { closeCardEditor(); return; }
+  const set = (src.cardSets || []).find((s) => s.id === item.setId);
+  const setSize = state.items.filter((it) => it.sourceId === src.id && it.setId === item.setId).length;
+
+  const titles = uniqueByValue(item.titleCandidates);
+  const thumbs = uniqueByValue(item.thumbCandidates).slice(0, 12);
+  const videos = uniqueByValue(item.videoCandidates);
+  const links = uniqueByValue(item.linkCandidates);
+  const videoSrc = item.video?.src || '';
+  const previewOn = !!(videoSrc && videoSrc !== item._parsed?.href);
+
+  // "Use for all cards": only offered when the current value came from a
+  // source other cards can be asked for too.
+  const promote = (field, value) => {
+    if (!set || setSize < 2) return '';
+    const cand = (item[FIELD_CANDIDATES[field]] || []).find((c) => c.value === value && c.strategy !== 'fallback');
+    if (!cand) return '';
+    return `<button type="button" class="card-editor__promote" data-promote="${field}" data-strategy="${escapeAttr(cand.strategy)}">Use this source for all ${setSize} cards in the set</button>`;
+  };
+
+  dialog.innerHTML = `
+    <form method="dialog" class="card-editor__form">
+      <header class="card-editor__head">
+        <div class="card-editor__preview">
+          ${item.thumbnail ? `<img src="${escapeAttr(item.thumbnail)}" alt="" />` : '<span>No image</span>'}
+        </div>
+        <div class="card-editor__headtext">
+          <p class="card-editor__kicker">Edit card</p>
+          <h3 id="card-editor-title">${escapeText(item.title || 'Untitled')}</h3>
+          <p class="card-editor__href">${escapeText(item.href)}</p>
+        </div>
+        <button type="button" class="icon-btn card-editor__close" data-editor-close aria-label="Close editor">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </header>
+
+      <div class="card-editor__body">
+        <section class="card-editor__section">
+          <h4>Title <small>${titles.length} found</small></h4>
+          <div class="card-editor__options">
+            ${titles.map((c, i) => `
+              <label class="card-editor__option">
+                <input type="radio" name="ce-title" value="${i}" ${c.value === item.title ? 'checked' : ''} />
+                <span class="card-editor__option-text">${escapeText(c.value)}</span>
+                <span class="card-editor__option-src">${escapeText(c.label)}</span>
+              </label>`).join('')}
+          </div>
+          <label class="card-editor__custom">
+            <span>Or write your own</span>
+            <input type="text" data-custom-title value="${escapeAttr(item.title || '')}" maxlength="280" />
+          </label>
+          ${promote('title', item.title)}
+        </section>
+
+        <section class="card-editor__section">
+          <h4>Image <small>${thumbs.length} found</small></h4>
+          <div class="card-editor__images">
+            ${thumbs.map((c, i) => `
+              <button type="button" class="card-editor__image ${c.value === item.thumbnail ? 'is-selected' : ''}" data-pick-thumb="${i}" aria-pressed="${c.value === item.thumbnail}" title="${escapeAttr(c.label)}">
+                <img src="${escapeAttr(c.value)}" alt="${escapeAttr(c.label)}" loading="lazy" />
+              </button>`).join('')}
+            <button type="button" class="card-editor__image card-editor__image--none ${item.thumbnail ? '' : 'is-selected'}" data-pick-thumb="none" aria-pressed="${!item.thumbnail}">No image</button>
+          </div>
+          ${item.thumbnail ? promote('thumb', item.thumbnail) : ''}
+        </section>
+
+        ${videos.length ? `
+        <section class="card-editor__section">
+          <h4>Video preview <small>${videos.length} found</small></h4>
+          <div class="card-editor__options">
+            ${videos.map((c, i) => `
+              <label class="card-editor__option">
+                <input type="radio" name="ce-video" value="${i}" ${c.value === videoSrc ? 'checked' : ''} />
+                <span class="card-editor__option-text card-editor__option-text--mono">${escapeText(truncate(c.value.replace(/^https?:\/\//, ''), 70))}</span>
+                <span class="card-editor__option-src">${escapeText(c.label)}</span>
+              </label>`).join('')}
+            <label class="card-editor__option">
+              <input type="radio" name="ce-video" value="none" ${previewOn || videos.some((c) => c.value === videoSrc) ? '' : 'checked'} />
+              <span class="card-editor__option-text">No video preview</span>
+            </label>
+          </div>
+          ${videoSrc ? promote('video', videoSrc) : ''}
+        </section>` : ''}
+
+        ${links.length > 1 ? `
+        <section class="card-editor__section">
+          <h4>Link <small>${links.length} in this card</small></h4>
+          <div class="card-editor__options">
+            ${links.map((c, i) => `
+              <label class="card-editor__option">
+                <input type="radio" name="ce-link" value="${i}" ${c.value === item.href ? 'checked' : ''} />
+                <span class="card-editor__option-text card-editor__option-text--mono">${escapeText(truncate(c.value.replace(/^https?:\/\//, ''), 70))}</span>
+                <span class="card-editor__option-src">${escapeText(c.label)}</span>
+              </label>`).join('')}
+          </div>
+        </section>` : ''}
+      </div>
+
+      <footer class="card-editor__foot">
+        <button type="button" class="btn btn--ghost btn--sm" data-editor-reset>Reset this card</button>
+        <button type="button" class="btn btn--primary btn--sm" data-editor-close>Done</button>
+      </footer>
+    </form>
+  `;
+
+  const edit = (patch) => {
+    src.cardEdits = src.cardEdits || {};
+    src.cardEdits[item.id] = { ...(src.cardEdits[item.id] || {}), ...patch };
+    flattenSourcesIntoItems({ resetEnabled: false });
+    renderReview();
+    renderCardEditor();
+  };
+
+  dialog.querySelectorAll('input[name="ce-title"]').forEach((input) => {
+    input.addEventListener('change', () => edit({ title: titles[Number(input.value)].value }));
+  });
+  const custom = dialog.querySelector('[data-custom-title]');
+  custom.addEventListener('change', () => {
+    const value = custom.value.replace(/\s+/g, ' ').trim();
+    if (value && value !== item.title) edit({ title: value });
+  });
+  custom.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); custom.blur(); }
+  });
+  dialog.querySelectorAll('[data-pick-thumb]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.pickThumb;
+      edit({ thumbnail: key === 'none' ? null : thumbs[Number(key)].value });
+    });
+  });
+  dialog.querySelectorAll('input[name="ce-video"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      if (input.value === 'none') { edit({ video: null }); return; }
+      const c = videos[Number(input.value)];
+      edit({ video: normalizeVideo(c.info || { url: c.value }) });
+    });
+  });
+  dialog.querySelectorAll('input[name="ce-link"]').forEach((input) => {
+    input.addEventListener('change', () => edit({ href: links[Number(input.value)].value }));
+  });
+  dialog.querySelectorAll('[data-promote]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      chooseSetField(src, item.setId, btn.dataset.promote, btn.dataset.strategy);
+      renderCardEditor();
+      showToast(`Applied to all ${setSize} cards in the set`);
+    });
+  });
+  dialog.querySelector('[data-editor-reset]').addEventListener('click', () => {
+    if (src.cardEdits) delete src.cardEdits[item.id];
+    flattenSourcesIntoItems({ resetEnabled: false });
+    renderReview();
+    renderCardEditor();
+  });
+  dialog.querySelectorAll('[data-editor-close]').forEach((btn) => btn.addEventListener('click', closeCardEditor));
 }
 
 function updateReviewMeta() {
@@ -2160,6 +2321,22 @@ document.addEventListener('click', (e) => {
     });
     return;
   }
+  const editCard = e.target.closest('[data-edit-card]');
+  if (editCard) {
+    e.preventDefault(); // the button sits inside the row's <label>
+    openCardEditor(editCard.dataset.editCard);
+    return;
+  }
+  if (e.target.closest('[data-next-question]')) {
+    const target = $('.set-ask', $('#categories'));
+    if (target) {
+      const panel = target.closest('.set-panel');
+      panel?.classList.add('group-panel--open');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.querySelector('button')?.focus({ preventScroll: true });
+    }
+    return;
+  }
   if (e.target.closest('[data-add-source]')) {
     addSource();
     return;
@@ -2214,6 +2391,11 @@ $('#review-collection-heading')?.addEventListener('blur', (event) => {
   refreshReviewPreview({ immediate: true });
 });
 window.addEventListener('resize', syncReviewModeForViewport);
+// Esc and backdrop clicks close the card editor like its Done button does.
+$('#card-editor')?.addEventListener('close', () => { cardEditor.itemId = null; });
+$('#card-editor')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeCardEditor();
+});
 
 // Publish-to-Vercel was removed: hosting user-generated pages on a shared
 // Vercel account is an abuse vector (anyone could fill the project quota or

@@ -609,6 +609,8 @@ const DS_CSS = `
   .lf-ds .lf-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-slow) var(--ease-out); }
   .lf-ds .lf-card:hover .lf-card__media img { transform: scale(1.03); }
   .lf-ds .lf-card__media.is-broken::after { content: "Preview unavailable"; position: absolute; inset: 0; display: grid; place-items: center; font: 400 var(--t-2xs)/1 var(--font-meta); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .lf-ds .lf-card__preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; pointer-events: none; transition: opacity var(--dur-base) var(--ease-out); }
+  .lf-ds .lf-card.is-previewing .lf-card__preview { opacity: 1; }
   .lf-ds .lf-card__play { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px 5px 7px; border-radius: 999px; background: rgba(0, 0, 0, .64); color: #fff; font: 600 var(--t-2xs)/1 var(--font-meta); letter-spacing: .08em; text-transform: uppercase; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   .lf-ds .lf-card__play svg { width: 11px; height: 11px; }
   .lf-ds .lf-card__body { display: grid; gap: 6px; min-width: 0; align-content: start; }
@@ -672,10 +674,54 @@ function planGrid(n, layout) {
   return { gridStyle, cards };
 }
 
+// A card's video preview, when it is a file a <video> tag can play directly.
+// Embeds and page URLs are destinations, not previews, and stay as the link.
+function previewVideoSrc(item) {
+  const src = item && item.video && (item.video.src || item.video.url);
+  return src && /^https?:/i.test(src) && /\.(mp4|webm|ogg|ogv|mov|m4v)([?#]|$)/i.test(src) ? src : '';
+}
+
+// The preview sits over the thumbnail and loads nothing until the card is
+// hovered or focused (preload="none"); see videoPreviewScript().
+function lfPreviewVideo(item) {
+  const src = previewVideoSrc(item);
+  return src ? `<video class="lf-card__preview" data-lf-preview src="${attr(src)}" muted loop playsinline preload="none" tabindex="-1" aria-hidden="true"></video>` : '';
+}
+
 function lfMedia(item, { play = true } = {}) {
   const isVideo = itemKind(item) === 'video';
-  return `<div class="lf-card__media">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}${
+  return `<div class="lf-card__media">${thumbImg(item, `decoding="async" ${BROKEN_IMG_ONERROR}`)}${lfPreviewVideo(item)}${
     play && isVideo ? `<span class="lf-card__play">${PLAY_ICON}Video</span>` : ''}</div>`;
+}
+
+function videoPreviewScript() {
+  return `<script>
+(function () {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  function cardOf(target) { return target && target.closest ? target.closest('.lf-card') : null; }
+  function start(e) {
+    var card = cardOf(e.target);
+    var video = card && card.querySelector('[data-lf-preview]');
+    if (!video || card.classList.contains('is-previewing')) return;
+    card.classList.add('is-previewing');
+    var playing = video.play();
+    if (playing && playing.catch) playing.catch(function () { card.classList.remove('is-previewing'); });
+  }
+  function stop(e) {
+    var card = cardOf(e.target);
+    if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return;
+    var video = card.querySelector('[data-lf-preview]');
+    if (!video) return;
+    card.classList.remove('is-previewing');
+    video.pause();
+    try { video.currentTime = 0; } catch (err) {}
+  }
+  document.addEventListener('mouseover', start);
+  document.addEventListener('focusin', start);
+  document.addEventListener('mouseout', stop);
+  document.addEventListener('focusout', stop);
+})();
+<\/script>`;
 }
 
 function lfCard(item, plan, { kicker = '', meta = '', extraClass = '', play = true } = {}) {
@@ -1466,6 +1512,7 @@ ${css}
 ${body}
 ${THEME_TOGGLE_BUTTON}
 ${themeToggleScript()}
+${body.includes('data-lf-preview') ? videoPreviewScript() : ''}
 </body>
 </html>`;
 }
