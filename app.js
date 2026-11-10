@@ -1127,18 +1127,10 @@ function renderSetPanel(src, set, items, index, open) {
   `;
 
   const fields = panel.querySelector('.set-panel__fields');
-  const controls = ['title', 'thumb', 'video'].map((field) => renderSetFieldControl(src, set, field, items)).filter(Boolean);
-  if (controls.length) {
-    const bar = document.createElement('div');
-    bar.className = 'set-fields';
-    controls.forEach((c) => bar.appendChild(c));
-    fields.appendChild(bar);
-  }
+  // Title, then image, then video: the pickers lead, the cards follow.
   for (const field of ['title', 'thumb', 'video']) {
-    if (fieldNeedsReview(src, set, field)) {
-      const ask = renderSetQuestion(src, set, field, items);
-      if (ask) fields.appendChild(ask);
-    }
+    const picker = renderSetPicker(src, set, field, items);
+    if (picker) fields.appendChild(picker);
   }
   for (const field of ['title', 'thumb']) {
     const note = set.fields?.[field]?.note;
@@ -1172,99 +1164,103 @@ function renderSetPanel(src, set, items, index, open) {
   return panel;
 }
 
-// One field's source for the whole set: "Auto" (the parser's per-card pick)
-// or any source the set's cards offer.
-function renderSetFieldControl(src, set, field, items) {
+// One field's picker, always the first thing in an open set: the options are
+// laid out as real values from one card of the set, so choosing is a matter
+// of looking, and the cards underneath update as soon as one is clicked.
+//
+//   Auto            the parser's own per-card pick
+//   rivals          sources the parser found competing with its pick
+//   other sources   anything else that reads differently on the example card
+//   (the rest)      a "More sources" menu, so the row stays scannable
+const PICKER_LIMIT = 4;
+
+function renderSetPicker(src, set, field, items) {
   const info = set.fields?.[field];
   const options = (info?.options || []).filter((o) => o.strategy !== 'fallback');
-  // A choice only exists when there is more than one source, or a field that
-  // can sensibly be switched off.
   if (!options.length) return null;
-  if (field === 'title' && options.length < 2) return null;
-  const choice = src.setChoices?.[set.id]?.[field] || '';
-  const total = set.count || items.length;
-  const optionLabel = (o) => {
-    const sample = field === 'title' ? ` · “${truncate(o.samples?.[0] || '', 36)}”` : '';
-    const reach = o.count >= total ? '' : ` · ${o.count} of ${total} cards`;
-    const flag = o.repeats ? ' · same on every card' : '';
-    return `${o.label}${sample}${reach}${flag}`;
-  };
-  const auto = info.strategy ? options.find((o) => o.strategy === info.strategy) : null;
-  const autoLabel = auto ? `Auto · ${auto.label}` : 'Auto';
-  const wrap = document.createElement('label');
-  wrap.className = 'set-field';
-  if (fieldNeedsReview(src, set, field)) wrap.classList.add('set-field--ask');
-  wrap.innerHTML = `
-    <span class="set-field__label">${FIELD_LABEL[field]}</span>
-    <select data-set-field="${field}" aria-label="${FIELD_LABEL[field]} source for this set">
-      <option value="">${escapeText(autoLabel)}</option>
-      ${options.map((o) => `<option value="${escapeAttr(o.strategy)}" ${o.strategy === choice ? 'selected' : ''}>${escapeText(optionLabel(o))}</option>`).join('')}
-      ${field === 'title' ? '' : `<option value="${NONE}" ${choice === NONE ? 'selected' : ''}>${field === 'thumb' ? 'No image' : 'No video preview'}</option>`}
-    </select>
-  `;
-  wrap.querySelector('select').addEventListener('change', (e) => {
-    chooseSetField(src, set.id, field, e.currentTarget.value);
-  });
-  return wrap;
-}
-
-// The ambiguity notice. Shown with a real card from the set as the example,
-// so the user compares actual values instead of selector names.
-function renderSetQuestion(src, set, field, items) {
-  const info = set.fields[field];
   const candKey = FIELD_CANDIDATES[field];
+  const needsReview = fieldNeedsReview(src, set, field);
+  const choice = src.setChoices?.[set.id]?.[field] || '';
   const example = items.find((it) => it.ambiguous?.[field]) || items[0];
   if (!example) return null;
-  const current = field === 'title' ? example.title
-    : field === 'thumb' ? example.thumbnail
-    : (example.video?.src || '');
-  const rivals = [];
-  for (const strategy of info.rivals || []) {
-    const cand = (example[candKey] || []).find((c) => c.strategy === strategy);
-    if (!cand || cand.value === current || rivals.some((r) => r.value === cand.value)) continue;
-    rivals.push(cand);
+
+  const parsed = example._parsed || {};
+  const autoValue = field === 'title' ? parsed.title
+    : field === 'thumb' ? parsed.thumbnail
+    : (parsed.video?.src || '');
+  const candOf = (strategy) => (example[candKey] || []).find((c) => c.strategy === strategy);
+  const autoOption = info.strategy ? options.find((o) => o.strategy === info.strategy) : null;
+
+  // Visible tiles: Auto first, then sources worth a look.
+  const tiles = [{ strategy: '', tag: autoOption ? `Auto · ${autoOption.label}` : 'Auto', value: autoValue }];
+  const shown = new Set([autoValue]);
+  const add = (strategy, force = false) => {
+    if (tiles.some((t) => t.strategy === strategy)) return;
+    const cand = candOf(strategy);
+    if (!cand) return;
+    if (!force && shown.has(cand.value)) return;
+    shown.add(cand.value);
+    tiles.push({ strategy, tag: cand.label, value: cand.value });
+  };
+  if (choice && choice !== NONE) add(choice, true);
+  for (const strategy of info.rivals || []) if (tiles.length < PICKER_LIMIT) add(strategy);
+  // Beyond the rivals, only titles are worth laying out: other image sources
+  // are mostly the same picture at another size, which is menu material.
+  if (field === 'title') {
+    for (const o of options) if (tiles.length < PICKER_LIMIT && !o.repeats) add(o.strategy);
   }
-  if (!rivals.length) return null;
+  if (field !== 'title') tiles.push({ strategy: NONE, tag: field === 'thumb' ? 'No image' : 'No video preview', value: null });
 
-  const what = field === 'title' ? 'title' : field === 'thumb' ? 'image' : 'video preview';
+  const rest = options.filter((o) => !tiles.some((t) => t.strategy === o.strategy));
+  if (tiles.length < 2 && !rest.length) return null;
+
   const total = items.length;
-  const count = Math.min(info.ambiguousCount, total);
-  const preview = (value) => field === 'title'
-    ? `<span class="set-ask__text">${escapeText(truncate(value || '(empty)', 90))}</span>`
-    : field === 'thumb'
-      ? `<img class="set-ask__img" src="${escapeAttr(value || '')}" alt="" loading="lazy" />`
-      : `<span class="set-ask__text set-ask__text--mono">${escapeText(truncate(String(value || '').replace(/^https?:\/\//, ''), 60))}</span>`;
+  const preview = (tile) => {
+    if (tile.strategy === NONE) return '<span class="set-pick__none">Leave it out</span>';
+    if (field === 'title') return `<span class="set-pick__text">${escapeText(truncate(tile.value || '(empty)', 90))}</span>`;
+    if (field === 'thumb') {
+      return tile.value
+        ? `<img class="set-pick__img" src="${escapeAttr(tile.value)}" alt="" loading="lazy" />`
+        : '<span class="set-pick__none">No image found</span>';
+    }
+    return `<span class="set-pick__text set-pick__text--mono">${escapeText(truncate(String(tile.value || '(none)').replace(/^https?:\/\//, ''), 60))}</span>`;
+  };
+  const count = Math.min(info.ambiguousCount || 0, total);
+  const hint = needsReview
+    ? `${count} of ${total} card${total === 1 ? '' : 's'} offer${count === 1 ? 's' : ''} more than one. Pick one for the whole set.`
+    : `Applies to all ${total} card${total === 1 ? '' : 's'} below`;
 
-  const ask = document.createElement('div');
-  ask.className = 'set-ask';
-  ask.dataset.askField = field;
-  ask.setAttribute('role', 'group');
-  ask.setAttribute('aria-label', `Choose the ${what} for this set`);
-  ask.innerHTML = `
-    <p class="set-ask__msg">
-      <strong>Which ${what}?</strong>
-      ${count} of ${total} card${total === 1 ? '' : 's'} offer${count === 1 ? 's' : ''} more than one. Pick one and it applies to the whole set.
-    </p>
-    <div class="set-ask__options">
-      <button type="button" class="set-ask__option is-current" data-ask-keep>
-        <span class="set-ask__tag">Current pick</span>
-        ${preview(current)}
-      </button>
-      ${rivals.map((c) => `
-        <button type="button" class="set-ask__option" data-ask-pick="${escapeAttr(c.strategy)}">
-          <span class="set-ask__tag">${escapeText(c.label)}</span>
-          ${preview(c.value)}
+  const el = document.createElement('div');
+  el.className = `set-pick set-pick--${field}`;
+  if (needsReview) el.classList.add('set-pick--ask');
+  el.dataset.pickField = field;
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', `${FIELD_LABEL[field]} for this set`);
+  el.innerHTML = `
+    <div class="set-pick__head">
+      <span class="set-pick__label">${FIELD_LABEL[field]}</span>
+      <span class="set-pick__hint">${escapeText(hint)}</span>
+      ${rest.length ? `
+        <select class="set-pick__more" data-set-more aria-label="More ${FIELD_LABEL[field].toLowerCase()} sources">
+          <option value="">More sources (${rest.length})</option>
+          ${rest.map((o) => `<option value="${escapeAttr(o.strategy)}">${escapeText(o.label)}${o.count >= (set.count || total) ? '' : ` · ${o.count} of ${set.count || total}`}${o.repeats ? ' · same on every card' : ''}</option>`).join('')}
+        </select>` : ''}
+    </div>
+    <div class="set-pick__options">
+      ${tiles.map((tile) => `
+        <button type="button" class="set-pick__option ${tile.strategy === choice ? 'is-current' : ''}" data-set-pick="${escapeAttr(tile.strategy)}" aria-pressed="${tile.strategy === choice}">
+          <span class="set-pick__tag">${escapeText(tile.tag)}</span>
+          ${preview(tile)}
         </button>`).join('')}
     </div>
   `;
-  ask.querySelector('[data-ask-keep]').addEventListener('click', () => {
-    setChoiceOf(src, set.id).reviewed[field] = true;
-    renderReview();
+  el.querySelectorAll('[data-set-pick]').forEach((btn) => {
+    btn.addEventListener('click', () => chooseSetField(src, set.id, field, btn.dataset.setPick));
   });
-  ask.querySelectorAll('[data-ask-pick]').forEach((btn) => {
-    btn.addEventListener('click', () => chooseSetField(src, set.id, field, btn.dataset.askPick));
+  el.querySelector('[data-set-more]')?.addEventListener('change', (e) => {
+    if (e.currentTarget.value) chooseSetField(src, set.id, field, e.currentTarget.value);
   });
-  return ask;
+  return el;
 }
 
 function renderItemRow(item, src, set) {
@@ -2328,7 +2324,7 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('[data-next-question]')) {
-    const target = $('.set-ask', $('#categories'));
+    const target = $('.set-pick--ask', $('#categories'));
     if (target) {
       const panel = target.closest('.set-panel');
       panel?.classList.add('group-panel--open');

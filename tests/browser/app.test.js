@@ -433,11 +433,18 @@ test('an ambiguous title is asked once per set and a single card can be overridd
     assert.equal(await page.locator('#categories .set-panel').count(), 1);
     assert.match(await page.locator('[data-next-question]').innerText(), /1 choice to check/);
 
-    await page.locator('.set-ask[data-ask-field="title"] [data-ask-pick]').first().click();
+    // The pickers lead the set: title first, image next, cards after.
+    const order = await page.locator('#categories .set-panel').first().evaluate((panel) => (
+      [...panel.querySelectorAll('.set-pick, .group-panel__body')].map((el) => el.dataset.pickField || 'cards')
+    ));
+    assert.deepEqual(order.slice(0, 2), ['title', 'thumb']);
+    assert.equal(order.at(-1), 'cards');
+    await page.locator('.set-pick[data-pick-field="title"] [data-set-pick]:not([data-set-pick=""])').first().click();
     const after = await titles();
     assert.equal(after.length, before.length);
     assert.ok(after.every((t, i) => t && t !== before[i]), 'the pick changes every card in the set');
-    assert.equal(await page.locator('.set-ask').count(), 0, 'an answered question is not asked again');
+    assert.equal(await page.locator('.set-pick--ask').count(), 0, 'an answered question is not asked again');
+    assert.equal(await page.locator('.set-pick[data-pick-field="title"] .is-current').count(), 1, 'the pick stays visible as the current choice');
     assert.equal(await page.locator('[data-next-question]').count(), 0);
 
     await page.locator('[data-edit-card]').first().click();
