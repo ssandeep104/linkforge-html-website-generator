@@ -493,6 +493,76 @@ test('cards that read the same are shown once, re-evaluated when a source is pic
   }
 });
 
+// Sets are worked through one at a time, every option of a field is on
+// screen, the cards are a full-width list, and no card sits in two sets.
+test('sets open one at a time with every option shown and no card in two sets', async () => {
+  const { page, pageErrors } = await openApp({ width: 390, height: 844 });
+  try {
+    const range = (n) => Array.from({ length: n }, (_, i) => i + 1);
+    const pic = (name) => `https://cdn.site.example/${name}.jpg`;
+    const grid = (i) => `<div class="tile"><a href="https://site.example/g/${i}"><img src="${pic('g' + i)}" srcset="${pic('g' + i)} 400w, ${pic('g' + i + '-big')} 800w"></a><h3>Grid story ${i} headline</h3><p class="deck">Deck ${i}</p></div>`;
+    // The hero repeats grid story 1 under another URL: one card, two layouts.
+    const hero = (i) => `<article class="hero"><a href="https://site.example/hero/${i}"><img src="${pic('g' + i)}"><h2>Grid story ${i} headline</h2></a></article>`;
+    const html = `<html><body><section>${[1, 9, 10].map(hero).join('')}</section><div class="grid">${range(6).map(grid).join('')}</div></body></html>`;
+    await page.locator('.source-card textarea').first().fill(html);
+    await page.locator('#btn-parse').click();
+    await page.locator('#step-review.screen--active').waitFor();
+
+    const panels = page.locator('#categories .set-panel');
+    assert.equal(await panels.count(), 2);
+    assert.deepEqual(
+      await panels.evaluateAll((els) => els.map((el) => el.classList.contains('group-panel--open'))),
+      [true, false],
+      'only the best set starts open',
+    );
+
+    // No card in two sets: the grid (ranked first) keeps story 1, the hero set loses it.
+    const bySet = await page.evaluate(() => {
+      const out = {};
+      for (const it of __lfState.items) (out[it.setId] ||= []).push(it.title);
+      return out;
+    });
+    const all = Object.values(bySet).flat();
+    assert.equal(new Set(all).size, all.length, 'every card title appears in exactly one set');
+    assert.equal(all.filter((t) => t === 'Grid story 1 headline').length, 1);
+
+    // Every image source is offered, not a shortlist.
+    const first = panels.first();
+    const imageOptions = await first.locator('.set-pick[data-pick-field="thumb"] [data-set-pick]').evaluateAll((els) => els.map((el) => el.dataset.setPick));
+    assert.ok(imageOptions.includes(''), 'Auto');
+    assert.ok(imageOptions.includes('img-srcset:800w'), 'the larger srcset size is its own option');
+    assert.ok(imageOptions.includes('__none__'));
+    assert.equal(await first.locator('.set-pick__more, select').count(), 0, 'nothing is tucked away in a menu');
+
+    // Full-width rows: thumbnail and title side by side, one card per row.
+    const rows = await first.locator('.item-row').evaluateAll((els) => els.map((el) => {
+      const r = el.getBoundingClientRect();
+      const t = el.querySelector('.item-row__thumb').getBoundingClientRect();
+      const h = el.querySelector('.item-row__title').getBoundingClientRect();
+      return { left: Math.round(r.left), width: Math.round(r.width), titleRightOfThumb: h.left >= t.right, sameBand: h.top < t.bottom, edit: !!el.querySelector('[data-edit-card]') };
+    }));
+    assert.ok(rows.length >= 5);
+    assert.equal(new Set(rows.map((r) => r.left)).size, 1, 'rows are stacked in one column');
+    assert.ok(rows.every((r) => r.width > 300 && r.titleRightOfThumb && r.sameBand && r.edit));
+
+    // Picking updates the list underneath in place.
+    await first.locator('.set-pick[data-pick-field="title"] [data-set-pick="slot:p.deck"]').click();
+    assert.equal(await panels.first().locator('.item-row__title').first().innerText(), 'Deck 1');
+
+    // "Next set" closes this one and opens the next.
+    await panels.first().locator('[data-next-set]').click();
+    assert.deepEqual(
+      await panels.evaluateAll((els) => els.map((el) => el.classList.contains('group-panel--open'))),
+      [false, true],
+    );
+    const dimensions = await page.evaluate(() => ({ c: document.documentElement.clientWidth, s: document.documentElement.scrollWidth }));
+    assert.ok(dimensions.s <= dimensions.c, 'the option strips scroll inside themselves, not the page');
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
 // WS3: measure the rendered grids. At desktop, tablet and phone widths every
 // row of cards must reach the grid's right edge (no orphan row), and the page
 // must not scroll sideways.

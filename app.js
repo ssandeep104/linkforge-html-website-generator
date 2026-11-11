@@ -545,6 +545,9 @@ const CATEGORY_ORDER = ['article', 'video', 'gallery', 'link'];
 const reviewState = {
   activeSourceId: null,
   filter: 'all',
+  // sourceId -> Set of set ids currently expanded. Sets are worked through
+  // one at a time, so only the first (best) set starts open.
+  openSets: new Map(),
 };
 
 // Map the internal item.category to the user-facing bucket above.
@@ -792,29 +795,37 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
     });
   });
   // Rebuild in original source order, dropping non-winners.
-  // A second pass, per card set: cards that READ the same (same title, same
+  // A second pass, per source: cards that READ the same (same title, same
   // picture; see duplicateKey) are one card even when their links differ.
-  // It runs on the values in effect, so choosing a different title or image
-  // source for a set re-evaluates which of its cards are duplicates. The
-  // first card in page order is kept.
+  // A card belongs to exactly one set: when the same card turns up in two
+  // layouts (a hero and the grid below it), the better-ranked set keeps it
+  // and it is removed from the other. It runs on the values in effect, so
+  // choosing a different title or image source re-evaluates it.
   const all = [];
   for (const src of state.sources) {
-    const seenInSet = new Set();
     src.duplicatesBySet = {};
-    for (const it of src.items || []) {
-      if (it._excludedBySet) continue;
-      const key = keyOf(it);
-      const winner = byHref.get(key);
-      if (!winner || winner.item !== it) continue;
-      const dupKey = typeof duplicateKey === 'function' ? duplicateKey(it) : '';
-      if (dupKey) {
-        const scoped = `${it.setId}\u0000${dupKey}`;
-        if (seenInSet.has(scoped)) {
-          src.duplicatesBySet[it.setId] = (src.duplicatesBySet[it.setId] || 0) + 1;
-          continue;
-        }
-        seenInSet.add(scoped);
+    const rankOf = new Map((src.cardSets || []).map((set, i) => [set.id, i]));
+    const survivors = (src.items || []).filter((it) => {
+      if (it._excludedBySet) return false;
+      const winner = byHref.get(keyOf(it));
+      return !!winner && winner.item === it;
+    });
+    const dupKeyOf = (it) => (typeof duplicateKey === 'function' ? duplicateKey(it) : '');
+    const owner = new Map(); // duplicate key -> the one card that keeps it
+    for (const it of survivors) {
+      const dupKey = dupKeyOf(it);
+      if (!dupKey) continue;
+      const rank = rankOf.has(it.setId) ? rankOf.get(it.setId) : Infinity;
+      const current = owner.get(dupKey);
+      if (!current || rank < current.rank) owner.set(dupKey, { item: it, rank });
+    }
+    for (const it of survivors) {
+      const dupKey = dupKeyOf(it);
+      if (dupKey && owner.get(dupKey).item !== it) {
+        src.duplicatesBySet[it.setId] = (src.duplicatesBySet[it.setId] || 0) + 1;
+        continue;
       }
+      const key = keyOf(it);
       const enabled = resetEnabled ? true : (prevEnabled.has(key) ? prevEnabled.get(key) : true);
       all.push({ ...it, enabled, pageSection: it.pageSection || 'Other' });
     }
@@ -1046,9 +1057,6 @@ function renderReview() {
   renderTemplatePicker();
 
   const root = $('#categories');
-  // Remember which sets the user collapsed, so a re-render (every choice
-  // triggers one) does not spring them back open.
-  const collapsed = new Set($$('.set-panel:not(.group-panel--open)', root).map((p) => p.dataset.setId));
   root.innerHTML = '';
 
   const activeSource = getActiveReviewSource();
@@ -1078,8 +1086,15 @@ function renderReview() {
   if (strays.length) sets.push({ set: { id: '__stray__', kind: 'loose', signature: 'Other', fields: {} }, items: strays });
 
   root.appendChild(renderDetectSummary(activeSource, sourceName, sets));
+  // Which sets are expanded lives in state, so a re-render (every choice
+  // triggers one) keeps the user where they are.
+  if (!reviewState.openSets.has(activeSource.id)) {
+    reviewState.openSets.set(activeSource.id, new Set([sets[0].set.id]));
+  }
+  const openSets = reviewState.openSets.get(activeSource.id);
   sets.forEach(({ set, items }, index) => {
-    root.appendChild(renderSetPanel(activeSource, set, items, index, !collapsed.has(set.id)));
+    const next = sets[index + 1]?.set || null;
+    root.appendChild(renderSetPanel(activeSource, set, items, index, openSets.has(set.id), { next, total: sets.length }));
   });
   applyReviewItemFilter();
   updateReviewSelectionSummary();
@@ -1111,7 +1126,7 @@ function renderDetectSummary(src, sourceName, sets) {
   return el;
 }
 
-function renderSetPanel(src, set, items, index, open) {
+function renderSetPanel(src, set, items, index, open, { next = null, total = 1 } = {}) {
   const enabled = items.filter((i) => i.enabled).length;
   const allOn = enabled === items.length;
   const someOn = enabled > 0 && enabled < items.length;
@@ -1134,6 +1149,7 @@ function renderSetPanel(src, set, items, index, open) {
         <span class="group-checkbox__box"></span>
       </label>
       <button type="button" class="group-panel__toggle" aria-expanded="${open ? 'true' : 'false'}">
+        <span class="set-panel__step">${index + 1} of ${total}</span>
         <span class="group-panel__title">${escapeText(name)}</span>
         <span class="group-panel__count">${enabled} / ${items.length}</span>
         <svg class="group-panel__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
@@ -1162,7 +1178,26 @@ function renderSetPanel(src, set, items, index, open) {
   if (!fields.children.length) fields.remove();
 
   const body = panel.querySelector('.group-panel__body');
-  items.forEach((it) => body.appendChild(renderItemRow(it, src, set)));
+  const listHead = document.createElement('p');
+  listHead.className = 'set-panel__listhead';
+  listHead.textContent = `${items.length} ${noun}${items.length === 1 ? '' : 's'} with the choices above`;
+  body.appendChild(listHead);
+  items.forEach((it, i) => body.appendChild(renderItemRow(it, src, set, i)));
+  if (next) {
+    const foot = document.createElement('div');
+    foot.className = 'set-panel__foot';
+    foot.innerHTML = `<button type="button" class="btn btn--primary btn--sm" data-next-set>Looks good, next set</button>`;
+    foot.querySelector('button').addEventListener('click', () => {
+      const openNow = reviewState.openSets.get(src.id);
+      openNow.delete(set.id);
+      openNow.add(next.id);
+      renderReview();
+      const target = $(`.set-panel[data-set-id="${CSS.escape(next.id)}"]`, $('#categories'));
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target?.querySelector('.group-panel__toggle')?.focus({ preventScroll: true });
+    });
+    body.appendChild(foot);
+  }
 
   const groupChk = panel.querySelector('[data-group-toggle]');
   if (someOn) groupChk.indeterminate = true;
@@ -1177,21 +1212,30 @@ function renderSetPanel(src, set, items, index, open) {
     panel.classList.toggle('group-panel--open');
     const expanded = panel.classList.contains('group-panel--open');
     panel.querySelector('.group-panel__toggle').setAttribute('aria-expanded', expanded);
+    const openNow = reviewState.openSets.get(src.id);
+    if (expanded) openNow?.add(set.id);
+    else openNow?.delete(set.id);
+  });
+
+  // Keep the current pick in view inside its strip after a re-render.
+  requestAnimationFrame(() => {
+    panel.querySelectorAll('.set-pick__options').forEach((strip) => {
+      const current = strip.querySelector('.is-current');
+      if (current) strip.scrollLeft = Math.max(0, current.offsetLeft - strip.offsetLeft - 8);
+    });
   });
 
   return panel;
 }
 
-// One field's picker, always the first thing in an open set: the options are
-// laid out as real values from one card of the set, so choosing is a matter
-// of looking, and the cards underneath update as soon as one is clicked.
+// One field's picker, always the first thing in an open set. EVERY source the
+// set offers for the field is laid out in one swipeable strip, each as a real
+// value from a card of the set, so choosing is a matter of looking. The cards
+// underneath update as soon as one is tapped.
 //
-//   Auto            the parser's own per-card pick
-//   rivals          sources the parser found competing with its pick
-//   other sources   anything else that reads differently on the example card
-//   (the rest)      a "More sources" menu, so the row stays scannable
-const PICKER_LIMIT = 4;
-
+// Two sources are folded into one tile only when they give the same value on
+// the first cards of the set (an anchor's text that merely repeats its own
+// heading); they are not different options, just two routes to one result.
 function renderSetPicker(src, set, field, items) {
   const info = set.fields?.[field];
   const options = (info?.options || []).filter((o) => o.strategy !== 'fallback');
@@ -1201,52 +1245,56 @@ function renderSetPicker(src, set, field, items) {
   const choice = src.setChoices?.[set.id]?.[field] || '';
   const example = items.find((it) => it.ambiguous?.[field]) || items[0];
   if (!example) return null;
-
-  const parsed = example._parsed || {};
-  const autoValue = field === 'title' ? parsed.title
-    : field === 'thumb' ? parsed.thumbnail
-    : (parsed.video?.src || '');
-  const candOf = (strategy) => (example[candKey] || []).find((c) => c.strategy === strategy);
-  const autoOption = info.strategy ? options.find((o) => o.strategy === info.strategy) : null;
-
-  // Visible tiles: Auto first, then sources worth a look.
-  const tiles = [{ strategy: '', tag: autoOption ? `Auto · ${autoOption.label}` : 'Auto', value: autoValue }];
-  const shown = new Set([autoValue]);
-  const add = (strategy, force = false) => {
-    if (tiles.some((t) => t.strategy === strategy)) return;
-    const cand = candOf(strategy);
-    if (!cand) return;
-    if (!force && shown.has(cand.value)) return;
-    shown.add(cand.value);
-    tiles.push({ strategy, tag: cand.label, value: cand.value });
-  };
-  if (choice && choice !== NONE) add(choice, true);
-  for (const strategy of info.rivals || []) if (tiles.length < PICKER_LIMIT) add(strategy);
-  // Beyond the rivals, only titles are worth laying out: other image sources
-  // are mostly the same picture at another size, which is menu material.
-  if (field === 'title') {
-    for (const o of options) if (tiles.length < PICKER_LIMIT && !o.repeats) add(o.strategy);
-  }
-  if (field !== 'title') tiles.push({ strategy: NONE, tag: field === 'thumb' ? 'No image' : 'No video preview', value: null });
-
-  const rest = options.filter((o) => !tiles.some((t) => t.strategy === o.strategy));
-  if (tiles.length < 2 && !rest.length) return null;
-
   const total = items.length;
+
+  const candOf = (it, strategy) => (it[candKey] || []).find((c) => c.strategy === strategy);
+  const parsedValue = (it) => {
+    const parsed = it._parsed || {};
+    return field === 'title' ? parsed.title : field === 'thumb' ? parsed.thumbnail : (parsed.video?.src || '');
+  };
+  const probe = [example, ...items.filter((it) => it !== example)].slice(0, 6);
+  const signatureOf = (strategy) => probe.map((it) => (strategy ? candOf(it, strategy)?.value : parsedValue(it)) || '').join('\u0000');
+  const sampleOf = (strategy) => {
+    const own = candOf(example, strategy);
+    if (own) return own;
+    for (const it of items) { const c = candOf(it, strategy); if (c) return c; }
+    return null;
+  };
+
+  const autoOption = info.strategy ? options.find((o) => o.strategy === info.strategy) : null;
+  const tiles = [{ strategy: '', tag: 'Auto', sub: autoOption ? autoOption.label : 'best guess per card', value: parsedValue(example) }];
+  const shown = new Set([signatureOf('')]);
+  const add = (o, force = false) => {
+    if (tiles.some((t) => t.strategy === o.strategy)) return;
+    const cand = sampleOf(o.strategy);
+    if (!cand) return;
+    const sig = signatureOf(o.strategy);
+    if (!force && shown.has(sig)) return;
+    shown.add(sig);
+    const reach = o.count >= total ? '' : `${Math.min(o.count, total)} of ${total} cards`;
+    tiles.push({ strategy: o.strategy, tag: cand.label, sub: o.repeats ? 'same on every card' : reach, value: cand.value });
+  };
+  const byStrategy = new Map(options.map((o) => [o.strategy, o]));
+  if (choice && choice !== NONE && byStrategy.has(choice)) add(byStrategy.get(choice), true);
+  for (const strategy of info.rivals || []) if (byStrategy.has(strategy)) add(byStrategy.get(strategy));
+  for (const o of options) add(o);
+  if (field !== 'title') tiles.push({ strategy: NONE, tag: field === 'thumb' ? 'No image' : 'No video preview', sub: '', value: null });
+  if (tiles.length < 2) return null;
+
   const preview = (tile) => {
     if (tile.strategy === NONE) return '<span class="set-pick__none">Leave it out</span>';
-    if (field === 'title') return `<span class="set-pick__text">${escapeText(truncate(tile.value || '(empty)', 90))}</span>`;
+    if (field === 'title') return `<span class="set-pick__text">${escapeText(truncate(tile.value || '(empty)', 110))}</span>`;
     if (field === 'thumb') {
       return tile.value
-        ? `<img class="set-pick__img" src="${escapeAttr(tile.value)}" alt="" loading="lazy" />`
+        ? `<img class="set-pick__img" src="${escapeAttr(tile.value)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'set-pick__none', textContent: 'Does not load' }))" />`
         : '<span class="set-pick__none">No image found</span>';
     }
-    return `<span class="set-pick__text set-pick__text--mono">${escapeText(truncate(String(tile.value || '(none)').replace(/^https?:\/\//, ''), 60))}</span>`;
+    return `<span class="set-pick__text set-pick__text--mono">${escapeText(truncate(String(tile.value || '(none)').replace(/^https?:\/\//, ''), 70))}</span>`;
   };
   const count = Math.min(info.ambiguousCount || 0, total);
   const hint = needsReview
     ? `${count} of ${total} card${total === 1 ? '' : 's'} offer${count === 1 ? 's' : ''} more than one. Pick one for the whole set.`
-    : `Applies to all ${total} card${total === 1 ? '' : 's'} below`;
+    : `Applies to all ${total} card${total === 1 ? '' : 's'} below.`;
 
   const el = document.createElement('div');
   el.className = `set-pick set-pick--${field}`;
@@ -1257,31 +1305,28 @@ function renderSetPicker(src, set, field, items) {
   el.innerHTML = `
     <div class="set-pick__head">
       <span class="set-pick__label">${FIELD_LABEL[field]}</span>
+      <span class="set-pick__count">${tiles.length} option${tiles.length === 1 ? '' : 's'}</span>
       <span class="set-pick__hint">${escapeText(hint)}</span>
-      ${rest.length ? `
-        <select class="set-pick__more" data-set-more aria-label="More ${FIELD_LABEL[field].toLowerCase()} sources">
-          <option value="">More sources (${rest.length})</option>
-          ${rest.map((o) => `<option value="${escapeAttr(o.strategy)}">${escapeText(o.label)}${o.count >= (set.count || total) ? '' : ` · ${o.count} of ${set.count || total}`}${o.repeats ? ' · same on every card' : ''}</option>`).join('')}
-        </select>` : ''}
     </div>
-    <div class="set-pick__options">
-      ${tiles.map((tile) => `
-        <button type="button" class="set-pick__option ${tile.strategy === choice ? 'is-current' : ''}" data-set-pick="${escapeAttr(tile.strategy)}" aria-pressed="${tile.strategy === choice}">
-          <span class="set-pick__tag">${escapeText(tile.tag)}</span>
+    <div class="set-pick__options" tabindex="-1">
+      ${tiles.map((tile) => {
+        const current = tile.strategy === choice;
+        return `
+        <button type="button" class="set-pick__option ${current ? 'is-current' : ''}" data-set-pick="${escapeAttr(tile.strategy)}" aria-pressed="${current}">
+          <span class="set-pick__tag">${current ? '<span class="set-pick__check" aria-hidden="true">✓</span> ' : ''}${escapeText(tile.tag)}</span>
           ${preview(tile)}
-        </button>`).join('')}
+          ${tile.sub ? `<span class="set-pick__sub">${escapeText(tile.sub)}</span>` : ''}
+        </button>`;
+      }).join('')}
     </div>
   `;
   el.querySelectorAll('[data-set-pick]').forEach((btn) => {
     btn.addEventListener('click', () => chooseSetField(src, set.id, field, btn.dataset.setPick));
   });
-  el.querySelector('[data-set-more]')?.addEventListener('change', (e) => {
-    if (e.currentTarget.value) chooseSetField(src, set.id, field, e.currentTarget.value);
-  });
   return el;
 }
 
-function renderItemRow(item, src, set) {
+function renderItemRow(item, src, set, index = 0) {
   const row = document.createElement('label');
   row.className = 'item-row item-row--card';
   if (!item.enabled) row.classList.add('item-row--off');
@@ -1302,19 +1347,20 @@ function renderItemRow(item, src, set) {
     edited ? '<span class="item-row__badge item-row__badge--edited">Edited</span>' : '',
   ].join('');
 
+  const shortUrl = String(item.href || '').replace(/^https?:\/\/(www\.)?/, '');
   row.innerHTML = `
-    <input type="checkbox" class="item-row__check" ${item.enabled ? 'checked' : ''} />
+    <input type="checkbox" class="item-row__check" ${item.enabled ? 'checked' : ''} aria-label="Include card ${index + 1}: ${escapeAttr(item.title || 'Untitled')}" />
     <span class="item-row__box"></span>
     ${thumbHtml}
     <div class="item-row__body">
       <p class="item-row__title">${escapeText(item.title || 'Untitled')}</p>
+      <span class="item-row__link" title="${escapeAttr(item.href)}">${escapeText(shortUrl)}</span>
       <div class="item-row__meta">
-        <span class="item-row__domain">${escapeText(item.domain)}</span>
+        <span class="item-row__num">Card ${index + 1}</span>
         ${badges}
+        <button type="button" class="item-row__edit" data-edit-card="${escapeAttr(item.id)}" aria-label="Edit card ${index + 1}: ${escapeAttr(item.title || 'Untitled')}">Edit</button>
       </div>
-      <span class="item-row__url">${escapeText(item.href)}</span>
     </div>
-    <button type="button" class="item-row__edit" data-edit-card="${escapeAttr(item.id)}" aria-label="Edit card: ${escapeAttr(item.title || 'Untitled')}">Edit</button>
   `;
 
   const check = row.querySelector('.item-row__check');
@@ -2346,6 +2392,8 @@ document.addEventListener('click', (e) => {
     if (target) {
       const panel = target.closest('.set-panel');
       panel?.classList.add('group-panel--open');
+      const activeSrc = getActiveReviewSource();
+      if (panel && activeSrc) reviewState.openSets.get(activeSrc.id)?.add(panel.dataset.setId);
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       target.querySelector('button')?.focus({ preventScroll: true });
     }
