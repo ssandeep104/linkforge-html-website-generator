@@ -604,6 +604,44 @@ test('incomplete cards are surfaced and can take another source on their own', a
   }
 });
 
+// On a phone the page itself scrolls. Editing a card far down the list must
+// open the editor on screen and leave the list exactly where it was.
+test('the card editor opens in view and editing keeps the scroll position', async () => {
+  const { page, pageErrors } = await openApp({ width: 390, height: 700 });
+  try {
+    const card = (i) => `<div class="tile"><a href="https://site.example/t/${i}"><img src="${BASE_URL}/icon-192.png?c=${i}"></a><h3>Tile story ${i} headline</h3><p class="deck">Deck ${i}</p></div>`;
+    await page.locator('.source-card textarea').first().fill(`<html><body><div>${Array.from({ length: 14 }, (_, i) => card(i + 1)).join('')}</div></body></html>`);
+    await page.locator('#btn-parse').click();
+    await page.locator('#step-review.screen--active').waitFor();
+
+    const edit = page.locator('[data-edit-card]').nth(9);
+    await edit.scrollIntoViewIfNeeded();
+    const scrollBefore = await page.evaluate(() => Math.round(window.scrollY));
+    assert.ok(scrollBefore > 500, 'the tenth card is well down the page');
+    const rowTop = () => page.evaluate(() => Math.round(document.querySelectorAll('.item-row')[9].getBoundingClientRect().top));
+    const rowBefore = await rowTop();
+
+    await edit.click();
+    const box = await page.evaluate(() => {
+      const r = document.querySelector('#card-editor').getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, viewport: window.innerHeight, scrollY: Math.round(window.scrollY) };
+    });
+    assert.ok(box.top >= 0 && box.bottom <= box.viewport, `editor is fully on screen (${JSON.stringify(box)})`);
+    assert.equal(box.scrollY, scrollBefore, 'opening the editor does not move the page');
+
+    await page.locator('#card-editor input[name="ce-title"]').nth(1).check();
+    await page.locator('#card-editor .card-editor__foot [data-editor-close]').click();
+
+    assert.equal(await page.evaluate(() => Math.round(window.scrollY)), scrollBefore, 'saving returns to the same place');
+    assert.equal(await rowTop(), rowBefore, 'the edited card is where it was on screen');
+    assert.equal(await page.evaluate(() => document.querySelectorAll('.item-row')[9].querySelector('.item-row__title').textContent), 'Deck 10');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelectorAll('[data-edit-card]')[9]), true, 'focus returns to that card');
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
 // WS3: measure the rendered grids. At desktop, tablet and phone widths every
 // row of cards must reach the grid's right edge (no orphan row), and the page
 // must not scroll sideways.

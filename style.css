@@ -5127,3 +5127,13 @@ body:has(#step-review.screen--active),
   color: var(--color-text);
 }
 #step-review .set-panel--only-incomplete .item-row:not(.item-row--incomplete) { display: none; }
+
+/* The editor is pinned to the screen, wherever the page is scrolled. A page
+   rule had left the modal dialog positioned in the document, so on a long
+   list it opened off-screen at the top and dragged the page up to it. */
+dialog.card-editor {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  max-height: min(86dvh, 760px);
+}

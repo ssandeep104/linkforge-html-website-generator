@@ -686,6 +686,9 @@ function changeActiveReviewSource(delta) {
   const nextIdx = Math.min(reviewable.length - 1, Math.max(0, safeIdx + delta));
   reviewState.activeSourceId = reviewable[nextIdx].id;
   renderReview();
+  // A different source is a different list: start it from the top.
+  $('.review-editor')?.scrollTo({ top: 0, behavior: 'instant' });
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function renderReviewSourceStepper() {
@@ -1081,6 +1084,17 @@ function renderReview() {
   renderTemplatePicker();
 
   const root = $('#categories');
+  // Rebuilding the list must not move the user. Emptying it collapses the
+  // page for an instant, which clamps the scroll position to the top; hold
+  // the height while it is rebuilt and put both scroll positions back.
+  const editorPane = $('.review-editor');
+  const scrollPos = { page: window.scrollY, pane: editorPane ? editorPane.scrollTop : 0 };
+  root.style.minHeight = `${root.offsetHeight}px`;
+  const restoreScroll = () => {
+    root.style.minHeight = '';
+    if (editorPane) editorPane.scrollTop = scrollPos.pane;
+    if (window.scrollY !== scrollPos.page) window.scrollTo({ top: scrollPos.page, behavior: 'instant' });
+  };
   root.innerHTML = '';
 
   const activeSource = getActiveReviewSource();
@@ -1098,6 +1112,7 @@ function renderReview() {
         <p>Go back and paste HTML that contains links, images, or videos.</p>
       </div>
     `;
+    restoreScroll();
     return;
   }
 
@@ -1121,6 +1136,7 @@ function renderReview() {
     root.appendChild(renderSetPanel(activeSource, set, items, index, openSets.has(set.id), { next, total: sets.length }));
   });
   applyReviewItemFilter();
+  restoreScroll();
   updateReviewSelectionSummary();
   refreshReviewPreview();
 }
@@ -1604,9 +1620,16 @@ function openCardEditor(itemId) {
 }
 
 function closeCardEditor() {
+  const itemId = cardEditor.itemId;
   cardEditor.itemId = null;
   const dialog = $('#card-editor');
   if (dialog?.open) dialog.close();
+  // Hand focus back to the card that was being edited, without scrolling:
+  // the list was rebuilt while the editor was open, so the button the browser
+  // would return to no longer exists.
+  if (itemId) {
+    $(`#categories [data-edit-card="${CSS.escape(itemId)}"]`)?.focus({ preventScroll: true });
+  }
 }
 
 function uniqueByValue(cands) {
@@ -2657,7 +2680,11 @@ $('#review-collection-heading')?.addEventListener('blur', (event) => {
 });
 window.addEventListener('resize', syncReviewModeForViewport);
 // Esc and backdrop clicks close the card editor like its Done button does.
-$('#card-editor')?.addEventListener('close', () => { cardEditor.itemId = null; });
+$('#card-editor')?.addEventListener('close', () => {
+  const itemId = cardEditor.itemId; // still set when closed with Esc
+  cardEditor.itemId = null;
+  if (itemId) $(`#categories [data-edit-card="${CSS.escape(itemId)}"]`)?.focus({ preventScroll: true });
+});
 $('#card-editor')?.addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeCardEditor();
 });
