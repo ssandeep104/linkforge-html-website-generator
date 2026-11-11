@@ -5156,3 +5156,73 @@ dialog.card-editor {
   margin: auto;
   max-height: min(86dvh, 760px);
 }
+
+/* ---------- template choice ---------- */
+#step-review .template-bar {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+#step-review .template-bar[hidden] { display: none; }
+.template-bar__swatch { overflow: hidden; border: 1px solid var(--color-border); border-radius: 5px; line-height: 0; }
+.template-bar__swatch svg, .template-option__swatch svg { display: block; width: 100%; height: auto; }
+.template-bar__text { display: grid; gap: 1px; min-width: 0; }
+.template-bar__label { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
+.template-bar__name { font-size: 0.98rem; line-height: 1.2; }
+.template-bar__desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.74rem; color: var(--color-text-muted); }
+.template-bar__count { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.22); font-size: 0.68rem; }
+@media (max-width: 560px) {
+  #step-review .template-bar { grid-template-columns: 64px minmax(0, 1fr); }
+  .template-bar__change { grid-column: 1 / -1; justify-content: center; min-height: 42px; }
+}
+dialog.template-sheet {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(720px, calc(100vw - 24px));
+  max-height: min(88dvh, 820px);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+dialog.template-sheet[open] { display: flex; }
+dialog.template-sheet::backdrop { background: rgba(5, 14, 13, 0.55); }
+.template-sheet__inner { display: flex; flex-direction: column; min-height: 0; width: 100%; }
+.template-sheet__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px; border-bottom: 1px solid var(--color-divider); }
+.template-sheet__head h3 { margin: 0; font-size: 1.05rem; }
+.template-sheet__head p { margin: 4px 0 0; font-size: 0.78rem; color: var(--color-text-muted); }
+.template-sheet__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; padding: 14px; overflow-y: auto; min-height: 0; }
+.template-option {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 10px;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.template-option:hover { border-color: var(--color-text-muted); }
+.template-option.is-selected { border-color: var(--color-primary); background: var(--color-primary-highlight); }
+.template-option:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.template-option__swatch { overflow: hidden; border: 1px solid var(--color-border); border-radius: 5px; line-height: 0; }
+.template-option__text { display: grid; gap: 4px; min-width: 0; }
+.template-option__name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.95rem; font-weight: 700; }
+.template-option__tag { padding: 1px 7px; border-radius: 999px; background: var(--color-surface-offset); font-size: 0.62rem; font-weight: 600; color: var(--color-text-muted); }
+.template-option__tag--on { background: var(--color-primary); color: var(--color-text-inverse); }
+.template-option__desc { font-size: 0.78rem; line-height: 1.4; color: var(--color-text); }
+.template-option__fit { font-size: 0.7rem; line-height: 1.4; color: var(--color-text-muted); }

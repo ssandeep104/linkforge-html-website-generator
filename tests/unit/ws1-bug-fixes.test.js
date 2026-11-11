@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { parseSourceWithMeta } from '../../parser.js';
-import { TEMPLATE_KEYS, buildHtml, context, items } from '../helpers/templates.js';
+import { TEMPLATE_KEYS, PRESETS, buildHtml, context, items } from '../helpers/templates.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixture = (name) => readFileSync(join(__dirname, '..', 'fixtures', name), 'utf8');
@@ -67,18 +67,12 @@ test('#4: Bloomberg data-video-url cards carry video semantics', () => {
 
 // ---------- issue #2: generated-output theme toggle ----------
 
-// Palette variable that paints each template's page background, and the
-// values it must take in the native vs. toggled theme.
-const PALETTES = {
-  youtube: { var: '--creator-bg', native: 'dark', dark: '#0b1014', light: '#f6f4ef' },
-  wall: { var: '--paper', native: 'light', dark: '#161512', light: '#f7f6f2' },
-  flux: { var: '--flux-bg', native: 'dark', dark: '#080c0e', light: '#f4f6f6' },
-  shelf: { var: '--shelf-bg', native: 'light', dark: '#101619', light: '#f7f8f8' },
-  // WS4 templates.
-  editorial: { var: '--front-bg', native: 'light', dark: '#141311', light: '#faf8f3' },
-  reading: { var: '--reading-bg', native: 'light', dark: '#121212', light: '#fbfbf9' },
-  mosaic: { var: '--mosaic-bg', native: 'dark', dark: '#0d0d0f', light: '#f3f2ee' },
-};
+// Every template is a preset; its own data says which theme it opens in and
+// what each theme's page background is, so a new preset is covered here
+// without adding an expectation by hand.
+const PALETTES = Object.fromEntries(PRESETS.map((p) => [p.key, {
+  var: '--bg', native: p.theme === 'light' ? 'light' : 'dark', dark: p.colors.dark.bg, light: p.colors.light.bg,
+}]));
 
 const TWO_SOURCES = () => [
   { name: 'Src A', items: [...items('a', 3), ...items('alinks', 2, { thumbnail: false })] },

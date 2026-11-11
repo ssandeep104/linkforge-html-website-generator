@@ -251,6 +251,10 @@
         <div class="review-head__meta" data-review-meta></div>
       </section>
 
+      <!-- The template choice, always on screen: on a phone the picker itself
+           sits in the Preview tab, where it is easy to never find. -->
+      <section id="template-bar" class="template-bar" aria-label="Site template"></section>
+
       <nav class="review-mode-switch" aria-label="Review workspace view">
         <button class="review-mode-switch__button is-active" type="button" data-review-mode="edit" aria-pressed="true">
           Edit
@@ -317,7 +321,7 @@
           <header class="review-preview__head">
             <div>
               <span class="review-preview__eyebrow">Live preview</span>
-              <strong id="review-preview-template">Creator Grid</strong>
+              <strong id="review-preview-template">Template</strong>
             </div>
             <div class="review-preview__devices" aria-label="Preview size">
               <button type="button" class="is-active" data-preview-width="desktop" aria-label="Desktop preview" aria-pressed="true">Desktop</button>
@@ -331,7 +335,7 @@
           <section class="template-picker">
             <div class="template-picker__head">
               <h3>Choose template</h3>
-              <p class="muted">Four image-first layouts</p>
+              <p class="muted">The look of your finished site</p>
             </div>
             <div class="template-carousel">
               <button class="template-carousel__btn template-carousel__btn--prev" type="button" aria-label="Previous template">
@@ -445,6 +449,9 @@
 
     <!-- Per-card editor: every title / image / video / link the card offers -->
     <dialog id="card-editor" class="card-editor" aria-labelledby="card-editor-title"></dialog>
+
+    <!-- Template chooser: every template, one tap each -->
+    <dialog id="template-sheet" class="template-sheet" aria-labelledby="template-sheet-title"></dialog>
 
     <!-- Toasts -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

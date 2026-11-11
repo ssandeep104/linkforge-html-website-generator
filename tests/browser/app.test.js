@@ -642,6 +642,41 @@ test('the card editor opens in view and editing keeps the scroll position', asyn
   }
 });
 
+// The template choice must be findable on a phone without opening the
+// Preview tab: a bar on the review page names the current template and opens
+// a chooser listing every one.
+test('the template is shown and changeable from the review page on a phone', async () => {
+  const { page, pageErrors } = await openApp({ width: 390, height: 844 });
+  try {
+    await loadSampleAndReview(page);
+    const bar = page.locator('#template-bar');
+    assert.equal(await bar.isVisible(), true, 'the template bar is on screen in the Edit view');
+    const before = await page.evaluate(() => __lfState.site.template);
+    assert.equal((await bar.locator('.template-bar__name').innerText()).trim(), await page.evaluate((k) => LINKFORGE_TEMPLATES[k].name, before));
+
+    await bar.locator('[data-open-templates]').click();
+    const sheet = page.locator('#template-sheet');
+    const box = await sheet.evaluate((el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: innerHeight }; });
+    assert.ok(box.top >= 0 && box.bottom <= box.h, 'the chooser opens on screen');
+    const keys = await page.evaluate(() => Object.keys(LINKFORGE_TEMPLATES));
+    assert.equal(await sheet.locator('[data-template-option]').count(), keys.length, 'every template is offered');
+    assert.equal(await sheet.locator('.template-option.is-selected').getAttribute('data-template-option'), before);
+
+    const other = keys.find((k) => k !== before);
+    await sheet.locator(`[data-template-option="${other}"]`).click();
+    assert.equal(await page.evaluate(() => __lfState.site.template), other);
+    assert.equal(await sheet.evaluate((el) => el.open), false);
+    assert.equal((await bar.locator('.template-bar__name').innerText()).trim(), await page.evaluate((k) => LINKFORGE_TEMPLATES[k].name, other));
+
+    await page.locator('#btn-generate').click();
+    await page.locator('#step-output.screen--active').waitFor();
+    await page.frameLocator('#preview-frame').locator(`body.tpl-${other}`).waitFor();
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
 // WS3: measure the rendered grids. At desktop, tablet and phone widths every
 // row of cards must reach the grid's right edge (no orphan row), and the page
 // must not scroll sideways.
@@ -695,7 +730,7 @@ test('generated grids have no orphan rows or horizontal overflow at any width', 
 
 // WS4: the new templates are offered in the picker and go through the same
 // generate -> preview path as the original four.
-for (const key of ['editorial', 'reading', 'mosaic']) {
+for (const key of ['posters', 'bento', 'queue']) {
   test(`the ${key} template is selectable and generates a preview`, async () => {
     const { page, pageErrors } = await openApp();
     try {

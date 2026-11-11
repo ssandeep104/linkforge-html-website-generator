@@ -4,7 +4,7 @@
 // much as the remainder requires.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TEMPLATES, planRows, SHAPES, items } from '../helpers/templates.js';
+import { TEMPLATES, LAYOUTS, planRows, SHAPES, items } from '../helpers/templates.js';
 
 // Walk spans into rows; throws if any row overflows or the tail is partial.
 function rowsOf(spans, cols) {
@@ -51,17 +51,15 @@ test('wide-card grids promote the fewest cards needed', () => {
   rowsOf(planRows(5, SHAPES.wideCards(4)), 4);
 });
 
-// Every layout the registered templates use, for every realistic count.
-const LAYOUTS = {
-  'creator lg': [SHAPES.wideCards(6), 6],
-  'creator md': [SHAPES.wideCards(4), 4],
-  'creator sm / tablet pairs': [SHAPES.wideCards(2), 2],
-  'wall lg': [[{ spans: [6, 6], cost: 0.1 }, { spans: [4, 5, 3], cost: 0 }, { spans: [12], cost: 5 }], 12],
-  'flux lg': [[{ spans: [6, 6], cost: 0.1 }, { spans: [4, 4, 4], cost: 0 }, { spans: [3, 3, 3, 3], cost: 0.1 }, { spans: [12], cost: 5 }], 12],
-  'shelf lg': [[{ spans: [7, 5], cost: 0 }, { spans: [4, 4, 4], cost: 0 }, { spans: [5, 7], cost: 0 }, { spans: [8, 4], cost: 0 }, { spans: [12], cost: 5 }], 12],
-  'editorial 3-col': [SHAPES.heroRows(3), 3],
-};
-for (const [name, [shapes, cols]] of Object.entries(LAYOUTS)) {
+// Every planned grid the engine offers, at every breakpoint, for every
+// realistic count. Read from the registry, so a new layout is covered as soon
+// as it is added.
+const GRID_SPECS = {};
+for (const [name, layout] of Object.entries(LAYOUTS)) {
+  if (layout.kind !== 'grid') continue;
+  for (const [bp, spec] of Object.entries(layout.bps)) GRID_SPECS[`${name} ${bp}`] = [spec.shapes, spec.cols];
+}
+for (const [name, [shapes, cols]] of Object.entries(GRID_SPECS)) {
   test(`${name}: every count from 1 to 60 fills every row exactly`, () => {
     for (let n = 1; n <= 60; n++) {
       const spans = planRows(n, shapes);
@@ -77,7 +75,7 @@ test('generated pages carry per-card spans and never use dense flow', () => {
     const built = tpl.build(ctx);
     const html = typeof built === 'string' ? built : built.html;
     assert.doesNotMatch(html, /grid-auto-flow:\s*dense/, `${key} uses dense flow`);
-    // Reading List is a single-column list by design: no grid, no orphans.
+    // Rails and lists are not grids: nothing to plan, no orphan rows.
     if (!html.includes('data-lf-grid')) continue;
     assert.equal((html.match(/--s-lg:\d+/g) || []).length >= 6, true, `${key} cards carry planned spans`);
   }

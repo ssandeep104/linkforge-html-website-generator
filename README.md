@@ -2,7 +2,7 @@
 
 Turn any pile of HTML into a site of your own.
 
-Paste raw HTML from web pages, portfolios, product lists, media libraries, or bookmarks. LinkForge pulls out every link, thumbnail, and preview, then lets you pick what goes in and generates a finished site in one of seven responsive templates (Creator Grid, Photo Wall, Flux Index, Pop Shelf, Editorial Front, Reading List, Mosaic), each with light and dark themes.
+Paste raw HTML from web pages, portfolios, product lists, media libraries, or bookmarks. LinkForge pulls out every link, thumbnail, and preview, then lets you pick what goes in and generates a finished site in one of six streaming-style templates (Marquee, Poster Wall, Pulse, Bento, Glasshouse, Queue), each with light and dark themes.
 
 **Live editor:** [linkforge-omega.vercel.app](https://linkforge-omega.vercel.app)
 
@@ -10,7 +10,7 @@ Paste raw HTML from web pages, portfolios, product lists, media libraries, or bo
 
 1. **Sources** — paste HTML or upload `.html` files (drag-and-drop supported). Add as many sources as you want.
 2. **Review** — LinkForge finds the repeating card layouts on each page (a grid of 20 matching containers is one *card set*; a page can hold several) and pairs each card's title, thumbnail, and video preview. Where a field has competing sources (two headings, two pictures) the set is flagged and you pick once for the whole set. Any single card can be edited on its own.
-3. **Output** — generates a styled standalone HTML page in one of seven layouts. Each preserves source grouping and readable fallback links; cards with a playable video file preview it on hover. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
+3. **Output** — generates a styled standalone HTML page in the template you pick (the review page shows the current one with a "Change template" button). Each preserves source grouping and readable fallback links; cards with a playable video file preview it on hover. **Download** the HTML and host it wherever you like — your own server, GitHub Pages, Netlify, S3, a USB stick, anywhere that can serve static files.
 
 Parser is fully client-side. There are no network calls — your HTML never leaves the browser.
 
@@ -45,6 +45,14 @@ No environment variables required — the app is fully static.
 4. **Judge each set as a group** — a title or image that repeats on every card is a label or logo and is replaced; fields with real rivals are reported as ambiguous.
 
 `parseSourceWithMeta()` returns `items` (each with `setId` and its candidate lists) and `cardSets` (each with per-field `strategy`, `ambiguous`, `rivals`, `options`).
+
+## Adding a template
+
+Templates are data. Each one is a preset object in the `PRESETS` list at the top of `templates.js`: fonts (Google Fonts family names), a dark and a light palette of seven colours, a layout (`rails`, `grid`, `posters`, `bento`, `list`), a hero style, and how a card looks (image ratio, corner radius, title below or over the picture, hover effect). One shared engine renders every preset.
+
+To add a template, add one object to `PRESETS`. It then appears in the picker with a generated preview, loads its own fonts, and gets the source filter, theme toggle, hover video previews and link tail. The template test suites read the preset list, so a new preset is tested without adding test code. The schema is documented in the comment at the top of `templates.js`.
+
+A new *layout* (a new way of arranging cards) is the one thing that needs engine code: an entry in `LAYOUTS` and, if it is not a planned grid, a branch in `renderItems()`.
 
 ## Tests
 

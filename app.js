@@ -9,7 +9,7 @@ const DEFAULT_SITE_TAGLINE = '';
 const state = window.__lfState = {
   sources: [], // {id, name, html, items[]}
   items: [], // flattened, with .enabled flag
-  site: { title: DEFAULT_SITE_TITLE, tagline: DEFAULT_SITE_TAGLINE, template: 'youtube' },
+  site: { title: DEFAULT_SITE_TITLE, tagline: DEFAULT_SITE_TAGLINE, template: '' },
 };
 
 // Source names are auto-derived from their position (Source 1, Source 2, …)
@@ -1908,24 +1908,7 @@ document.addEventListener('click', (e) => {
 // STEP 3 — GENERATE FINAL SITE
 // ===================================================
 
-const TEMPLATE_DEFAULTS = {
-  youtube: {
-    title: DEFAULT_SITE_TITLE,
-    tagline: DEFAULT_SITE_TAGLINE
-  },
-  wall: {
-    title: DEFAULT_SITE_TITLE,
-    tagline: DEFAULT_SITE_TAGLINE
-  },
-  flux: {
-    title: DEFAULT_SITE_TITLE,
-    tagline: DEFAULT_SITE_TAGLINE
-  },
-  shelf: {
-    title: DEFAULT_SITE_TITLE,
-    tagline: DEFAULT_SITE_TAGLINE
-  }
-};
+const TEMPLATE_DEFAULTS = {};
 const DEFAULT_TEMPLATE_TITLES = new Set(Object.values(TEMPLATE_DEFAULTS).map((d) => d.title));
 const DEFAULT_TEMPLATE_TAGLINES = new Set(Object.values(TEMPLATE_DEFAULTS).map((d) => d.tagline));
 
@@ -1936,6 +1919,86 @@ function countByCategory(items) {
   const c = { article: 0, video: 0, gallery: 0, link: 0, total: items.length };
   for (const i of items) c[i.category] = (c[i.category] || 0) + 1;
   return c;
+}
+
+// One place that changes the template, whichever control asked for it.
+function selectTemplate(key) {
+  if (!window.LINKFORGE_TEMPLATES[key]) return;
+  state.site.template = key;
+  $$('.template-card').forEach((c) => {
+    const active = c.dataset.template === key;
+    c.classList.toggle('template-card--active', active);
+    c.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  renderTemplateBar();
+  refreshReviewPreview({ immediate: true });
+}
+
+// The always-visible summary of the current template, with the way to change it.
+function renderTemplateBar() {
+  const bar = $('#template-bar');
+  if (!bar) return;
+  const tpl = window.LINKFORGE_TEMPLATES[state.site.template];
+  if (!tpl) { bar.hidden = true; return; }
+  bar.hidden = false;
+  const count = Object.keys(window.LINKFORGE_TEMPLATES).length;
+  bar.innerHTML = `
+    <div class="template-bar__swatch" aria-hidden="true">${tpl.preview ? tpl.preview() : ''}</div>
+    <div class="template-bar__text">
+      <span class="template-bar__label">Template</span>
+      <strong class="template-bar__name">${escapeText(tpl.name)}</strong>
+      <span class="template-bar__desc">${escapeText(tpl.desc || '')}</span>
+    </div>
+    <button type="button" class="btn btn--primary btn--sm template-bar__change" data-open-templates>Change template <span class="template-bar__count">${count}</span></button>
+  `;
+}
+
+function openTemplateSheet() {
+  const dialog = $('#template-sheet');
+  if (!dialog) return;
+  const enabled = state.items.filter((i) => i.enabled);
+  const suggested = window.LINKFORGE_SUGGEST(countByCategory(enabled));
+  const entries = Object.entries(window.LINKFORGE_TEMPLATES);
+  dialog.innerHTML = `
+    <div class="template-sheet__inner">
+      <header class="template-sheet__head">
+        <div>
+          <h3 id="template-sheet-title">Choose a template</h3>
+          <p>${entries.length} looks for the same cards. You can switch at any time.</p>
+        </div>
+        <button type="button" class="icon-btn" data-close-templates aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </header>
+      <div class="template-sheet__list">
+        ${entries.map(([key, tpl]) => {
+          const active = key === state.site.template;
+          return `
+          <button type="button" class="template-option ${active ? 'is-selected' : ''}" data-template-option="${escapeAttr(key)}" aria-pressed="${active}">
+            <span class="template-option__swatch" aria-hidden="true">${tpl.preview ? tpl.preview() : ''}</span>
+            <span class="template-option__text">
+              <span class="template-option__name">${escapeText(tpl.name)}
+                ${active ? '<span class="template-option__tag template-option__tag--on">Selected</span>' : ''}
+                ${key === suggested && !active ? '<span class="template-option__tag">Suggested</span>' : ''}
+              </span>
+              <span class="template-option__desc">${escapeText(tpl.desc || '')}</span>
+              ${tpl.fit ? `<span class="template-option__fit">${escapeText(tpl.fit)}</span>` : ''}
+            </span>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  dialog.querySelectorAll('[data-template-option]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.templateOption;
+      selectTemplate(key);
+      dialog.close();
+      showToast(`Template: ${window.LINKFORGE_TEMPLATES[key].name}`);
+    });
+  });
+  dialog.querySelector('[data-close-templates]').addEventListener('click', () => dialog.close());
+  if (!dialog.open) dialog.showModal();
 }
 
 function renderTemplatePicker() {
@@ -1960,6 +2023,7 @@ function renderTemplatePicker() {
   if (!state.site.template || !window.LINKFORGE_TEMPLATES[state.site.template] || isRejected(window.LINKFORGE_TEMPLATES[state.site.template])) {
     state.site.template = suggested;
   }
+  renderTemplateBar();
 
   // Featured templates first, then the rest in declaration order.
   const ordered = templates.slice().sort((a, b) => {
@@ -2003,33 +2067,7 @@ function renderTemplatePicker() {
     `;
     card.addEventListener('click', () => {
       if (disabledReason) { showToast(disabledReason); return; }
-
-      const currentTitle = $('#site-title').value.trim();
-      const currentTagline = $('#site-tagline').value.trim();
-
-      const isTitleDefault = !currentTitle || DEFAULT_TEMPLATE_TITLES.has(currentTitle);
-
-      const isTaglineDefault = !currentTagline || DEFAULT_TEMPLATE_TAGLINES.has(currentTagline);
-
-      state.site.template = key;
-
-      if (isTitleDefault) {
-        const newTitle = TEMPLATE_DEFAULTS[key]?.title || DEFAULT_SITE_TITLE;
-        $('#site-title').value = newTitle;
-        state.site.title = newTitle;
-      }
-      if (isTaglineDefault) {
-        const newTagline = TEMPLATE_DEFAULTS[key]?.tagline || DEFAULT_SITE_TAGLINE;
-        $('#site-tagline').value = newTagline;
-        state.site.tagline = newTagline;
-      }
-
-      $$('.template-card').forEach((c) => {
-        const active = c.dataset.template === key;
-        c.classList.toggle('template-card--active', active);
-        c.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-      refreshReviewPreview({ immediate: true });
+      selectTemplate(key);
     });
     grid.appendChild(card);
   }
@@ -2173,7 +2211,7 @@ function buildGeneratedSite() {
     today,
   };
 
-  const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || window.LINKFORGE_TEMPLATES.youtube || window.LINKFORGE_TEMPLATES.flux;
+  const tpl = window.LINKFORGE_TEMPLATES[state.site.template] || Object.values(window.LINKFORGE_TEMPLATES)[0];
   if (tpl.validate) {
     const check = tpl.validate(ctx);
     if (check && check.ok === false) {
@@ -2629,6 +2667,10 @@ document.addEventListener('click', (e) => {
     });
     return;
   }
+  if (e.target.closest('[data-open-templates]')) {
+    openTemplateSheet();
+    return;
+  }
   const editCard = e.target.closest('[data-edit-card]');
   if (editCard) {
     e.preventDefault(); // the button sits inside the row's <label>
@@ -2709,6 +2751,9 @@ $('#card-editor')?.addEventListener('close', () => {
 });
 $('#card-editor')?.addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeCardEditor();
+});
+$('#template-sheet')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.close();
 });
 
 // Publish-to-Vercel was removed: hosting user-generated pages on a shared
