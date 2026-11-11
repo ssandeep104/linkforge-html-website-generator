@@ -563,6 +563,47 @@ test('sets open one at a time with every option shown and no card in two sets', 
   }
 });
 
+// Cards the set-wide choice leaves incomplete (here: a picture that does not
+// load) are listed per set and can be filled from another source without
+// touching the cards that were already fine.
+test('incomplete cards are surfaced and can take another source on their own', async () => {
+  const { page, pageErrors } = await openApp({ width: 390, height: 844 });
+  try {
+    const good = (n) => `${BASE_URL}/icon-192.png?card=${n}`;
+    const card = (i) => `<div class="tile"><a href="https://site.example/t/${i}"><img src="${i === 6 ? `${BASE_URL}/missing-${i}.jpg` : good(i)}"></a>${i === 6 ? `<img class="backup" src="${good('backup')}">` : ''}<h3>Tile story ${i} headline</h3></div>`;
+    await page.locator('.source-card textarea').first().fill(`<html><body><div>${[1, 2, 3, 4, 5, 6].map(card).join('')}</div></body></html>`);
+    await page.locator('#btn-parse').click();
+    await page.locator('#step-review.screen--active').waitFor();
+
+    const attention = page.locator('.set-attention');
+    await attention.waitFor();
+    assert.match(await attention.locator('.set-attention__msg').innerText(), /1 of 6 cards not complete/);
+    assert.match(await page.locator('.detect-summary__incomplete').innerText(), /1 card is missing/);
+    assert.equal(await page.locator('.item-row--incomplete').count(), 1);
+    assert.match(await page.locator('.item-row--incomplete .item-row__badge--warn').innerText(), /Image does not load/i);
+
+    const thumbs = () => page.evaluate(() => __lfState.items.map((it) => it.thumbnail));
+    const before = await thumbs();
+
+    await attention.locator('[data-only-incomplete]').click();
+    assert.equal(await page.locator('#categories .item-row:visible').count(), 1, 'the list narrows to the incomplete card');
+
+    await page.locator('.set-attention [data-add-fallback][data-field="thumb"]').first().click();
+    const after = await thumbs();
+    assert.deepEqual(after.slice(0, 5), before.slice(0, 5), 'complete cards keep their image');
+    assert.equal(after[5], good('backup'), 'the incomplete card takes the other source');
+    assert.equal(await page.locator('.item-row--incomplete').count(), 0);
+    assert.match(await page.locator('.set-attention__msg').innerText(), /All 6 cards complete/);
+    assert.equal(await page.locator('#categories .item-row:visible').count(), 6, 'with nothing left to fix the full list returns');
+
+    await page.locator('[data-clear-fallback]').click();
+    assert.deepEqual(await thumbs(), before, 'Undo removes the extra source');
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
 // WS3: measure the rendered grids. At desktop, tablet and phone widths every
 // row of cards must reach the grid's right edge (no orphan row), and the page
 // must not scroll sideways.

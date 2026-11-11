@@ -548,6 +548,10 @@ const reviewState = {
   // sourceId -> Set of set ids currently expanded. Sets are worked through
   // one at a time, so only the first (best) set starts open.
   openSets: new Map(),
+  // Thumbnail URLs that failed to load in the review list.
+  brokenThumbs: new Set(),
+  // "sourceId\0setId" of sets currently narrowed to their incomplete cards.
+  onlyIncomplete: new Set(),
 };
 
 // Map the internal item.category to the user-facing bucket above.
@@ -895,14 +899,34 @@ function applyCardChoices(src) {
     const edit = src.cardEdits[it.id] || {};
     const pick = (field, strategy) => (it[FIELD_CANDIDATES[field]] || []).find((c) => c.strategy === strategy);
 
+    // Extra sources for the cards the set-wide choice left incomplete. They
+    // never touch a card that already has a value (see renderSetAttention).
+    const fallback = choice.fallback || {};
+    const broken = reviewState.brokenThumbs;
+
     let title = base.title;
     if (choice.title) title = pick('title', choice.title)?.value ?? base.title;
+    if (!hasRealTitle({ title, domain: it.domain })) {
+      for (const strategy of fallback.title || []) {
+        const c = pick('title', strategy);
+        if (c && hasRealTitle({ title: c.value, domain: it.domain })) { title = c.value; break; }
+      }
+    }
     if (typeof edit.title === 'string') title = edit.title;
 
     let thumbnail = base.thumbnail;
     if (choice.thumb === NONE) thumbnail = null;
-    else if (choice.thumb) thumbnail = pick('thumb', choice.thumb)?.value ?? base.thumbnail;
+    else {
+      if (choice.thumb) thumbnail = pick('thumb', choice.thumb)?.value ?? base.thumbnail;
+      if (!thumbnail || broken.has(thumbnail)) {
+        for (const strategy of fallback.thumb || []) {
+          const c = pick('thumb', strategy);
+          if (c && !broken.has(c.value)) { thumbnail = c.value; break; }
+        }
+      }
+    }
     if ('thumbnail' in edit) thumbnail = edit.thumbnail;
+    it._thumbBroken = !!thumbnail && broken.has(thumbnail);
 
     // A parsed video whose src is the card's own destination says what the
     // card IS (a video page: Bloomberg/NBC/duration-chip cards), not an
@@ -1106,6 +1130,10 @@ function renderDetectSummary(src, sourceName, sets) {
   const repeating = sets.filter((entry) => entry.set.kind === 'repeating');
   const cardCount = sets.reduce((sum, entry) => sum + entry.items.length, 0);
   const questions = openQuestions(src);
+  const incomplete = sets.reduce((sum, entry) => {
+    const expected = expectedFields(entry.items);
+    return sum + entry.items.filter((it) => missingFields(it, expected).length).length;
+  }, 0);
   const found = repeating.length
     ? `<strong>${repeating.length} card set${repeating.length === 1 ? '' : 's'}</strong> · ${cardCount} card${cardCount === 1 ? '' : 's'}`
     : `<strong>${cardCount} item${cardCount === 1 ? '' : 's'}</strong> · no repeating card layout`;
@@ -1118,6 +1146,7 @@ function renderDetectSummary(src, sourceName, sets) {
     <div class="detect-summary__text">
       <p class="detect-summary__found">${found} <span class="detect-summary__source">in ${escapeText(sourceName)}</span></p>
       <p class="detect-summary__explain">${explain}</p>
+      ${incomplete ? `<p class="detect-summary__incomplete">${incomplete} card${incomplete === 1 ? ' is' : 's are'} missing an image or a title. Each set lists its own and lets you try another source for just those.</p>` : ''}
     </div>
     ${questions.length
       ? `<button type="button" class="btn btn--sm detect-summary__action" data-next-question>${questions.length} choice${questions.length === 1 ? '' : 's'} to check</button>`
@@ -1175,14 +1204,24 @@ function renderSetPanel(src, set, items, index, open, { next = null, total = 1 }
       fields.appendChild(p);
     }
   }
+  // After the pickers, before the list: what the choices above did NOT solve.
+  const attention = renderSetAttention(src, set, items);
+  if (attention) fields.appendChild(attention);
   if (!fields.children.length) fields.remove();
+
+  const expected = expectedFields(items);
+  const incompleteCount = items.filter((it) => missingFields(it, expected).length).length;
+  const onlyIncomplete = incompleteCount > 0 && reviewState.onlyIncomplete.has(`${src.id}\u0000${set.id}`);
+  if (onlyIncomplete) panel.classList.add('set-panel--only-incomplete');
 
   const body = panel.querySelector('.group-panel__body');
   const listHead = document.createElement('p');
   listHead.className = 'set-panel__listhead';
-  listHead.textContent = `${items.length} ${noun}${items.length === 1 ? '' : 's'} with the choices above`;
+  listHead.textContent = onlyIncomplete
+    ? `${incompleteCount} incomplete ${noun}${incompleteCount === 1 ? '' : 's'} (of ${items.length})`
+    : `${items.length} ${noun}${items.length === 1 ? '' : 's'} with the choices above`;
   body.appendChild(listHead);
-  items.forEach((it, i) => body.appendChild(renderItemRow(it, src, set, i)));
+  items.forEach((it, i) => body.appendChild(renderItemRow(it, src, set, i, missingFields(it, expected))));
   if (next) {
     const foot = document.createElement('div');
     foot.className = 'set-panel__foot';
@@ -1226,6 +1265,165 @@ function renderSetPanel(src, set, items, index, open, { next = null, total = 1 }
   });
 
   return panel;
+}
+
+// ---------- cards that did not fully resolve ----------
+// A card is "complete" when it has a real title and a picture that loads.
+// After the set-wide choice some cards can still fall short: the chosen
+// heading is empty on three of them, the chosen <img> is a dead URL on two.
+// Those are surfaced per set, and can be filled from a DIFFERENT source
+// without disturbing the cards the set-wide choice already got right:
+//
+//   src.setChoices[setId].fallback = { title: [strategy, ...], thumb: [...] }
+//
+// Fallback sources are tried in order, only on cards whose own value is
+// missing (see applyCardChoices).
+function hasRealTitle(item) {
+  const title = (item.title || '').trim();
+  return !!title && title !== 'Untitled' && title !== item.domain;
+}
+
+// Which fields a set is expected to have. A list of plain text links is not
+// "missing" forty images; a picture grid with three blanks is missing three.
+function expectedFields(items) {
+  const withThumb = items.filter((it) => it.thumbnail && !it._thumbBroken).length;
+  return { title: true, thumb: items.length > 0 && withThumb / items.length >= 0.5 };
+}
+
+function missingFields(item, expected) {
+  const out = [];
+  if (expected.title && !hasRealTitle(item)) out.push('title');
+  if (expected.thumb && (!item.thumbnail || item._thumbBroken)) out.push('thumb');
+  return out;
+}
+
+function addFallback(src, setId, field, strategy) {
+  const choice = setChoiceOf(src, setId);
+  choice.fallback ||= {};
+  choice.fallback[field] ||= [];
+  if (!choice.fallback[field].includes(strategy)) choice.fallback[field].push(strategy);
+  flattenSourcesIntoItems({ resetEnabled: false });
+  renderReview();
+}
+
+function clearFallback(src, setId) {
+  const choice = setChoiceOf(src, setId);
+  delete choice.fallback;
+  flattenSourcesIntoItems({ resetEnabled: false });
+  renderReview();
+}
+
+// A thumbnail that fails to load is as missing as one that was never found.
+// Rows report failures here; the list is re-evaluated once they settle.
+let brokenThumbTimer = null;
+function reportBrokenThumb(url) {
+  if (!url || reviewState.brokenThumbs.has(url)) return;
+  reviewState.brokenThumbs.add(url);
+  clearTimeout(brokenThumbTimer);
+  brokenThumbTimer = setTimeout(() => {
+    if (!$('#step-review.screen--active')) return;
+    flattenSourcesIntoItems({ resetEnabled: false });
+    renderReview();
+    if (cardEditor.itemId) renderCardEditor();
+  }, 350);
+}
+
+function renderSetAttention(src, set, items) {
+  const expected = expectedFields(items);
+  const incomplete = items.filter((it) => missingFields(it, expected).length);
+  const fallback = src.setChoices?.[set.id]?.fallback || {};
+  const inUse = [...(fallback.title || []), ...(fallback.thumb || [])];
+  if (!incomplete.length && !inUse.length) return null;
+
+  const key = `${src.id}\u0000${set.id}`;
+  const onlyThese = reviewState.onlyIncomplete.has(key) && incomplete.length > 0;
+  const el = document.createElement('div');
+  el.className = 'set-attention';
+  if (!incomplete.length) el.classList.add('set-attention--done');
+  el.dataset.attention = set.id;
+
+  const lacking = (field) => items.filter((it) => missingFields(it, expected).includes(field));
+  const noTitle = lacking('title').length;
+  const noThumb = lacking('thumb').length;
+  const parts = [
+    noThumb ? `${noThumb} without an image` : '',
+    noTitle ? `${noTitle} without a title` : '',
+  ].filter(Boolean).join(', ');
+
+  let html = incomplete.length
+    ? `<div class="set-attention__head">
+         <p class="set-attention__msg"><strong>${incomplete.length} of ${items.length} card${items.length === 1 ? '' : 's'} not complete</strong> · ${parts}.</p>
+         <button type="button" class="btn btn--ghost btn--sm" data-only-incomplete aria-pressed="${onlyThese}">${onlyThese ? 'Show all cards' : 'Show only these'}</button>
+       </div>`
+    : `<div class="set-attention__head"><p class="set-attention__msg"><strong>All ${items.length} cards complete</strong> with the extra source${inUse.length === 1 ? '' : 's'} below.</p></div>`;
+
+  for (const field of ['thumb', 'title']) {
+    const affected = lacking(field);
+    if (!affected.length) continue;
+    const candKey = FIELD_CANDIDATES[field];
+    const usable = (c) => field === 'thumb'
+      ? !!c.value && !reviewState.brokenThumbs.has(c.value)
+      : hasRealTitle({ title: c.value, domain: affected[0].domain });
+    // Sources the unfinished cards offer, with how many of them each fills.
+    const byStrategy = new Map();
+    for (const it of affected) {
+      const seen = new Set();
+      for (const c of it[candKey] || []) {
+        if (c.strategy === 'fallback' || seen.has(c.strategy) || !usable(c)) continue;
+        if ((fallback[field] || []).includes(c.strategy)) continue;
+        seen.add(c.strategy);
+        if (!byStrategy.has(c.strategy)) byStrategy.set(c.strategy, { strategy: c.strategy, label: c.label, sample: c.value, fills: 0, sig: [] });
+        const o = byStrategy.get(c.strategy);
+        o.fills++;
+        o.sig.push(`${it.id}=${c.value}`);
+      }
+    }
+    const seenSig = new Set();
+    const options = [...byStrategy.values()]
+      .sort((a, b) => b.fills - a.fills)
+      .filter((o) => { const s = o.sig.join('|'); if (seenSig.has(s)) return false; seenSig.add(s); return true; });
+    const what = field === 'thumb' ? 'image' : 'title';
+    html += `<div class="set-attention__field" data-attention-field="${field}">
+      <p class="set-attention__label">${options.length
+        ? `Try another ${what} source for just ${affected.length === 1 ? 'this card' : `these ${affected.length} cards`}`
+        : `No other ${what} source found in ${affected.length === 1 ? 'this card' : `these ${affected.length} cards`}. Use Edit on a card to set it by hand.`}</p>
+      ${options.length ? `<div class="set-pick__options">${options.map((o) => `
+        <button type="button" class="set-pick__option" data-add-fallback="${escapeAttr(o.strategy)}" data-field="${field}">
+          <span class="set-pick__tag">${escapeText(o.label)}</span>
+          ${field === 'thumb'
+            ? `<img class="set-pick__img" src="${escapeAttr(o.sample)}" alt="" loading="lazy" />`
+            : `<span class="set-pick__text">${escapeText(truncate(o.sample, 110))}</span>`}
+          <span class="set-pick__sub">fills ${o.fills} of ${affected.length}</span>
+        </button>`).join('')}</div>` : ''}
+    </div>`;
+  }
+
+  if (inUse.length) {
+    const labelOf = (field, strategy) => {
+      for (const it of items) {
+        const c = (it[FIELD_CANDIDATES[field]] || []).find((x) => x.strategy === strategy);
+        if (c) return c.label;
+      }
+      return strategy;
+    };
+    const names = [
+      ...(fallback.thumb || []).map((s) => `image: ${labelOf('thumb', s)}`),
+      ...(fallback.title || []).map((s) => `title: ${labelOf('title', s)}`),
+    ];
+    html += `<p class="set-attention__inuse">Extra source${names.length === 1 ? '' : 's'} in use for incomplete cards only (${escapeText(names.join(', '))}). <button type="button" class="set-attention__undo" data-clear-fallback>Undo</button></p>`;
+  }
+
+  el.innerHTML = html;
+  el.querySelector('[data-only-incomplete]')?.addEventListener('click', () => {
+    if (reviewState.onlyIncomplete.has(key)) reviewState.onlyIncomplete.delete(key);
+    else reviewState.onlyIncomplete.add(key);
+    renderReview();
+  });
+  el.querySelectorAll('[data-add-fallback]').forEach((btn) => {
+    btn.addEventListener('click', () => addFallback(src, set.id, btn.dataset.field, btn.dataset.addFallback));
+  });
+  el.querySelector('[data-clear-fallback]')?.addEventListener('click', () => clearFallback(src, set.id));
+  return el;
 }
 
 // One field's picker, always the first thing in an open set. EVERY source the
@@ -1326,16 +1524,17 @@ function renderSetPicker(src, set, field, items) {
   return el;
 }
 
-function renderItemRow(item, src, set, index = 0) {
+function renderItemRow(item, src, set, index = 0, missing = []) {
   const row = document.createElement('label');
   row.className = 'item-row item-row--card';
   if (!item.enabled) row.classList.add('item-row--off');
   row.dataset.id = item.id;
   row.dataset.reviewFilterKind = reviewFilterOf(item);
+  if (missing.length) row.classList.add('item-row--incomplete');
 
-  const thumbHtml = item.thumbnail
+  const thumbHtml = item.thumbnail && !item._thumbBroken
     ? `<div class="item-row__thumb ${item.category === 'video' ? 'item-row__thumb--video' : ''}">
-         <img src="${escapeAttr(item.thumbnail)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('item-row__thumb--empty'); this.remove();" />
+         <img src="${escapeAttr(item.thumbnail)}" alt="" loading="lazy" />
          ${item.category === 'video' ? '<span class="item-row__play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>' : ''}
        </div>`
     : `<div class="item-row__thumb item-row__thumb--empty"><span>${escapeText((item.domain || item.title || 'L').charAt(0).toUpperCase())}</span></div>`;
@@ -1343,6 +1542,8 @@ function renderItemRow(item, src, set, index = 0) {
   const edited = src?.cardEdits?.[item.id] && Object.keys(src.cardEdits[item.id]).length > 0;
   const hasPreview = !!(item.video && item.video.src && item.video.src !== item.href);
   const badges = [
+    missing.includes('thumb') ? `<span class="item-row__badge item-row__badge--warn">${item._thumbBroken ? 'Image does not load' : 'No image'}</span>` : '',
+    missing.includes('title') ? '<span class="item-row__badge item-row__badge--warn">No title</span>' : '',
     hasPreview ? '<span class="item-row__badge">Video preview</span>' : '',
     edited ? '<span class="item-row__badge item-row__badge--edited">Edited</span>' : '',
   ].join('');
@@ -1362,6 +1563,8 @@ function renderItemRow(item, src, set, index = 0) {
       </div>
     </div>
   `;
+
+  row.querySelector('.item-row__thumb img')?.addEventListener('error', () => reportBrokenThumb(item.thumbnail));
 
   const check = row.querySelector('.item-row__check');
   check.addEventListener('change', () => {
