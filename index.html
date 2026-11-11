@@ -466,12 +466,13 @@
       would otherwise race ahead of the deferred module).
     -->
     <script type="module">
-      import { parseSource, parseSourceWithMeta, domainOf, canonicalHref, duplicateKey } from './parser.js';
+      import { parseSource, parseSourceWithMeta, domainOf, canonicalHref, duplicateKey, findDuplicateCards } from './parser.js';
       window.parseSource = parseSource;
       window.parseSourceWithMeta = parseSourceWithMeta;
       window.domainOf = domainOf;
       window.canonicalHref = canonicalHref;
       window.duplicateKey = duplicateKey;
+      window.findDuplicateCards = findDuplicateCards;
     </script>
     <script src="./templates.js" defer></script>
     <script src="./app.js" defer></script>

@@ -577,7 +577,7 @@ test('incomplete cards are surfaced and can take another source on their own', a
 
     const attention = page.locator('.set-attention');
     await attention.waitFor();
-    assert.match(await attention.locator('.set-attention__msg').innerText(), /1 of 6 cards not complete/);
+    assert.match(await attention.locator('.set-attention__msg').innerText(), /1 of 6 cards to check/);
     assert.match(await page.locator('.detect-summary__incomplete').innerText(), /1 card is missing/);
     assert.equal(await page.locator('.item-row--incomplete').count(), 1);
     assert.match(await page.locator('.item-row--incomplete .item-row__badge--warn').innerText(), /Image does not load/i);
@@ -671,6 +671,49 @@ test('the template is shown and changeable from the review page on a phone', asy
     await page.locator('#btn-generate').click();
     await page.locator('#step-output.screen--active').waitFor();
     await page.frameLocator('#preview-frame').locator(`body.tpl-${other}`).waitFor();
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await page.close();
+  }
+});
+
+// The same story under a different URL in a second layout is one card; a
+// different story that merely shows the same picture is kept but flagged; and
+// the removed card is listed, not silently dropped.
+test('cross-set duplicates are merged, listed, and shared pictures are flagged', async () => {
+  const { page, pageErrors } = await openApp({ width: 390, height: 844 });
+  try {
+    const pic = (n) => `${BASE_URL}/icon-192.png?story=${n}`;
+    const tile = (i) => `<div class="tile"><a href="https://site.example/story/${i}"><img src="${pic(i)}"></a><h3>Grid story number ${i} headline</h3></div>`;
+    const side = (href, title, n) => `<li class="side"><a href="${href}"><img src="${pic(n)}"><span class="t">${title}</span></a></li>`;
+    const html = `<html><body><div class="grid">${[1, 2, 3, 4, 5, 6].map(tile).join('')}</div><ul class="rail">
+      ${side('https://site.example/story/1?from=sidebar&pos=1', 'Grid story number 1 headline', 1)}
+      ${side('https://site.example/featured/second', 'Grid story number 2 headline, extended cut', 2)}
+      ${side('https://site.example/opinion/other', 'A different piece entirely about rail', 3)}
+      ${side('https://site.example/opinion/fresh', 'Something only the sidebar has today', 9)}
+    </ul></body></html>`;
+    await page.locator('.source-card textarea').first().fill(html);
+    await page.locator('#btn-parse').click();
+    await page.locator('#step-review.screen--active').waitFor();
+
+    const hrefs = await page.evaluate(() => __lfState.items.map((it) => it.href));
+    assert.equal(hrefs.filter((h) => /story\/1/.test(h)).length, 1, 'story 1 is one card, not two');
+    assert.ok(!hrefs.includes('https://site.example/featured/second'), 'the renamed copy of story 2 is merged on title and picture');
+    assert.ok(hrefs.includes('https://site.example/opinion/other'), 'a different story with a shared picture is kept');
+    assert.equal(hrefs.length, 8);
+
+    const dupes = await page.evaluate(() => __lfState.sources[0].duplicates.map((d) => d.reason).sort());
+    assert.deepEqual(dupes, ['same page and picture', 'same title and picture']);
+    const shared = await page.evaluate(() => __lfState.items.filter((it) => it._sharedImageWith.length).map((it) => it.href).sort());
+    assert.deepEqual(shared, ['https://site.example/opinion/other', 'https://site.example/story/3']);
+
+    // Open the second set, where both removals happened, and read the list.
+    const second = page.locator('#categories .set-panel').nth(1);
+    await second.locator('.group-panel__toggle').click();
+    assert.match(await second.locator('.set-dupes summary').innerText(), /2 duplicates removed/);
+    await second.locator('.set-dupes summary').click();
+    assert.equal(await second.locator('.set-dupes li').count(), 2);
+    assert.equal(await second.locator('.item-row__badge--warn', { hasText: 'Same image as another card' }).count(), 1);
     assert.deepEqual(pageErrors, []);
   } finally {
     await page.close();

@@ -352,14 +352,11 @@ const SOURCE_FILTER_CSS = `
 // same reason: a template cannot forget it.
 //
 // Contract:
-//   - shell() stamps <html data-theme="…"> with the template's native theme
-//     (dark-native templates: Creator Grid, Flux Index; light-native: Photo
-//     Wall, Pop Shelf) and renders one toggle button + one small script on
-//     every generated page.
-//   - Each template's CSS carries a `:root[data-theme="…"]` block for the
-//     OPPOSITE theme that reassigns its palette variables (plus overrides
-//     for the hard-coded colors variables don't reach), so flipping the
-//     attribute genuinely re-skins body, cards, headings and links.
+//   - shell() stamps <html data-theme="…"> with the preset's own `theme`
+//     and renders one toggle button + one small script on every page.
+//   - Every preset supplies both palettes; shell() writes them as
+//     `:root[data-theme="light"]` and `:root[data-theme="dark"]` blocks, so
+//     flipping the attribute re-skins body, cards, headings and links.
 //   - The script only flips the attribute. No localStorage: an export is a
 //     standalone file the reader may open anywhere, and the issue's
 //     validator explicitly ruled persistence out.

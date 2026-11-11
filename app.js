@@ -802,40 +802,45 @@ function flattenSourcesIntoItems({ resetEnabled = false } = {}) {
     });
   });
   // Rebuild in original source order, dropping non-winners.
-  // A second pass, per source: cards that READ the same (same title, same
-  // picture; see duplicateKey) are one card even when their links differ.
-  // A card belongs to exactly one set: when the same card turns up in two
-  // layouts (a hero and the grid below it), the better-ranked set keeps it
-  // and it is removed from the other. It runs on the values in effect, so
-  // choosing a different title or image source re-evaluates it.
-  const all = [];
-  for (const src of state.sources) {
+  // A second pass over everything that is left, across all sets and sources:
+  // cards that are the same card twice even though their links are not
+  // identical (see findDuplicateCards for the rules). A card belongs to one
+  // set only; of two duplicates the one in the earlier source and the
+  // better-ranked set is kept. It runs on the values in effect, so choosing a
+  // different title or image source re-evaluates it.
+  const survivors = [];
+  const rankByItem = new Map();
+  state.sources.forEach((src, srcIdx) => {
+    src.duplicates = [];
     src.duplicatesBySet = {};
-    const rankOf = new Map((src.cardSets || []).map((set, i) => [set.id, i]));
-    const survivors = (src.items || []).filter((it) => {
-      if (it._excludedBySet) return false;
+    const setRank = new Map((src.cardSets || []).map((set, i) => [set.id, i]));
+    for (const it of src.items || []) {
+      if (it._excludedBySet) continue;
       const winner = byHref.get(keyOf(it));
-      return !!winner && winner.item === it;
-    });
-    const dupKeyOf = (it) => (typeof duplicateKey === 'function' ? duplicateKey(it) : '');
-    const owner = new Map(); // duplicate key -> the one card that keeps it
-    for (const it of survivors) {
-      const dupKey = dupKeyOf(it);
-      if (!dupKey) continue;
-      const rank = rankOf.has(it.setId) ? rankOf.get(it.setId) : Infinity;
-      const current = owner.get(dupKey);
-      if (!current || rank < current.rank) owner.set(dupKey, { item: it, rank });
+      if (!winner || winner.item !== it) continue;
+      survivors.push(it);
+      rankByItem.set(it, srcIdx * 10000 + (setRank.has(it.setId) ? setRank.get(it.setId) : 9999));
     }
-    for (const it of survivors) {
-      const dupKey = dupKeyOf(it);
-      if (dupKey && owner.get(dupKey).item !== it) {
+  });
+  const { dropped, shared } = typeof findDuplicateCards === 'function'
+    ? findDuplicateCards(survivors, { rank: (it) => rankByItem.get(it) })
+    : { dropped: new Map(), shared: new Map() };
+  const all = [];
+  for (const it of survivors) {
+    const dup = dropped.get(it);
+    if (dup) {
+      const src = state.sources.find((s) => s.id === it.sourceId);
+      if (src) {
+        src.duplicates.push({ setId: it.setId, title: it.title, href: it.href, reason: dup.reason, keptTitle: dup.kept.title, keptHref: dup.kept.href });
         src.duplicatesBySet[it.setId] = (src.duplicatesBySet[it.setId] || 0) + 1;
-        continue;
       }
-      const key = keyOf(it);
-      const enabled = resetEnabled ? true : (prevEnabled.has(key) ? prevEnabled.get(key) : true);
-      all.push({ ...it, enabled, pageSection: it.pageSection || 'Other' });
+      continue;
     }
+    const key = keyOf(it);
+    const enabled = resetEnabled ? true : (prevEnabled.has(key) ? prevEnabled.get(key) : true);
+    // Cards that are NOT duplicates but show the same picture as another card.
+    const sharedWith = (shared.get(it) || []).map((other) => ({ title: other.title, href: other.href }));
+    all.push({ ...it, enabled, pageSection: it.pageSection || 'Other', _sharedImageWith: sharedWith });
   }
   state.items = all;
 }
@@ -1220,6 +1225,20 @@ function renderSetPanel(src, set, items, index, open, { next = null, total = 1 }
       fields.appendChild(p);
     }
   }
+  // What was merged away, so a removed card can be checked instead of trusted.
+  const removed = (src.duplicates || []).filter((d) => d.setId === set.id);
+  if (removed.length) {
+    const details = document.createElement('details');
+    details.className = 'set-dupes';
+    details.innerHTML = `
+      <summary>${removed.length} duplicate${removed.length === 1 ? '' : 's'} removed from this set</summary>
+      <ul>${removed.map((d) => `<li>
+        <span class="set-dupes__title">${escapeText(d.title || d.href)}</span>
+        <span class="set-dupes__why">${escapeText(d.reason)} as “${escapeText(truncate(d.keptTitle || d.keptHref, 60))}”</span>
+        <span class="set-dupes__url">${escapeText(String(d.href).replace(/^https?:\/\/(www\.)?/, ''))}</span>
+      </li>`).join('')}</ul>`;
+    fields.appendChild(details);
+  }
   // After the pickers, before the list: what the choices above did NOT solve.
   const attention = renderSetAttention(src, set, items);
   if (attention) fields.appendChild(attention);
@@ -1310,6 +1329,8 @@ function missingFields(item, expected) {
   const out = [];
   if (expected.title && !hasRealTitle(item)) out.push('title');
   if (expected.thumb && (!item.thumbnail || item._thumbBroken)) out.push('thumb');
+  // Not missing, but worth a look: its picture is also on a different card.
+  if (item.thumbnail && item._sharedImageWith?.length) out.push('shared');
   return out;
 }
 
@@ -1361,14 +1382,16 @@ function renderSetAttention(src, set, items) {
   const lacking = (field) => items.filter((it) => missingFields(it, expected).includes(field));
   const noTitle = lacking('title').length;
   const noThumb = lacking('thumb').length;
+  const sharing = lacking('shared').length;
   const parts = [
     noThumb ? `${noThumb} without an image` : '',
     noTitle ? `${noTitle} without a title` : '',
+    sharing ? `${sharing} showing an image that another card also uses` : '',
   ].filter(Boolean).join(', ');
 
   let html = incomplete.length
     ? `<div class="set-attention__head">
-         <p class="set-attention__msg"><strong>${incomplete.length} of ${items.length} card${items.length === 1 ? '' : 's'} not complete</strong> · ${parts}.</p>
+         <p class="set-attention__msg"><strong>${incomplete.length} of ${items.length} card${items.length === 1 ? '' : 's'} to check</strong> · ${parts}.</p>
          <button type="button" class="btn btn--ghost btn--sm" data-only-incomplete aria-pressed="${onlyThese}">${onlyThese ? 'Show all cards' : 'Show only these'}</button>
        </div>`
     : `<div class="set-attention__head"><p class="set-attention__msg"><strong>All ${items.length} cards complete</strong> with the extra source${inUse.length === 1 ? '' : 's'} below.</p></div>`;
@@ -1560,6 +1583,7 @@ function renderItemRow(item, src, set, index = 0, missing = []) {
   const badges = [
     missing.includes('thumb') ? `<span class="item-row__badge item-row__badge--warn">${item._thumbBroken ? 'Image does not load' : 'No image'}</span>` : '',
     missing.includes('title') ? '<span class="item-row__badge item-row__badge--warn">No title</span>' : '',
+    missing.includes('shared') ? `<span class="item-row__badge item-row__badge--warn" title="${escapeAttr(`Also used by: ${item._sharedImageWith.map((o) => o.title || o.href).join('; ')}`)}">Same image as another card</span>` : '',
     hasPreview ? '<span class="item-row__badge">Video preview</span>' : '',
     edited ? '<span class="item-row__badge item-row__badge--edited">Edited</span>' : '',
   ].join('');

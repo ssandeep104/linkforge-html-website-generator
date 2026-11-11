@@ -5226,3 +5226,11 @@ dialog.template-sheet::backdrop { background: rgba(5, 14, 13, 0.55); }
 .template-option__tag--on { background: var(--color-primary); color: var(--color-text-inverse); }
 .template-option__desc { font-size: 0.78rem; line-height: 1.4; color: var(--color-text); }
 .template-option__fit { font-size: 0.7rem; line-height: 1.4; color: var(--color-text-muted); }
+
+/* ---------- duplicates removed from a set ---------- */
+#step-review .set-dupes { font-size: 0.76rem; color: var(--color-text-muted); }
+#step-review .set-dupes summary { cursor: pointer; font-weight: 600; color: var(--color-primary); }
+#step-review .set-dupes ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+#step-review .set-dupes li { display: grid; gap: 1px; min-width: 0; padding-left: 10px; border-left: 2px solid var(--color-border); }
+#step-review .set-dupes__title { color: var(--color-text); font-weight: 600; overflow-wrap: anywhere; }
+#step-review .set-dupes__url { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.68rem; color: var(--color-text-faint); }

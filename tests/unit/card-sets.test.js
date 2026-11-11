@@ -232,3 +232,82 @@ test('cards with no reliable identity are never merged', () => {
   assert.equal(duplicateKey(cardLike({ title: 'Download', thumbnail: null })), '', 'short picture-less labels repeat legitimately');
   assert.notEqual(duplicateKey(cardLike({ thumbnail: null })), '', 'a full title identifies a picture-less card');
 });
+
+// ---------- duplicates across sets: two signals, never one ----------
+import { findDuplicateCards } from '../../parser.js';
+
+const c = (over) => ({ href: 'https://site.example/story/1', title: 'The long road home', thumbnail: 'https://cdn.example/a.jpg', domain: 'site.example', ...over });
+const droppedTitles = (items, opts) => [...findDuplicateCards(items, opts).dropped.keys()].map((it) => it.id);
+
+test('the same page reached through another query string, subdomain or /amp is one card', () => {
+  const items = [
+    c({ id: 'a' }),
+    c({ id: 'b', href: 'https://site.example/story/1?from=homepage&pos=3' }),
+    c({ id: 'c', href: 'https://m.site.example/story/1/amp' }),
+    c({ id: 'd', href: 'https://site.example/story/1/index.html', thumbnail: 'https://cdn.example/a.jpg?w=300' }),
+  ];
+  assert.deepEqual(droppedTitles(items), ['b', 'c', 'd']);
+  assert.equal(findDuplicateCards(items).dropped.get(items[1]).reason, 'same page and picture');
+});
+
+test('the same path with different content is not a duplicate', () => {
+  const items = [
+    c({ id: 'a', href: 'https://site.example/watch?v=1', title: 'First video', thumbnail: 'https://cdn.example/1.jpg' }),
+    c({ id: 'b', href: 'https://site.example/watch?v=2', title: 'Second video', thumbnail: 'https://cdn.example/2.jpg' }),
+    // Same path AND same title, but a different picture: two episodes.
+    c({ id: 'c', href: 'https://site.example/watch?v=3', title: 'First video', thumbnail: 'https://cdn.example/3.jpg' }),
+  ];
+  assert.deepEqual(droppedTitles(items), []);
+});
+
+test('the same story linked under a different URL is merged on title plus picture', () => {
+  const items = [
+    c({ id: 'grid', href: 'https://site.example/story/1' }),
+    c({ id: 'hero', href: 'https://site.example/featured/long-road', title: 'The long road home: a photo essay from the coast' }),
+  ];
+  const { dropped } = findDuplicateCards(items);
+  assert.deepEqual([...dropped.keys()].map((it) => it.id), ['hero']);
+  assert.equal(dropped.get(items[1]).reason, 'same title and picture');
+});
+
+test('a short shared word in the title is not enough to merge', () => {
+  const items = [
+    c({ id: 'a', href: 'https://site.example/x', title: 'News' }),
+    c({ id: 'b', href: 'https://site.example/y', title: 'Local news roundup for the week' }),
+  ];
+  assert.deepEqual(droppedTitles(items), []);
+});
+
+test('two different cards showing one picture are kept and reported as sharing it', () => {
+  const items = [
+    c({ id: 'a', href: 'https://site.example/a', title: 'Budget vote passes after long session' }),
+    c({ id: 'b', href: 'https://site.example/b', title: 'Rail line reopens next spring' }),
+    c({ id: 'c', href: 'https://site.example/c', title: 'Unrelated', thumbnail: 'https://cdn.example/other.jpg' }),
+  ];
+  const { dropped, shared } = findDuplicateCards(items);
+  assert.equal(dropped.size, 0);
+  assert.deepEqual(shared.get(items[0]).map((it) => it.id), ['b']);
+  assert.deepEqual(shared.get(items[1]).map((it) => it.id), ['a']);
+  assert.equal(shared.has(items[2]), false);
+});
+
+test('of two duplicates the better-ranked set keeps the card', () => {
+  const items = [c({ id: 'loose', setId: 'loose-1' }), c({ id: 'grid', setId: 'set-1', href: 'https://site.example/story/1?ref=grid' })];
+  const rank = (it) => (it.setId === 'set-1' ? 0 : 1);
+  assert.deepEqual(droppedTitles(items, { rank }), ['loose']);
+});
+
+test('more share and campaign parameters are stripped from links', () => {
+  const { items } = parse(`<a href="/p/1?igshid=abc&mc_cid=9&utm_id=4">First post title here</a><a href="/p/1?ref_src=tw">First post title here</a>`);
+  assert.deepEqual(items.map((i) => i.href), ['https://site.example/p/1']);
+});
+
+test('two different videos on a video host stay two cards even with one title and one picture', () => {
+  const items = [
+    c({ id: 'a', href: 'https://www.youtube.com/embed/AAA111' }),
+    c({ id: 'b', href: 'https://www.youtube.com/embed/BBB222' }),
+  ];
+  const { dropped, shared } = findDuplicateCards(items);
+  assert.equal(dropped.size, 0);
+  assert.deepEqual(shared.get(items[0]).map((it) => it.id), ['b'], 'but they are reported as sharing a picture');
+});

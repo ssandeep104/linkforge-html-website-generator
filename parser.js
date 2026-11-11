@@ -6,7 +6,7 @@
    DOMParser polyfill, e.g. linkedom, installed by the caller).
    ===================================================== */
 
-import { detectCardSets, resolveSetFields, rankSet, compareSetRank, duplicateKey } from './cards.js';
+import { detectCardSets, resolveSetFields, rankSet, compareSetRank, duplicateKey, findDuplicateCards } from './cards.js';
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -157,7 +157,11 @@ function normalizeURL(urlStr) {
       'ref', 'referrer', 'spm', '_openstat', 'action_object_map',
       'action_type_map', 'action_ref_map', '__twitter_impression',
       'pp', 'feature', 'si', 'embeds_referring_euri',
-      'embeds_referring_origin', 'source_ve_path', 'ab_channel', 'attr_tag'
+      'embeds_referring_origin', 'source_ve_path', 'ab_channel', 'attr_tag',
+      // Share / campaign tags that never change the page.
+      'utm_id', 'utm_source_platform', 'utm_creative_format', 'utm_marketing_tactic',
+      'ref_src', 'ref_url', 'igshid', 'igsh', 'mc_cid', 'mc_eid', 'cmpid', 'ncid',
+      '_hsenc', '_hsmi', 'mkt_tok', 'icid', 'trk', 'share_id', 'smid', 'smtyp',
     ];
 
     for (const param of paramsToStrip) {
@@ -3093,4 +3097,4 @@ function synthesizeFromArticle(art, baseURL, sourceName) {
   return outItems.length > 0 ? outItems : null;
 }
 
-export { parseSource, parseSourceWithMeta, domainOf, canonicalHref, duplicateKey };
+export { parseSource, parseSourceWithMeta, domainOf, canonicalHref, duplicateKey, findDuplicateCards };

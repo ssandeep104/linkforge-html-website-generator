@@ -521,4 +521,155 @@ function duplicateKey(item) {
   return `${title}\u0000${image}`;
 }
 
-export { detectCardSets, resolveSetFields, titleTier, sameTitle, rankSet, compareSetRank, duplicateKey };
+// The page a link points at, ignoring everything that varies between two
+// links to the same page: protocol, www/m/amp subdomains, the query string,
+// the fragment, a trailing slash, index files and /amp suffixes. On its own
+// this is too loose to call two links the same (watch?v=1 and watch?v=2
+// share it), so it is only ever used together with a matching title or
+// picture; see findDuplicateCards.
+function pageKey(href) {
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase().replace(/^(www|m|mobile|amp)\./, '');
+    const path = u.pathname
+      .replace(/\/(index|default)\.(html?|php|aspx?)$/i, '/')
+      .replace(/\/amp\/?$/i, '/')
+      .replace(/\/+$/, '');
+    return `${host}${path || '/'}`;
+  } catch {
+    return '';
+  }
+}
+
+// Two different videos on a video host (youtube.com/embed/AAA and /embed/BBB)
+// are different things whatever title or art they were given. A post that
+// embeds two players hands both the post's own headline and picture, which
+// would otherwise read as one card shown twice.
+const VIDEO_HOST = /(^|\.)(youtube\.com|youtube-nocookie\.com|youtu\.be|vimeo\.com|dailymotion\.com|twitch\.tv|tiktok\.com|wistia\.(com|net)|streamable\.com|loom\.com|rumble\.com)$/;
+function areDistinctVideos(a, b) {
+  try {
+    const x = new URL(a);
+    const y = new URL(b);
+    if (!VIDEO_HOST.test(x.hostname) || !VIDEO_HOST.test(y.hostname)) return false;
+    return x.hostname.replace(/^www\./, '') + x.pathname + x.search !== y.hostname.replace(/^www\./, '') + y.pathname + y.search;
+  } catch {
+    return false;
+  }
+}
+
+function realTitle(item) {
+  const title = norm(item.title);
+  return title && title !== norm(item.domain) ? title : '';
+}
+
+// One title says no more than the other. Containment only counts when the
+// shorter one is long enough to be a title in its own right, so "News" does
+// not match every headline with the word in it.
+function titlesAlike(a, b) {
+  const x = realTitle(a);
+  const y = realTitle(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  return short.length >= 12 && short.split(' ').length >= 3 && long.includes(short);
+}
+
+/**
+ * Find cards that are the same card twice, across every set and source.
+ *
+ * Exact link matches are assumed to be merged already. This catches what an
+ * exact match cannot, always on two independent signals so that neither a
+ * shared URL path nor a shared picture is enough by itself:
+ *
+ *   same page + same picture     the link differs only by query string,
+ *                                subdomain or /amp, and the art is the same
+ *   same page + same title       likewise, when one of the two has no picture
+ *   same picture + same title    the same story linked from two layouts under
+ *                                different URLs (one title may be a longer
+ *                                version of the other). Not applied to
+ *                                two different videos on a video host.
+ *
+ * A picture shared by two cards that are otherwise DIFFERENT (other title,
+ * other page) is not merged, because nothing says which card it belongs to.
+ * Those pairs are reported in `shared` for the user to judge.
+ *
+ * In each group of duplicates the card with the best `rank` (lowest) is kept;
+ * ties go to the fuller card, then to page order.
+ *
+ * @param {Array} items
+ * @param {{ rank?: (item) => number }} [opts]
+ * @returns {{ dropped: Map<object, {kept: object, reason: string}>, shared: Map<object, object[]> }}
+ */
+function findDuplicateCards(items, { rank = () => 0 } = {}) {
+  const parent = items.map((_, i) => i);
+  const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const reasonOf = new Map(); // index -> why it was tied to an earlier card
+  const union = (i, j, reason) => {
+    const a = find(i);
+    const b = find(j);
+    if (a === b) return;
+    parent[b] = a;
+    if (!reasonOf.has(j)) reasonOf.set(j, reason);
+    if (!reasonOf.has(i)) reasonOf.set(i, reason);
+  };
+
+  const images = items.map((it) => imageIdentity(it.thumbnail));
+  const byPage = new Map();
+  const byImage = new Map();
+  const sharedPairs = [];
+  items.forEach((it, i) => {
+    const page = pageKey(it.href);
+    if (page) {
+      for (const j of byPage.get(page) || []) {
+        const sameImage = images[i] && images[i] === images[j];
+        const differentImages = images[i] && images[j] && images[i] !== images[j];
+        if (sameImage) union(j, i, 'same page and picture');
+        else if (!differentImages && realTitle(it) && realTitle(it) === realTitle(items[j])) union(j, i, 'same page and title');
+      }
+      if (!byPage.has(page)) byPage.set(page, []);
+      byPage.get(page).push(i);
+    }
+    if (images[i]) {
+      for (const j of byImage.get(images[i]) || []) {
+        if (titlesAlike(it, items[j]) && !areDistinctVideos(it.href, items[j].href)) union(j, i, 'same title and picture');
+        else sharedPairs.push([j, i]);
+      }
+      if (!byImage.has(images[i])) byImage.set(images[i], []);
+      byImage.get(images[i]).push(i);
+    }
+  });
+
+  const richness = (it) => (it.thumbnail ? 2 : 0) + (realTitle(it) ? 1 : 0) + (it.video ? 1 : 0);
+  const groups = new Map();
+  items.forEach((_, i) => {
+    const root = find(i);
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(i);
+  });
+  const dropped = new Map();
+  const keeperOf = new Map();
+  for (const members of groups.values()) {
+    let best = members[0];
+    for (const i of members) {
+      const better = rank(items[i]) - rank(items[best]) || richness(items[best]) - richness(items[i]);
+      if (better < 0) best = i;
+    }
+    for (const i of members) {
+      keeperOf.set(i, best);
+      if (i !== best) dropped.set(items[i], { kept: items[best], reason: reasonOf.get(i) || 'same card' });
+    }
+  }
+  const shared = new Map();
+  for (const [i, j] of sharedPairs) {
+    const a = keeperOf.get(i);
+    const b = keeperOf.get(j);
+    if (a === b) continue; // the pair was merged after all, through a third card
+    for (const [x, y] of [[a, b], [b, a]]) {
+      if (!shared.has(items[x])) shared.set(items[x], []);
+      if (!shared.get(items[x]).includes(items[y])) shared.get(items[x]).push(items[y]);
+    }
+  }
+  return { dropped, shared };
+}
+
+export { detectCardSets, resolveSetFields, titleTier, sameTitle, rankSet, compareSetRank, duplicateKey, findDuplicateCards, pageKey };
