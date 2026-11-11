@@ -5009,21 +5009,40 @@ body:has(#step-review.screen--active),
 }
 .card-editor__image {
   display: grid;
-  place-items: center;
-  aspect-ratio: 16 / 10;
-  padding: 0;
-  overflow: hidden;
+  gap: 5px;
+  min-width: 0;
+  padding: 5px;
   border: 2px solid var(--color-border);
   border-radius: 6px;
-  background: var(--color-surface-offset);
+  background: var(--color-surface-2);
   color: var(--color-text-muted);
   font: inherit;
-  font-size: 0.72rem;
+  text-align: left;
   cursor: pointer;
 }
-.card-editor__image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* The picture, and under it the name of the source it came from. */
+.card-editor__image-pic {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--color-surface-offset);
+}
+.card-editor__image-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-editor__image-broken { padding: 4px; font-size: 0.68rem; text-align: center; color: var(--color-warning); }
+.card-editor__image-src {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.66rem;
+  color: var(--color-text-muted);
+}
 .card-editor__image:hover { border-color: var(--color-text-muted); }
 .card-editor__image.is-selected { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-highlight); }
+.card-editor__image.is-selected .card-editor__image-src { color: var(--color-primary); font-weight: 600; }
+.card-editor__option--none { grid-template-columns: auto minmax(0, 1fr); }
+.card-editor__empty { margin: 0; font-size: 0.78rem; color: var(--color-text-muted); }
 .card-editor__promote {
   justify-self: start;
   padding: 0;

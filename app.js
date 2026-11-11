@@ -1699,11 +1699,20 @@ function renderCardEditor() {
           <h4>Image <small>${thumbs.length} found</small></h4>
           <div class="card-editor__images">
             ${thumbs.map((c, i) => `
-              <button type="button" class="card-editor__image ${c.value === item.thumbnail ? 'is-selected' : ''}" data-pick-thumb="${i}" aria-pressed="${c.value === item.thumbnail}" title="${escapeAttr(c.label)}">
-                <img src="${escapeAttr(c.value)}" alt="${escapeAttr(c.label)}" loading="lazy" />
+              <button type="button" class="card-editor__image ${c.value === item.thumbnail ? 'is-selected' : ''}" data-pick-thumb="${i}" aria-pressed="${c.value === item.thumbnail}" aria-label="Use image from ${escapeAttr(c.label)}">
+                <span class="card-editor__image-pic">
+                  ${reviewState.brokenThumbs.has(c.value)
+                    ? '<span class="card-editor__image-broken">Does not load</span>'
+                    : `<img src="${escapeAttr(c.value)}" alt="" loading="lazy" />`}
+                </span>
+                <span class="card-editor__image-src">${escapeText(c.label)}</span>
               </button>`).join('')}
-            <button type="button" class="card-editor__image card-editor__image--none ${item.thumbnail ? '' : 'is-selected'}" data-pick-thumb="none" aria-pressed="${!item.thumbnail}">No image</button>
           </div>
+          ${thumbs.length ? '' : '<p class="card-editor__empty">No image was found in this card.</p>'}
+          <label class="card-editor__option card-editor__option--none">
+            <input type="checkbox" data-pick-thumb-none ${item.thumbnail ? '' : 'checked'} />
+            <span class="card-editor__option-text">Show this card without an image</span>
+          </label>
           ${item.thumbnail ? promote('thumb', item.thumbnail) : ''}
         </section>
 
@@ -1766,10 +1775,23 @@ function renderCardEditor() {
     if (e.key === 'Enter') { e.preventDefault(); custom.blur(); }
   });
   dialog.querySelectorAll('[data-pick-thumb]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.pickThumb;
-      edit({ thumbnail: key === 'none' ? null : thumbs[Number(key)].value });
+    btn.addEventListener('click', () => edit({ thumbnail: thumbs[Number(btn.dataset.pickThumb)].value }));
+    // A picture that fails here is shown as such, under its own source name,
+    // instead of leaving an empty box.
+    btn.querySelector('img')?.addEventListener('error', (e) => {
+      reviewState.brokenThumbs.add(thumbs[Number(btn.dataset.pickThumb)].value);
+      e.currentTarget.replaceWith(Object.assign(document.createElement('span'), { className: 'card-editor__image-broken', textContent: 'Does not load' }));
     });
+  });
+  dialog.querySelector('[data-pick-thumb-none]').addEventListener('change', (e) => {
+    if (e.currentTarget.checked) { edit({ thumbnail: null }); return; }
+    // Unticking goes back to whatever the set's choice gives this card.
+    const edits = { ...(src.cardEdits?.[item.id] || {}) };
+    delete edits.thumbnail;
+    src.cardEdits[item.id] = edits;
+    flattenSourcesIntoItems({ resetEnabled: false });
+    renderReview();
+    renderCardEditor();
   });
   dialog.querySelectorAll('input[name="ce-video"]').forEach((input) => {
     input.addEventListener('change', () => {
